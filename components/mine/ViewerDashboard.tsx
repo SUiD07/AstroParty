@@ -1295,7 +1295,7 @@ export default function ViewerDashboard() {
     for (let i = 0; i < 80; i++) {
       const piece = document.createElement("div");
       const color = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.cssText = `position:absolute;left:${Math.random() * 100}%;top:-20px;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};animation:confettiFall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s forwards;`;
+      piece.style.cssText = `position:absolute;left:${Math.random() * 100}%;top:-20px;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};animation:confettiFall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s infinite;`;
       c.appendChild(piece);
     }
   };
@@ -1407,7 +1407,7 @@ export default function ViewerDashboard() {
           margin: "0 0 8px 0",
         }}
       >
-        VIEWER DASHBOARD
+        AMSci 2026
       </p>
       <p
         style={{
@@ -1419,7 +1419,7 @@ export default function ViewerDashboard() {
           margin: 0,
         }}
       >
-        Live Competition Tracker
+        9 August 2026
       </p>
 
       {/* Status badges */}
@@ -1635,8 +1635,8 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 3: Space Race + Fleet Rankings --------------------------------
-  const Slide3 = () => (
+  // ---- Slide 4(3->4): Space Race + Fleet Rankings --------------------------------
+  const Slide4 = () => (
     <div
       style={{
         display: "flex",
@@ -2026,8 +2026,8 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 4: Jeopardy Board ---------------------------------------------
-  const Slide4 = () => (
+  // ---- Slide 3(4->3): Jeopardy Board ---------------------------------------------
+  const Slide3 = () => (
     <div
       style={{
         display: "flex",
@@ -2259,7 +2259,6 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 5: Live Leaderboard -------------------------------------------
   // ---- Slide 5: Live Leaderboard -------------------------------------------
   const Slide5 = () => (
     <div
@@ -2534,58 +2533,77 @@ export default function ViewerDashboard() {
   }
 
   // ---- Nav bar -------------------------------------------------------------
-  const NavBar = () => (
-    <div
-      style={{
-        position: "fixed",
-        bottom: 16,
-        left: "50%",
-        transform: "translateX(-50%)",
-        zIndex: 50,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-      }}
-    >
-      <button style={navBtn} onClick={prevSlide}>
-        ← Prev
-      </button>
-      <span
+  const NavBar = () => {
+    const [showNav, setShowNav] = useState(false);
+
+    return (
+      <div
         style={{
-          fontFamily: "'Orbitron', monospace",
-          fontSize: 13,
-          opacity: 0.5,
-          color: "#f5f0e8",
+          position: "fixed",
+          bottom: 16,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 50,
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
         }}
       >
-        {currentSlide} / {totalSlides}
-      </span>
-      <button style={navBtn} onClick={nextSlide}>
-        Next →
-      </button>
-      {/* Quick nav */}
-      {[
-        ["🚀", 3, "Race"],
-        ["📋", 4, "Board"],
-        ["📊", 5, "Scores"],
-        ["🏆", 6, "Finals"],
-      ].map(([icon, n, label]) => (
+        {/* Toggle button */}
         <button
-          key={String(n)}
-          style={{
-            ...navBtn,
-            padding: "6px 12px",
-            fontSize: 12,
-            opacity: currentSlide === n ? 1 : 0.5,
-          }}
-          onClick={() => goToSlide(n as number)}
-          title={String(label)}
+          style={{ ...navBtn, padding: "6px 12px", fontSize: 12 }}
+          onClick={() => setShowNav((v) => !v)}
         >
-          {icon}
+          {showNav ? "✕" : "☰"}
         </button>
-      ))}
-    </div>
-  );
+
+        {/* ทุกอย่างซ่อน/แสดงพร้อมกัน */}
+        {showNav && (
+          <>
+            <button style={navBtn} onClick={prevSlide}>
+              ← Prev
+            </button>
+            <span
+              style={{
+                fontFamily: "'Orbitron', monospace",
+                fontSize: 13,
+                opacity: 0.5,
+                color: "#f5f0e8",
+              }}
+            >
+              {currentSlide} / {totalSlides}
+            </span>
+            <button style={navBtn} onClick={nextSlide}>
+              Next →
+            </button>
+
+            {[
+              ["😽", 1, "Intro"],
+              ["💻", 2, "Overview"],
+              ["📋", 3, "Board"],
+              ["🚀", 4, "Race"],
+              ["📊", 5, "Scores"],
+              ["🏆", 6, "Finals"],
+            ].map(([icon, n, label]) => (
+              <button
+                key={String(n)}
+                style={{
+                  ...navBtn,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                  opacity: currentSlide === n ? 1 : 0.5,
+                }}
+                onClick={() => goToSlide(n as number)}
+                title={String(label)}
+              >
+                {icon}
+              </button>
+            ))}
+          </>
+        )}
+      </div>
+    );
+  };
 
   // ---- Slide map -----------------------------------------------------------
   const slides: Record<number, React.ReactNode> = {
