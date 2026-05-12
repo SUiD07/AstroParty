@@ -1135,6 +1135,13 @@ function QuestionModal({
             >
               ยังไม่มีการให้คะแนนในข้อนี้
             </p>
+            <div>
+              <iframe
+                loading="lazy"
+                src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embed"
+                allow="fullscreen"
+              ></iframe>
+            </div>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -2226,6 +2233,13 @@ export default function ViewerDashboard() {
                 {label}
               </div>
             ))}
+            <div>
+              <iframe
+                loading="lazy"
+                src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embed"
+                allow="fullscreen"
+              ></iframe>
+            </div>
           </div>
         </>
       )}
