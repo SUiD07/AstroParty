@@ -802,7 +802,7 @@
 
 import {
   useEffect,
-  useRef,
+  // useRef,
   useState,
   useCallback,
 } from "react";
@@ -810,6 +810,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
 import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
+// import { useMemo } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -834,11 +835,11 @@ interface ScoreEvent {
 // ---------------------------------------------------------------------------
 // Static
 // ---------------------------------------------------------------------------
-const TEAM_COLORS = [
-  "#22d3ee","#a78bfa","#f472b6","#34d399",
-  "#f0b000","#ff6b9d","#fb923c","#60a5fa",
-];
-const medals = ["🥇","🥈","🥉","🏅","🏅","🏅","🏅","🏅"];
+// const TEAM_COLORS = [
+//   "#22d3ee","#a78bfa","#f472b6","#34d399",
+//   "#f0b000","#ff6b9d","#fb923c","#60a5fa",
+// ];
+const medals = ["🥇", "🥈", "🥉", "🏅", "🏅", "🏅", "🏅", "🏅"];
 
 // ---------------------------------------------------------------------------
 // Inline styles / helpers
@@ -851,7 +852,8 @@ const glassPanel: React.CSSProperties = {
 };
 const neonBorder: React.CSSProperties = {
   border: "1px solid rgba(34,211,238,0.4)",
-  boxShadow: "0 0 15px rgba(34,211,238,0.1), inset 0 0 15px rgba(34,211,238,0.05)",
+  boxShadow:
+    "0 0 15px rgba(34,211,238,0.1), inset 0 0 15px rgba(34,211,238,0.05)",
 };
 const navBtn: React.CSSProperties = {
   background: "rgba(13,27,42,0.8)",
@@ -870,28 +872,46 @@ const navBtn: React.CSSProperties = {
 // Starfield
 // ---------------------------------------------------------------------------
 function Starfield() {
-  const stars = Array.from({ length: 120 }, (_, i) => ({
-    id: i,
-    left: Math.random() * 100,
-    top: Math.random() * 100,
-    size: 1 + Math.random() * 2,
-    dur: 2 + Math.random() * 4,
-    delay: Math.random() * 3,
-  }));
+  const [stars, setStars] = useState<
+    {
+      id: number;
+      left: number;
+      top: number;
+      size: number;
+      dur: number;
+      delay: number;
+    }[]
+  >([]);
+
+  useEffect(() => {
+    const generatedStars = Array.from({ length: 120 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      size: 1 + Math.random() * 2,
+      dur: 2 + Math.random() * 4,
+      delay: Math.random() * 3,
+    }));
+
+    setStars(generatedStars);
+  }, []);
+
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
       {stars.map((s) => (
         <div
           key={s.id}
           className="star"
-          style={{
-            left: `${s.left}%`,
-            top: `${s.top}%`,
-            width: s.size,
-            height: s.size,
-            ["--dur" as any]: `${s.dur}s`,
-            ["--delay" as any]: `${s.delay}s`,
-          }}
+          style={
+            {
+              left: `${s.left}%`,
+              top: `${s.top}%`,
+              width: s.size,
+              height: s.size,
+              "--dur": `${s.dur}s`,
+              "--delay": `${s.delay}s`,
+            } as React.CSSProperties
+          }
         />
       ))}
     </div>
@@ -946,7 +966,14 @@ function JeopardyCell({
       }}
     >
       {answered ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            width: "100%",
+          }}
+        >
           {events.map((ev) => {
             const team = teams.find((t) => t.id === ev.team_id);
             if (!team) return null;
@@ -965,14 +992,31 @@ function JeopardyCell({
                   color: ev.delta > 0 ? team.color : "#f87171",
                 }}
               >
-                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 60 }}>
+                <span
+                  style={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    maxWidth: 60,
+                  }}
+                >
                   {team.name}
                 </span>
                 <span>{ev.delta > 0 ? `+${ev.delta}` : ev.delta}</span>
               </div>
             );
           })}
-          <div style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "rgba(107,33,168,0.5)" }} />
+          <div
+            style={{
+              position: "absolute",
+              top: 4,
+              right: 4,
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "rgba(107,33,168,0.5)",
+            }}
+          />
         </div>
       ) : (
         <span
@@ -1050,22 +1094,58 @@ function QuestionModal({
           <X size={16} />
         </button>
         <div style={{ marginBottom: 24 }}>
-          <p style={{ fontFamily: "'Orbitron', monospace", color: "#22d3ee", fontSize: 11, letterSpacing: "0.2em", marginBottom: 6 }}>
+          <p
+            style={{
+              fontFamily: "'Orbitron', monospace",
+              color: "#22d3ee",
+              fontSize: 11,
+              letterSpacing: "0.2em",
+              marginBottom: 6,
+            }}
+          >
             {category.name}
           </p>
-          <h3 style={{ fontFamily: "'Orbitron', monospace", fontSize: 26, fontWeight: 900, color: "#f5f0e8", margin: 0 }}>
+          <h3
+            style={{
+              fontFamily: "'Orbitron', monospace",
+              fontSize: 26,
+              fontWeight: 900,
+              color: "#f5f0e8",
+              margin: 0,
+            }}
+          >
             ข้อ {question.number}
           </h3>
         </div>
         {events.length === 0 ? (
-          <div style={{ padding: "40px 0", textAlign: "center", borderRadius: 8, border: "1px dashed rgba(34,211,238,0.2)" }}>
-            <p style={{ fontSize: 11, color: "rgba(245,240,232,0.3)", letterSpacing: "0.2em" }}>
+          <div
+            style={{
+              padding: "40px 0",
+              textAlign: "center",
+              borderRadius: 8,
+              border: "1px dashed rgba(34,211,238,0.2)",
+            }}
+          >
+            <p
+              style={{
+                fontSize: 11,
+                color: "rgba(245,240,232,0.3)",
+                letterSpacing: "0.2em",
+              }}
+            >
               ยังไม่มีการให้คะแนนในข้อนี้
             </p>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <p style={{ fontSize: 10, letterSpacing: "0.2em", color: "rgba(245,240,232,0.4)", marginBottom: 4 }}>
+            <p
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                color: "rgba(245,240,232,0.4)",
+                marginBottom: 4,
+              }}
+            >
               ผลคะแนนที่บันทึกไว้
             </p>
             {events.map((ev, i) => {
@@ -1088,13 +1168,45 @@ function QuestionModal({
                     border: `1px solid ${team.color}44`,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: team.color }} />
-                    <span style={{ fontSize: 14, fontWeight: 700, color: team.color }}>{team.name}</span>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <div
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: team.color,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 700,
+                        color: team.color,
+                      }}
+                    >
+                      {team.name}
+                    </span>
                   </div>
-                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 20, fontWeight: 900, color: isPos ? "#34d399" : "#f87171" }}>
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: 20,
+                      fontWeight: 900,
+                      color: isPos ? "#34d399" : "#f87171",
+                    }}
+                  >
                     {isPos ? `+${ev.delta}` : ev.delta}
-                    <span style={{ fontSize: 9, color: "rgba(245,240,232,0.4)", marginLeft: 4 }}>PTS</span>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: "rgba(245,240,232,0.4)",
+                        marginLeft: 4,
+                      }}
+                    >
+                      PTS
+                    </span>
                   </span>
                 </motion.div>
               );
@@ -1142,7 +1254,9 @@ export default function ViewerDashboard() {
     setDataReady(true);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -1170,11 +1284,11 @@ export default function ViewerDashboard() {
     const c = document.getElementById("confetti-root");
     if (!c) return;
     c.innerHTML = "";
-    const colors = ["#22d3ee","#a78bfa","#f472b6","#34d399","#e8d5b7"];
+    const colors = ["#22d3ee", "#a78bfa", "#f472b6", "#34d399", "#e8d5b7"];
     for (let i = 0; i < 80; i++) {
       const piece = document.createElement("div");
       const color = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.cssText = `position:absolute;left:${Math.random()*100}%;top:-20px;width:${6+Math.random()*8}px;height:${6+Math.random()*8}px;background:${color};border-radius:${Math.random()>0.5?"50%":"2px"};animation:confettiFall ${2+Math.random()*3}s linear ${Math.random()*2}s forwards;`;
+      piece.style.cssText = `position:absolute;left:${Math.random() * 100}%;top:-20px;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};animation:confettiFall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s forwards;`;
       c.appendChild(piece);
     }
   };
@@ -1192,12 +1306,14 @@ export default function ViewerDashboard() {
     scoreEvents.filter((e) => e.question_id === questionId);
 
   const answeredCount = categories.reduce(
-    (acc, cat) => acc + (cat.questions?.filter((q) => getEvents(q.id).length > 0).length ?? 0),
-    0
+    (acc, cat) =>
+      acc +
+      (cat.questions?.filter((q) => getEvents(q.id).length > 0).length ?? 0),
+    0,
   );
   const totalQCount = categories.reduce(
     (acc, cat) => acc + (cat.questions?.length ?? 0),
-    0
+    0,
   );
 
   // Refresh button (shared)
@@ -1210,7 +1326,9 @@ export default function ViewerDashboard() {
         display: "flex",
         alignItems: "center",
         gap: 6,
-        background: isRefreshing ? "rgba(34,211,238,0.1)" : "rgba(34,211,238,0.2)",
+        background: isRefreshing
+          ? "rgba(34,211,238,0.1)"
+          : "rgba(34,211,238,0.2)",
         opacity: isRefreshing ? 0.7 : 1,
       }}
     >
@@ -1221,37 +1339,140 @@ export default function ViewerDashboard() {
 
   // ---- Slide 1: Title -------------------------------------------------------
   const Slide1 = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", position: "relative", padding: 32 }}>
-      <div style={{ position: "absolute", top: 40, right: 64, width: 96, height: 96, borderRadius: "50%", background: "radial-gradient(circle at 30% 30%, #e8d5b7, #8b7355)", opacity: 0.6, animation: "float 6s ease-in-out infinite", boxShadow: "0 0 40px rgba(232,213,183,0.3)" }} />
-      <h1 style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(2.5rem,6vw,5rem)", fontWeight: 900, textAlign: "center", color: "#22d3ee", letterSpacing: 4, animation: "glowPulse 3s ease-in-out infinite", margin: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        padding: 32,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 40,
+          right: 64,
+          width: 96,
+          height: 96,
+          borderRadius: "50%",
+          background: "radial-gradient(circle at 30% 30%, #e8d5b7, #8b7355)",
+          opacity: 0.6,
+          animation: "float 6s ease-in-out infinite",
+          boxShadow: "0 0 40px rgba(232,213,183,0.3)",
+        }}
+      />
+      <h1
+        style={{
+          fontFamily: "'Orbitron', monospace",
+          fontSize: "clamp(2.5rem,6vw,5rem)",
+          fontWeight: 900,
+          textAlign: "center",
+          color: "#22d3ee",
+          letterSpacing: 4,
+          animation: "glowPulse 3s ease-in-out infinite",
+          margin: 0,
+        }}
+      >
         ASTROPARTY
       </h1>
-      <div style={{ width: 192, height: 4, borderRadius: 4, background: "linear-gradient(90deg, transparent, #22d3ee, transparent)", margin: "16px 0", animation: "glowPulse 2s infinite" }} />
-      <p style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(1rem,2vw,1.25rem)", fontWeight: 700, letterSpacing: "0.3em", color: "#a78bfa", margin: "0 0 8px 0" }}>
+      <div
+        style={{
+          width: 192,
+          height: 4,
+          borderRadius: 4,
+          background:
+            "linear-gradient(90deg, transparent, #22d3ee, transparent)",
+          margin: "16px 0",
+          animation: "glowPulse 2s infinite",
+        }}
+      />
+      <p
+        style={{
+          fontFamily: "'Orbitron', monospace",
+          fontSize: "clamp(1rem,2vw,1.25rem)",
+          fontWeight: 700,
+          letterSpacing: "0.3em",
+          color: "#a78bfa",
+          margin: "0 0 8px 0",
+        }}
+      >
         VIEWER DASHBOARD
       </p>
-      <p style={{ fontSize: "clamp(0.9rem,2vw,1.1rem)", fontWeight: 300, letterSpacing: "0.2em", opacity: 0.7, color: "#e8d5b7", margin: 0 }}>
+      <p
+        style={{
+          fontSize: "clamp(0.9rem,2vw,1.1rem)",
+          fontWeight: 300,
+          letterSpacing: "0.2em",
+          opacity: 0.7,
+          color: "#e8d5b7",
+          margin: 0,
+        }}
+      >
         Live Competition Tracker
       </p>
 
       {/* Status badges */}
       <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
-        <div style={{ ...glassPanel, padding: "8px 20px", display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: dataReady ? "#34d399" : "#f472b6", animation: "glowPulse 1.5s infinite" }} />
-          <span style={{ fontSize: 12, letterSpacing: "0.15em", color: dataReady ? "#34d399" : "#f472b6" }}>
+        <div
+          style={{
+            ...glassPanel,
+            padding: "8px 20px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: dataReady ? "#34d399" : "#f472b6",
+              animation: "glowPulse 1.5s infinite",
+            }}
+          />
+          <span
+            style={{
+              fontSize: 12,
+              letterSpacing: "0.15em",
+              color: dataReady ? "#34d399" : "#f472b6",
+            }}
+          >
             {dataReady ? "DATA LINKED" : "CONNECTING…"}
           </span>
         </div>
         <div style={{ ...glassPanel, padding: "8px 20px" }}>
-          <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 12, color: "#22d3ee", letterSpacing: "0.15em" }}>
+          <span
+            style={{
+              fontFamily: "'Orbitron', monospace",
+              fontSize: 12,
+              color: "#22d3ee",
+              letterSpacing: "0.15em",
+            }}
+          >
             ROUND {data.state.round}
           </span>
         </div>
       </div>
 
       <div style={{ marginTop: 32 }}>
-        <div style={{ ...glassPanel, ...neonBorder, padding: "12px 28px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 14, letterSpacing: "0.15em", opacity: 0.6 }}>Press → to begin</span>
+        <div
+          style={{
+            ...glassPanel,
+            ...neonBorder,
+            padding: "12px 28px",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <span style={{ fontSize: 14, letterSpacing: "0.15em", opacity: 0.6 }}>
+            Press → to begin
+          </span>
           <RefreshBtn />
         </div>
       </div>
@@ -1260,32 +1481,119 @@ export default function ViewerDashboard() {
 
   // ---- Slide 2: Round Info -------------------------------------------------
   const Slide2 = () => (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", padding: 32 }}>
-      <div style={{ ...glassPanel, ...neonBorder, padding: 48, maxWidth: 760, width: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-          <h2 style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(2rem,4vw,3rem)", fontWeight: 900, color: "#22d3ee", animation: "glowPulse 3s infinite", margin: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: 32,
+      }}
+    >
+      <div
+        style={{
+          ...glassPanel,
+          ...neonBorder,
+          padding: 48,
+          maxWidth: 760,
+          width: "100%",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
+          }}
+        >
+          <h2
+            style={{
+              fontFamily: "'Orbitron', monospace",
+              fontSize: "clamp(2rem,4vw,3rem)",
+              fontWeight: 900,
+              color: "#22d3ee",
+              animation: "glowPulse 3s infinite",
+              margin: 0,
+            }}
+          >
             Round {data.state.round}
           </h2>
-          <div style={{ padding: "6px 16px", borderRadius: 6, background: "rgba(34,211,238,0.1)", border: "1px solid rgba(34,211,238,0.3)" }}>
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 12, fontWeight: 700, color: data.state.status === "finished" ? "#34d399" : "#22d3ee", letterSpacing: "0.15em" }}>
+          <div
+            style={{
+              padding: "6px 16px",
+              borderRadius: 6,
+              background: "rgba(34,211,238,0.1)",
+              border: "1px solid rgba(34,211,238,0.3)",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Orbitron', monospace",
+                fontSize: 12,
+                fontWeight: 700,
+                color: data.state.status === "finished" ? "#34d399" : "#22d3ee",
+                letterSpacing: "0.15em",
+              }}
+            >
               {data.state.status.toUpperCase()}
             </span>
           </div>
         </div>
-        <p style={{ textAlign: "left", fontSize: 18, color: "#e8d5b7", opacity: 0.6, marginBottom: 32 }}>
+        <p
+          style={{
+            textAlign: "left",
+            fontSize: 18,
+            color: "#e8d5b7",
+            opacity: 0.6,
+            marginBottom: 32,
+          }}
+        >
           Medical Science Competition
         </p>
 
         {/* Stats row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 28 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3,1fr)",
+            gap: 12,
+            marginBottom: 28,
+          }}
+        >
           {[
             ["👥 Teams", data.teams.length],
             ["✅ Answered", `${answeredCount} / ${totalQCount}`],
-            ["🏆 Leader", sortedPositions[0] ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)?.name ?? "—") : "—"],
+            [
+              "🏆 Leader",
+              sortedPositions[0]
+                ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)
+                    ?.name ?? "—")
+                : "—",
+            ],
           ].map(([label, val]) => (
-            <div key={String(label)} style={{ ...glassPanel, padding: "12px 16px", textAlign: "center" }}>
-              <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>{label}</div>
-              <div style={{ fontFamily: "'Orbitron', monospace", fontSize: 18, fontWeight: 900, color: "#22d3ee" }}>{val}</div>
+            <div
+              key={String(label)}
+              style={{
+                ...glassPanel,
+                padding: "12px 16px",
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
+                {label}
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: 18,
+                  fontWeight: 900,
+                  color: "#22d3ee",
+                }}
+              >
+                {val}
+              </div>
             </div>
           ))}
         </div>
@@ -1293,10 +1601,23 @@ export default function ViewerDashboard() {
         {/* Categories */}
         {categories.length > 0 && (
           <>
-            <h3 style={{ color: "#22d3ee", fontWeight: 700, margin: "0 0 10px" }}>Categories:</h3>
+            <h3
+              style={{ color: "#22d3ee", fontWeight: 700, margin: "0 0 10px" }}
+            >
+              Categories:
+            </h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {categories.map((c) => (
-                <div key={c.id} style={{ ...glassPanel, padding: "6px 14px", fontSize: 13, fontWeight: 600, color: "#e8d5b7" }}>
+                <div
+                  key={c.id}
+                  style={{
+                    ...glassPanel,
+                    padding: "6px 14px",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#e8d5b7",
+                  }}
+                >
                   {c.name}
                 </div>
               ))}
@@ -1309,10 +1630,35 @@ export default function ViewerDashboard() {
 
   // ---- Slide 3: Space Race + Fleet Rankings --------------------------------
   const Slide3 = () => (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", padding: 24, gap: 16 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        padding: 24,
+        gap: 16,
+      }}
+    >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-        <h2 style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(1.25rem,2.5vw,2rem)", fontWeight: 900, color: "#22d3ee", animation: "glowPulse 3s infinite", margin: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexShrink: 0,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "'Orbitron', monospace",
+            fontSize: "clamp(1.25rem,2.5vw,2rem)",
+            fontWeight: 900,
+            color: "#22d3ee",
+            animation: "glowPulse 3s infinite",
+            margin: 0,
+          }}
+        >
           SPACE RACE
         </h2>
         <RefreshBtn />
@@ -1331,18 +1677,55 @@ export default function ViewerDashboard() {
           }}
         >
           {/* Grid background */}
-          <div style={{
-            position: "absolute", inset: 0, opacity: 0.08,
-            backgroundImage: "linear-gradient(#22d3ee 1px, transparent 1px), linear-gradient(90deg, #22d3ee 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }} />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              opacity: 0.08,
+              backgroundImage:
+                "linear-gradient(#22d3ee 1px, transparent 1px), linear-gradient(90deg, #22d3ee 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
 
           {/* Scale marks */}
-          <div style={{ position: "absolute", bottom: 0, left: 48, right: 80, height: 24, borderTop: "1px solid rgba(34,211,238,0.15)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "0 8px" }}>
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 48,
+              right: 80,
+              height: 24,
+              borderTop: "1px solid rgba(34,211,238,0.15)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "flex-start",
+              padding: "0 8px",
+            }}
+          >
             {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-              <div key={p} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ width: 1, height: 8, background: "rgba(34,211,238,0.2)" }} />
-                <span style={{ fontSize: 9, color: "rgba(245,240,232,0.3)", marginTop: 2 }}>
+              <div
+                key={p}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: 1,
+                    height: 8,
+                    background: "rgba(34,211,238,0.2)",
+                  }}
+                />
+                <span
+                  style={{
+                    fontSize: 9,
+                    color: "rgba(245,240,232,0.3)",
+                    marginTop: 2,
+                  }}
+                >
                   {Math.floor(p * visualTarget)}
                 </span>
               </div>
@@ -1350,7 +1733,16 @@ export default function ViewerDashboard() {
           </div>
 
           {/* Ships */}
-          <div style={{ position: "absolute", left: 48, right: 80, top: 0, bottom: 24, padding: "16px 0" }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 48,
+              right: 80,
+              top: 0,
+              bottom: 24,
+              padding: "16px 0",
+            }}
+          >
             <AnimatePresence>
               {topFive.map((pos, index) => {
                 const team = data.teams.find((t) => t.id === pos.teamId);
@@ -1367,52 +1759,84 @@ export default function ViewerDashboard() {
                       top: `${yPos}%`,
                     }}
                     transition={{ type: "spring", stiffness: 40, damping: 15 }}
-                    style={{ position: "absolute", transform: "translate(-50%, -50%)", zIndex: 10 }}
+                    style={{
+                      position: "absolute",
+                      transform: "translate(-50%, -50%)",
+                      zIndex: 10,
+                    }}
                   >
-                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <div
+                      style={{
+                        position: "relative",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
                       {/* Ship body */}
                       <div
                         style={{
-                          width: 40, height: 28, flexShrink: 0,
-                          clipPath: "polygon(0% 0%, 100% 50%, 0% 100%, 25% 50%)",
+                          width: 40,
+                          height: 28,
+                          flexShrink: 0,
+                          clipPath:
+                            "polygon(0% 0%, 100% 50%, 0% 100%, 25% 50%)",
                           backgroundColor: team.color,
                           boxShadow: `0 0 20px ${team.color}`,
                         }}
                       />
                       {/* Label */}
-                      <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        ...(isNearRight ? { right: "calc(100% + 10px)" } : { left: "calc(100% + 10px)" }),
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 3,
-                        alignItems: isNearRight ? "flex-end" : "flex-start",
-                        whiteSpace: "nowrap",
-                      }}>
-                        <div style={{
-                          fontFamily: "'Orbitron', monospace",
-                          fontSize: 9, fontWeight: 900,
-                          padding: "2px 8px",
-                          borderRadius: 4,
-                          background: "rgba(10,10,26,0.95)",
-                          border: `1px solid ${team.color}66`,
-                          color: team.color,
-                          letterSpacing: "0.12em",
-                        }}>
-                          <span style={{ opacity: 0.5 }}>#{index + 1}</span> {team.name}
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          ...(isNearRight
+                            ? { right: "calc(100% + 10px)" }
+                            : { left: "calc(100% + 10px)" }),
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 3,
+                          alignItems: isNearRight ? "flex-end" : "flex-start",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: "'Orbitron', monospace",
+                            fontSize: 9,
+                            fontWeight: 900,
+                            padding: "2px 8px",
+                            borderRadius: 4,
+                            background: "rgba(10,10,26,0.95)",
+                            border: `1px solid ${team.color}66`,
+                            color: team.color,
+                            letterSpacing: "0.12em",
+                          }}
+                        >
+                          <span style={{ opacity: 0.5 }}>#{index + 1}</span>{" "}
+                          {team.name}
                         </div>
-                        <div style={{
-                          fontFamily: "'Orbitron', monospace",
-                          fontSize: 10, fontWeight: 900,
-                          padding: "1px 6px",
-                          borderRadius: 3,
-                          background: "rgba(13,27,42,0.6)",
-                          border: "1px solid rgba(255,255,255,0.05)",
-                          color: "#f5f0e8",
-                        }}>
-                          {pos.score} <span style={{ fontSize: 7, color: "rgba(245,240,232,0.4)" }}>P</span>
+                        <div
+                          style={{
+                            fontFamily: "'Orbitron', monospace",
+                            fontSize: 10,
+                            fontWeight: 900,
+                            padding: "1px 6px",
+                            borderRadius: 3,
+                            background: "rgba(13,27,42,0.6)",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                            color: "#f5f0e8",
+                          }}
+                        >
+                          {pos.score}{" "}
+                          <span
+                            style={{
+                              fontSize: 7,
+                              color: "rgba(245,240,232,0.4)",
+                            }}
+                          >
+                            P
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -1421,25 +1845,79 @@ export default function ViewerDashboard() {
               })}
             </AnimatePresence>
             {topFive.length === 0 && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(245,240,232,0.2)", fontSize: 11, letterSpacing: "0.2em" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "rgba(245,240,232,0.2)",
+                  fontSize: 11,
+                  letterSpacing: "0.2em",
+                }}
+              >
                 AWAITING FLEET TRANSMISSION…
               </div>
             )}
           </div>
 
           {/* Finish line */}
-          <div style={{ position: "absolute", right: 80, top: 0, bottom: 24, width: 1, background: "rgba(34,211,238,0.25)" }} />
+          <div
+            style={{
+              position: "absolute",
+              right: 80,
+              top: 0,
+              bottom: 24,
+              width: 1,
+              background: "rgba(34,211,238,0.25)",
+            }}
+          />
         </div>
 
         {/* Fleet Rankings sidebar */}
-        <div style={{ flex: 1, minWidth: 220, ...glassPanel, display: "flex", flexDirection: "column", minHeight: 0, overflow: "hidden" }}>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(34,211,238,0.15)" }}>
-            <div style={{ fontFamily: "'Orbitron', monospace", fontSize: 10, fontWeight: 900, color: "#22d3ee", letterSpacing: "0.2em", display: "flex", justifyContent: "space-between" }}>
+        <div
+          style={{
+            flex: 1,
+            minWidth: 220,
+            ...glassPanel,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              padding: "12px 16px",
+              borderBottom: "1px solid rgba(34,211,238,0.15)",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "'Orbitron', monospace",
+                fontSize: 10,
+                fontWeight: 900,
+                color: "#22d3ee",
+                letterSpacing: "0.2em",
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
               Fleet Rankings
               <span style={{ opacity: 0.4 }}>LIVE</span>
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: 8,
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
             {sortedPositions.map((pos, index) => {
               const team = data.teams.find((t) => t.id === pos.teamId);
               if (!team) return null;
@@ -1448,29 +1926,76 @@ export default function ViewerDashboard() {
                 <div
                   key={team.id}
                   style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 12px", borderRadius: 8,
-                    background: isTop ? "rgba(34,211,238,0.05)" : "rgba(0,0,0,0.2)",
-                    border: isTop ? "1px solid rgba(34,211,238,0.2)" : "1px solid rgba(255,255,255,0.04)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: isTop
+                      ? "rgba(34,211,238,0.05)"
+                      : "rgba(0,0,0,0.2)",
+                    border: isTop
+                      ? "1px solid rgba(34,211,238,0.2)"
+                      : "1px solid rgba(255,255,255,0.04)",
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, width: 14, color: index < 3 ? "#34d399" : "rgba(245,240,232,0.4)" }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                  >
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        width: 14,
+                        color: index < 3 ? "#34d399" : "rgba(245,240,232,0.4)",
+                      }}
+                    >
                       {index + 1}
                     </span>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: team.color }} />
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", maxWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: team.color,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: "0.05em",
+                        maxWidth: 90,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
                       {team.name}
                     </span>
                   </div>
-                  <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 10, color: "rgba(245,240,232,0.5)" }}>
+                  <span
+                    style={{
+                      fontFamily: "'Orbitron', monospace",
+                      fontSize: 10,
+                      color: "rgba(245,240,232,0.5)",
+                    }}
+                  >
                     {pos.score} <span style={{ fontSize: 8 }}>PTS</span>
                   </span>
                 </div>
               );
             })}
             {data.teams.length === 0 && (
-              <div style={{ padding: 32, textAlign: "center", fontSize: 10, color: "rgba(245,240,232,0.2)", letterSpacing: "0.15em" }}>
+              <div
+                style={{
+                  padding: 32,
+                  textAlign: "center",
+                  fontSize: 10,
+                  color: "rgba(245,240,232,0.2)",
+                  letterSpacing: "0.15em",
+                }}
+              >
                 NO DATA
               </div>
             )}
@@ -1479,7 +2004,16 @@ export default function ViewerDashboard() {
       </div>
 
       {/* Finish line label */}
-      <div style={{ textAlign: "right", paddingRight: 92, fontSize: 11, opacity: 0.35, letterSpacing: "0.1em", flexShrink: 0 }}>
+      <div
+        style={{
+          textAlign: "right",
+          paddingRight: 92,
+          fontSize: 11,
+          opacity: 0.35,
+          letterSpacing: "0.1em",
+          flexShrink: 0,
+        }}
+      >
         🏁 FINISH LINE ({Math.floor(visualTarget)} PTS) →
       </div>
     </div>
@@ -1487,16 +2021,58 @@ export default function ViewerDashboard() {
 
   // ---- Slide 4: Jeopardy Board ---------------------------------------------
   const Slide4 = () => (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", padding: 24, overflowY: "auto" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        padding: 24,
+        overflowY: "auto",
+      }}
+    >
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexShrink: 0 }}>
-        <h2 style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(1.25rem,2.5vw,2rem)", fontWeight: 900, color: "#22d3ee", animation: "glowPulse 3s infinite", margin: 0 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 16,
+          flexShrink: 0,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "'Orbitron', monospace",
+            fontSize: "clamp(1.25rem,2.5vw,2rem)",
+            fontWeight: 900,
+            color: "#22d3ee",
+            animation: "glowPulse 3s infinite",
+            margin: 0,
+          }}
+        >
           QUESTION BOARD
         </h2>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", borderRadius: 8, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.2)" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 14px",
+              borderRadius: 8,
+              background: "rgba(34,211,238,0.08)",
+              border: "1px solid rgba(34,211,238,0.2)",
+            }}
+          >
             <Zap size={12} color="#22d3ee" />
-            <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 11, color: "#22d3ee" }}>
+            <span
+              style={{
+                fontFamily: "'Orbitron', monospace",
+                fontSize: 11,
+                color: "#22d3ee",
+              }}
+            >
               {answeredCount}/{totalQCount}
             </span>
           </div>
@@ -1505,17 +2081,58 @@ export default function ViewerDashboard() {
       </div>
 
       {categories.length === 0 ? (
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <p style={{ opacity: 0.3, letterSpacing: "0.15em", fontSize: 12 }}>No categories loaded — press Sync</p>
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <p style={{ opacity: 0.3, letterSpacing: "0.15em", fontSize: 12 }}>
+            No categories loaded — press Sync
+          </p>
         </div>
       ) : (
         <>
           {/* Progress bar */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12, flexShrink: 0 }}>
-            <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(34,211,238,0.1)", overflow: "hidden" }}>
-              <div style={{ height: "100%", background: "rgba(34,211,238,0.5)", width: totalQCount ? `${(answeredCount / totalQCount) * 100}%` : "0%", transition: "width 0.7s ease" }} />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              marginBottom: 12,
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                height: 4,
+                borderRadius: 2,
+                background: "rgba(34,211,238,0.1)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  background: "rgba(34,211,238,0.5)",
+                  width: totalQCount
+                    ? `${(answeredCount / totalQCount) * 100}%`
+                    : "0%",
+                  transition: "width 0.7s ease",
+                }}
+              />
             </div>
-            <span style={{ fontSize: 10, color: "rgba(245,240,232,0.4)", letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
+            <span
+              style={{
+                fontSize: 10,
+                color: "rgba(245,240,232,0.4)",
+                letterSpacing: "0.1em",
+                whiteSpace: "nowrap",
+              }}
+            >
               {answeredCount} / {totalQCount}
             </span>
           </div>
@@ -1533,13 +2150,24 @@ export default function ViewerDashboard() {
               <div
                 key={cat.id}
                 style={{
-                  padding: "8px 6px", textAlign: "center",
+                  padding: "8px 6px",
+                  textAlign: "center",
                   background: "rgba(34,211,238,0.08)",
                   border: "1px solid rgba(34,211,238,0.2)",
                   borderRadius: 6,
                 }}
               >
-                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 10, fontWeight: 700, color: "#22d3ee", letterSpacing: "0.1em", lineHeight: 1.3, display: "block" }}>
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: "#22d3ee",
+                    letterSpacing: "0.1em",
+                    lineHeight: 1.3,
+                    display: "block",
+                  }}
+                >
                   {cat.name}
                 </span>
               </div>
@@ -1549,28 +2177,52 @@ export default function ViewerDashboard() {
             {Array.from({ length: 6 }, (_, qi) =>
               categories.map((cat) => {
                 const q = cat.questions?.find((q) => q.number === qi + 1);
-                if (!q) return <div key={`${cat.id}-${qi}`} style={{ minHeight: 60 }} />;
+                if (!q)
+                  return (
+                    <div key={`${cat.id}-${qi}`} style={{ minHeight: 60 }} />
+                  );
                 return (
                   <JeopardyCell
                     key={q.id}
                     question={q}
                     events={getEvents(q.id)}
                     teams={data.teams}
-                    onClick={() => setSelectedCell({ category: cat, question: q })}
+                    onClick={() =>
+                      setSelectedCell({ category: cat, question: q })
+                    }
                   />
                 );
-              })
+              }),
             )}
           </div>
 
           {/* Legend */}
-          <div style={{ display: "flex", gap: 20, paddingTop: 12, flexShrink: 0 }}>
+          <div
+            style={{ display: "flex", gap: 20, paddingTop: 12, flexShrink: 0 }}
+          >
             {[
               ["rgba(34,211,238,0.4)", "ยังไม่ตอบ"],
               ["rgba(107,33,168,0.5)", "ตอบแล้ว — กดเพื่อดูรายละเอียด"],
             ].map(([color, label]) => (
-              <div key={label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "rgba(245,240,232,0.4)", letterSpacing: "0.1em" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 10,
+                  color: "rgba(245,240,232,0.4)",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                <div
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: color,
+                  }}
+                />
                 {label}
               </div>
             ))}
@@ -1594,36 +2246,115 @@ export default function ViewerDashboard() {
   );
 
   // ---- Slide 5: Live Leaderboard -------------------------------------------
+  // ---- Slide 5: Live Leaderboard -------------------------------------------
   const Slide5 = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", padding: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <h2 style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(1.5rem,3vw,2.5rem)", fontWeight: 900, color: "#22d3ee", animation: "glowPulse 3s infinite", margin: 0 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        width: "100%",
+        height: "100%",
+        padding: 24,
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 24,
+          flexShrink: 0,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "'Orbitron', monospace",
+            fontSize: "clamp(1.5rem,3vw,2.5rem)",
+            fontWeight: 900,
+            color: "#22d3ee",
+            animation: "glowPulse 3s infinite",
+            margin: 0,
+          }}
+        >
           LIVE LEADERBOARD
         </h2>
         <RefreshBtn />
       </div>
-      <div style={{ width: "100%", maxWidth: 720 }}>
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 720,
+          flex: 1,
+          overflowY: "auto",
+          paddingRight: 8,
+        }}
+      >
         {sortedPositions.length === 0 && (
-          <p style={{ opacity: 0.4, textAlign: "center", letterSpacing: "0.15em" }}>No teams yet</p>
+          <p
+            style={{
+              opacity: 0.4,
+              textAlign: "center",
+              letterSpacing: "0.15em",
+            }}
+          >
+            No teams yet
+          </p>
         )}
+
         {sortedPositions.map((pos, i) => {
           const team = data.teams.find((t) => t.id === pos.teamId);
           if (!team) return null;
+
           return (
             <div
               key={team.id}
               style={{
-                ...glassPanel, ...neonBorder,
+                ...glassPanel,
+                ...neonBorder,
                 borderLeft: `4px solid ${team.color}`,
-                padding: 16, marginBottom: 12,
-                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: 16,
+                marginBottom: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <span style={{ fontSize: 30 }}>{medals[i]}</span>
-                <span style={{ fontSize: 20, fontWeight: 700 }}>{team.name}</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  minWidth: 0,
+                }}
+              >
+                <span style={{ fontSize: 30, flexShrink: 0 }}>{medals[i]}</span>
+
+                <span
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {team.name}
+                </span>
               </div>
-              <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 26, fontWeight: 900, color: team.color }}>
+
+              <span
+                style={{
+                  fontFamily: "'Orbitron', monospace",
+                  fontSize: 26,
+                  fontWeight: 900,
+                  color: team.color,
+                  flexShrink: 0,
+                }}
+              >
                 {pos.score}
               </span>
             </div>
@@ -1634,56 +2365,190 @@ export default function ViewerDashboard() {
   );
 
   // ---- Slide 6: Final Results ----------------------------------------------
-  const Slide6 = () => {
-    useEffect(() => { launchConfetti(); }, []);
-    const winner = sortedPositions[0] ? data.teams.find((t) => t.id === sortedPositions[0].teamId) : null;
+  function Slide6() {
+    useEffect(() => {
+      launchConfetti();
+    }, []);
+
+    const winner = sortedPositions[0]
+      ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
+      : null;
+
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", padding: 32, position: "relative" }}>
-        <div id="confetti-root" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }} />
-        <div style={{ fontSize: 64, animation: "float 2s ease-in-out infinite", marginBottom: 16 }}>🚀</div>
-        <h2 style={{ fontFamily: "'Orbitron', monospace", fontSize: "clamp(2rem,5vw,3.5rem)", fontWeight: 900, color: "#22d3ee", animation: "glowPulse 3s infinite", marginBottom: 8 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          width: "100%",
+          height: "100%",
+          padding: 32,
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          id="confetti-root"
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+          }}
+        />
+
+        <div
+          style={{
+            fontSize: 64,
+            animation: "float 2s ease-in-out infinite",
+            marginBottom: 16,
+            flexShrink: 0,
+          }}
+        >
+          🚀
+        </div>
+
+        <h2
+          style={{
+            fontFamily: "'Orbitron', monospace",
+            fontSize: "clamp(2rem,5vw,3.5rem)",
+            fontWeight: 900,
+            color: "#22d3ee",
+            animation: "glowPulse 3s infinite",
+            marginBottom: 8,
+            flexShrink: 0,
+          }}
+        >
           CONGRATULATIONS!
         </h2>
+
         {winner && (
-          <p style={{ fontSize: 26, fontWeight: 700, color: winner.color, marginBottom: 32 }}>
+          <p
+            style={{
+              fontSize: 26,
+              fontWeight: 700,
+              color: winner.color,
+              marginBottom: 24,
+              flexShrink: 0,
+            }}
+          >
             {winner.name}
           </p>
         )}
-        <div style={{ width: "100%", maxWidth: 600 }}>
+
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 600,
+            flex: 1,
+            overflowY: "auto",
+            paddingRight: 8,
+          }}
+        >
           {sortedPositions.map((pos, i) => {
             const team = data.teams.find((t) => t.id === pos.teamId);
             if (!team) return null;
+
             return (
-              <div key={team.id} style={{ ...glassPanel, ...neonBorder, padding: "14px 20px", marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: 22 }}>{medals[i]}</span>
-                  <span style={{ fontSize: 17, fontWeight: 700, color: team.color }}>{team.name}</span>
+              <div
+                key={team.id}
+                style={{
+                  ...glassPanel,
+                  ...neonBorder,
+                  padding: "14px 20px",
+                  marginBottom: 10,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>
+                    {medals[i]}
+                  </span>
+
+                  <span
+                    style={{
+                      fontSize: 17,
+                      fontWeight: 700,
+                      color: team.color,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {team.name}
+                  </span>
                 </div>
-                <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 20, fontWeight: 900 }}>{pos.score}</span>
+
+                <span
+                  style={{
+                    fontFamily: "'Orbitron', monospace",
+                    fontSize: 20,
+                    fontWeight: 900,
+                    flexShrink: 0,
+                  }}
+                >
+                  {pos.score}
+                </span>
               </div>
             );
           })}
         </div>
-        <button style={{ ...navBtn, marginTop: 24, background: "rgba(34,211,238,0.15)" }} onClick={() => goToSlide(1)}>
+
+        <button
+          style={{
+            ...navBtn,
+            marginTop: 20,
+            background: "rgba(34,211,238,0.15)",
+            flexShrink: 0,
+          }}
+          onClick={() => goToSlide(1)}
+        >
           ↩ Back to Start
         </button>
       </div>
     );
-  };
+  }
 
   // ---- Nav bar -------------------------------------------------------------
   const NavBar = () => (
     <div
       style={{
-        position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)",
-        zIndex: 50, display: "flex", alignItems: "center", gap: 10,
+        position: "fixed",
+        bottom: 16,
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
       }}
     >
-      <button style={navBtn} onClick={prevSlide}>← Prev</button>
-      <span style={{ fontFamily: "'Orbitron', monospace", fontSize: 13, opacity: 0.5, color: "#f5f0e8" }}>
+      <button style={navBtn} onClick={prevSlide}>
+        ← Prev
+      </button>
+      <span
+        style={{
+          fontFamily: "'Orbitron', monospace",
+          fontSize: 13,
+          opacity: 0.5,
+          color: "#f5f0e8",
+        }}
+      >
         {currentSlide} / {totalSlides}
       </span>
-      <button style={navBtn} onClick={nextSlide}>Next →</button>
+      <button style={navBtn} onClick={nextSlide}>
+        Next →
+      </button>
       {/* Quick nav */}
       {[
         ["🚀", 3, "Race"],
@@ -1693,7 +2558,12 @@ export default function ViewerDashboard() {
       ].map(([icon, n, label]) => (
         <button
           key={String(n)}
-          style={{ ...navBtn, padding: "6px 12px", fontSize: 12, opacity: currentSlide === n ? 1 : 0.5 }}
+          style={{
+            ...navBtn,
+            padding: "6px 12px",
+            fontSize: 12,
+            opacity: currentSlide === n ? 1 : 0.5,
+          }}
           onClick={() => goToSlide(n as number)}
           title={String(label)}
         >
@@ -1731,9 +2601,25 @@ export default function ViewerDashboard() {
         .star { position:absolute; background:white; border-radius:50%; animation:twinkle var(--dur) ease-in-out infinite; animation-delay:var(--delay); }
       `}</style>
 
-      <div style={{ position: "fixed", inset: 0, background: "#0a0a1a", fontFamily: "'Rajdhani', sans-serif", color: "#f5f0e8", overflow: "hidden" }}>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "#0a0a1a",
+          fontFamily: "'Rajdhani', sans-serif",
+          color: "#f5f0e8",
+          overflow: "hidden",
+        }}
+      >
         <Starfield />
-        <div style={{ position: "absolute", inset: 0, display: "flex", zIndex: 10 }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            zIndex: 10,
+          }}
+        >
           {slides[currentSlide]}
         </div>
         <NavBar />
