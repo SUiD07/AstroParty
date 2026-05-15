@@ -1,44 +1,60 @@
 import { supabase } from './supabase';
-import { RaceData } from '@/app/types';
+import { RaceData, Team, GameStatus } from '@/app/types';
 
+// ---- Types ----
+export interface ScoreEvent {
+  id: number;
+  team_id: string;
+  category_id: number;
+  question_id: number;
+  delta: number;
+  note: string | null;
+  created_at: string;
+  // joined
+  team_name?: string;
+  team_color?: string;
+  category_name?: string;
+  question_number?: number;
+}
+
+// ---- Load ----
 export async function loadData(): Promise<RaceData> {
-  const [{ data: teams }, { data: positions }, { data: gameState }] = await Promise.all([
+  const [{ data: teams }, { data: scores }, { data: gameState }] = await Promise.all([
     supabase.from('teams').select('*'),
-    supabase.from('positions').select('*'),
+    supabase.from('team_scores').select('*'),   // จาก view
     supabase.from('game_state').select('*').eq('id', 1).single(),
   ]);
 
   return {
     teams: teams ?? [],
-    positions: (positions ?? []).map(p => ({ teamId: p.team_id, score: p.score })),
+    positions: (scores ?? []).map(s => ({ teamId: s.team_id, score: s.score })),
     state: gameState ?? { status: 'idle', round: 1 },
   };
 }
 
-export async function saveTeam(team: { id: string; name: string; color: string }) {
+// ---- Teams ----
+export async function saveTeam(team: Team) {
   await supabase.from('teams').upsert(team);
-  await supabase.from('positions').upsert({ team_id: team.id, score: 0 });
+  // ไม่ต้อง upsert positions แล้ว
 }
 
 export async function deleteTeam(id: string) {
+  // score_events จะลบ cascade ตาม team_id
   await supabase.from('teams').delete().eq('id', id);
-  // positions ลบ cascade อัตโนมัติ
 }
 
-export async function updateScore(teamId: string, score: number) {
-  await supabase.from('positions').update({ score }).eq('team_id', teamId);
-}
-
-export async function updateGameState(patch: Partial<{ status: string; round: number }>) {
+// ---- Game State ----
+export async function updateGameState(patch: Partial<{ status: GameStatus; round: number }>) {
   await supabase.from('game_state').update(patch).eq('id', 1);
 }
 
 export async function resetScores() {
-  await supabase.from('positions').update({ score: 0 });
+  // ลบ events ทั้งหมด → score กลับเป็น 0 ทุกทีมทันที
+  await supabase.from('score_events').delete().neq('id', 0);
   await supabase.from('game_state').update({ status: 'idle' }).eq('id', 1);
 }
 
-// ดึง categories + questions
+// ---- Categories ----
 export async function loadCategories() {
   const { data } = await supabase
     .from('categories')
@@ -47,34 +63,66 @@ export async function loadCategories() {
   return data ?? [];
 }
 
-// บันทึก score event + อัปเดต positions ในครั้งเดียว
+// ---- Score Events ----
 export async function addScoreEvent(
   teamId: string,
   categoryId: number,
   questionId: number,
-  delta: number
+  delta: number,
+  note?: string
 ) {
-  await supabase.from('score_events').insert({
+  const { error } = await supabase.from('score_events').insert({
     team_id: teamId,
     category_id: categoryId,
     question_id: questionId,
     delta,
+    note: note ?? null,
   });
-  // อัปเดต score สะสม
-  const { data: pos } = await supabase
-    .from('positions')
-    .select('score')
-    .eq('team_id', teamId)
-    .single();
-  const newScore = Math.max(0, (pos?.score ?? 0) + delta);
-  await supabase.from('positions')
-    .update({ score: newScore })
-    .eq('team_id', teamId);
+  if (error) throw error;
+  // ไม่ต้องอัปเดต positions แล้ว — view คำนวณเองอัตโนมัติ
 }
 
-export async function loadScoreEvents() {
-  const { data } = await supabase
+export async function deleteScoreEvent(eventId: number) {
+  const { error } = await supabase
     .from('score_events')
-    .select('id, team_id, question_id, delta');
-  return data ?? [];
+    .delete()
+    .eq('id', eventId);
+  if (error) throw error;
+  // score อัปเดตอัตโนมัติผ่าน view
+}
+
+export async function loadScoreEvents(): Promise<ScoreEvent[]> {
+  const { data, error } = await supabase
+    .from('score_events')
+    .select(`
+      id,
+      team_id,
+      category_id,
+      question_id,
+      delta,
+      note,
+      created_at,
+      teams ( name, color ),
+      categories ( name ),
+      questions ( number )
+    `)
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  if (error) throw error;
+
+  // flatten joined fields
+  return (data ?? []).map((e: any) => ({
+    id: e.id,
+    team_id: e.team_id,
+    category_id: e.category_id,
+    question_id: e.question_id,
+    delta: e.delta,
+    note: e.note,
+    created_at: e.created_at,
+    team_name: e.teams?.name,
+    team_color: e.teams?.color,
+    category_name: e.categories?.name,
+    question_number: e.questions?.number,
+  }));
 }
