@@ -810,6 +810,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
 import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
+import type { ScoreEvent } from "@/lib/db";
 // import { useMemo } from "react";
 
 // ---------------------------------------------------------------------------
@@ -825,12 +826,12 @@ interface Category {
   position: number;
   questions: Question[];
 }
-interface ScoreEvent {
-  id: string;
-  team_id: string;
-  question_id: number;
-  delta: number;
-}
+// interface ScoreEvent {
+//   id: string;
+//   team_id: string;
+//   question_id: number;
+//   delta: number;
+// }
 
 // ---------------------------------------------------------------------------
 // Static
