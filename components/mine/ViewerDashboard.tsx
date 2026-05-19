@@ -786,32 +786,18 @@
 
 /**
  * AstroParty Viewer Dashboard — Slide-Based
- *
- * Merged from:
- *  - File 1: AstropartyJeopardy (slide UI, starfield, animations, navBar)
- *  - File 2: ViewerDashboard (Space Race, JeopardyBoard, FleetRankings, loadData/loadCategories/loadScoreEvents)
- *
- * Slides:
- *  1 — Title
- *  2 — Round Info
- *  3 — Space Race Track + Fleet Rankings
- *  4 — Jeopardy Board
- *  5 — Live Leaderboard
- *  6 — Final Results
+ * Theme: Space & Cosmos
+ * Palette: #254074 #538FEE #9CC8EE #FCD47D #ED8240 #AA4229
+ * Fonts: Noto Sans Thai + Orbitron (display)
  */
 
-import {
-  useEffect,
-  // useRef,
-  useState,
-  useCallback,
-} from "react";
+import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
 import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
 import type { ScoreEvent } from "@/lib/db";
-// import { useMemo } from "react";
+// import Image from "next/image";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -819,6 +805,7 @@ import type { ScoreEvent } from "@/lib/db";
 interface Question {
   id: number;
   number: number;
+  points?: number;
 }
 interface Category {
   id: number;
@@ -826,53 +813,95 @@ interface Category {
   position: number;
   questions: Question[];
 }
-// interface ScoreEvent {
-//   id: string;
-//   team_id: string;
-//   question_id: number;
-//   delta: number;
-// }
 
 // ---------------------------------------------------------------------------
-// Static
+// Design Tokens
 // ---------------------------------------------------------------------------
-// const TEAM_COLORS = [
-//   "#22d3ee","#a78bfa","#f472b6","#34d399",
-//   "#f0b000","#ff6b9d","#fb923c","#60a5fa",
-// ];
+const C = {
+  navyDeep: "#0D1B2E",
+  navyMid: "#254074",
+  blueCore: "#538FEE",
+  blueLight: "#9CC8EE",
+  gold: "#FCD47D",
+  orange: "#ED8240",
+  redAcc: "#AA4229",
+  slate: "#76849D",
+  bg: "#07111E",
+  white: "#FFFFFF",
+  textHi: "#FFFFFF",
+  textMid: "#9CC8EE",
+  textLo: "#76849D",
+} as const;
+
+// Surface helpers
+const surface = "rgba(37,64,116,0.22)";
+const surfaceHi = "rgba(37,64,116,0.40)";
+const border = "rgba(156,200,238,0.14)";
+const borderWarm = "rgba(237,130,64,0.32)";
+
+// Reusable style objects
+const glassCard = (warm = false): React.CSSProperties => ({
+  background: surface,
+  border: `1px solid ${warm ? borderWarm : border}`,
+  borderRadius: 10,
+  backdropFilter: "blur(10px)",
+});
+
+const orbitron: React.CSSProperties = { fontFamily: "'Orbitron', monospace" };
+const notoTH: React.CSSProperties = {
+  fontFamily: "'Noto Sans Thai', sans-serif",
+};
+
 const medals = ["🥇", "🥈", "🥉", "🏅", "🏅", "🏅", "🏅", "🏅"];
 
 // ---------------------------------------------------------------------------
-// Inline styles / helpers
+// Global CSS (injected once)
 // ---------------------------------------------------------------------------
-const glassPanel: React.CSSProperties = {
-  background: "rgba(13,27,42,0.7)",
-  backdropFilter: "blur(12px)",
-  border: "1px solid rgba(34,211,238,0.2)",
-  borderRadius: 16,
-};
-const neonBorder: React.CSSProperties = {
-  border: "1px solid rgba(34,211,238,0.4)",
-  boxShadow:
-    "0 0 15px rgba(34,211,238,0.1), inset 0 0 15px rgba(34,211,238,0.05)",
-};
-const navBtn: React.CSSProperties = {
-  background: "rgba(13,27,42,0.8)",
-  border: "1px solid rgba(34,211,238,0.3)",
-  color: "#f5f0e8",
-  padding: "8px 18px",
-  borderRadius: 8,
-  cursor: "pointer",
-  fontFamily: "'Rajdhani', sans-serif",
-  fontWeight: 600,
-  fontSize: 15,
-  transition: "all 0.2s",
-};
+const GLOBAL_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@keyframes twinkle  { 0%,100%{opacity:.15} 50%{opacity:.9} }
+@keyframes float    { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+@keyframes ndrift   { from{transform:translate(0,0) scale(1);} to{transform:translate(35px,22px) scale(1.08);} }
+@keyframes shipGlow { from{filter:brightness(1);} to{filter:brightness(1.4) drop-shadow(0 0 10px currentColor);} }
+@keyframes glowPulse {
+  0%,100%{ filter: drop-shadow(0 0 12px rgba(237,130,64,.55)) drop-shadow(0 0 28px rgba(252,212,125,.25)); }
+  50%    { filter: drop-shadow(0 0 28px rgba(237,130,64,.9))  drop-shadow(0 0 60px rgba(252,212,125,.50)); }
+}
+@keyframes confettiFall {
+  0%  { transform: translateY(-30px) rotate(0deg);   opacity: 1; }
+  100%{ transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity:0; transform:translateX(-12px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+
+.ap-star {
+  position: absolute; border-radius: 50%; background: white;
+  animation: twinkle var(--dur) ease-in-out infinite var(--dl);
+}
+.ap-nebula {
+  position: absolute; border-radius: 50%;
+  filter: blur(88px); pointer-events: none;
+}
+
+/* custom scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(83,143,238,.25); border-radius: 2px; }
+`;
 
 // ---------------------------------------------------------------------------
-// Starfield
+// Cosmos Background
 // ---------------------------------------------------------------------------
-function Starfield() {
+function CosmosBackground() {
   const [stars, setStars] = useState<
     {
       id: number;
@@ -880,41 +909,198 @@ function Starfield() {
       top: number;
       size: number;
       dur: number;
-      delay: number;
+      dl: number;
     }[]
   >([]);
 
   useEffect(() => {
-    const generatedStars = Array.from({ length: 120 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      top: Math.random() * 100,
-      size: 1 + Math.random() * 2,
-      dur: 2 + Math.random() * 4,
-      delay: Math.random() * 3,
-    }));
-
-    setStars(generatedStars);
+    setStars(
+      Array.from({ length: 130 }, (_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        top: Math.random() * 100,
+        size: 0.8 + Math.random() * 1.8,
+        dur: 2 + Math.random() * 5,
+        dl: Math.random() * 4,
+      })),
+    );
   }, []);
 
   return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        overflow: "hidden",
+      }}
+    >
+      {/* Nebula layers */}
+      <div
+        className="ap-nebula"
+        style={{
+          width: 900,
+          height: 500,
+          top: -150,
+          left: -250,
+          background:
+            "radial-gradient(ellipse, rgba(83,143,238,0.13), transparent 70%)",
+          animation: "ndrift 22s ease-in-out infinite alternate",
+        }}
+      />
+      <div
+        className="ap-nebula"
+        style={{
+          width: 600,
+          height: 600,
+          bottom: -80,
+          right: -120,
+          background:
+            "radial-gradient(ellipse, rgba(237,130,64,0.09), transparent 70%)",
+          animation: "ndrift 28s ease-in-out infinite alternate-reverse",
+        }}
+      />
+      <div
+        className="ap-nebula"
+        style={{
+          width: 400,
+          height: 300,
+          top: "38%",
+          left: "40%",
+          background:
+            "radial-gradient(ellipse, rgba(252,212,125,0.05), transparent 70%)",
+          animation: "ndrift 16s ease-in-out infinite alternate",
+        }}
+      />
+      {/* Stars */}
       {stars.map((s) => (
         <div
           key={s.id}
-          className="star"
+          className="ap-star"
           style={
             {
               left: `${s.left}%`,
               top: `${s.top}%`,
               width: s.size,
               height: s.size,
+              opacity: 0.3 + Math.random() * 0.5,
               "--dur": `${s.dur}s`,
-              "--delay": `${s.delay}s`,
+              "--dl": `${s.dl}s`,
             } as React.CSSProperties
           }
         />
       ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared UI atoms
+// ---------------------------------------------------------------------------
+function SectionHead({
+  title,
+  badge,
+  warm = false,
+}: {
+  title: React.ReactNode;
+  badge?: React.ReactNode;
+  warm?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "9px 14px",
+        background: surfaceHi,
+        borderBottom: `1px solid ${border}`,
+        borderRadius: "10px 10px 0 0",
+      }}
+    >
+      <div
+        style={{
+          ...orbitron,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: C.blueLight,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        {title}
+      </div>
+      {badge && (
+        <div
+          style={{
+            ...orbitron,
+            fontSize: 8,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            padding: "2px 8px",
+            borderRadius: 10,
+            border: `1px solid ${warm ? borderWarm : "rgba(83,143,238,.28)"}`,
+            color: warm ? C.orange : C.blueCore,
+            background: warm ? "rgba(237,130,64,.08)" : "rgba(83,143,238,.08)",
+          }}
+        >
+          {badge}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SlideHeader({
+  title,
+  right,
+}: {
+  title: string;
+  right?: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "16px 28px 0",
+        flexShrink: 0,
+      }}
+    >
+      <div style={{ position: "relative" }}>
+        <h2
+          style={{
+            ...orbitron,
+            fontSize: "clamp(1.1rem,2.2vw,1.7rem)",
+            fontWeight: 900,
+            color: C.blueLight,
+            letterSpacing: "0.10em",
+            textTransform: "uppercase",
+          }}
+        >
+          {title}
+        </h2>
+        <div
+          style={{
+            position: "absolute",
+            bottom: -5,
+            left: 0,
+            width: 44,
+            height: 2,
+            borderRadius: 2,
+            background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+          }}
+        />
+      </div>
+      {right && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {right}
+        </div>
+      )}
     </div>
   );
 }
@@ -934,20 +1120,25 @@ function JeopardyCell({
   onClick: () => void;
 }) {
   const answered = events.length > 0;
+  const label =
+    question.points != null
+      ? `+${question.points}`
+      : `+${question.number * 100}`;
+
   return (
     <div
       onClick={onClick}
       style={{
         position: "relative",
-        minHeight: 60,
+        minHeight: 62,
         padding: "8px 6px",
         borderRadius: 8,
         border: answered
-          ? "1px solid rgba(107,33,168,0.2)"
-          : "1px solid rgba(34,211,238,0.3)",
+          ? `1px solid rgba(37,64,116,0.22)`
+          : `1px solid rgba(83,143,238,0.25)`,
         background: answered
-          ? "rgba(10,10,26,0.8)"
-          : "linear-gradient(135deg, rgba(13,27,42,0.9), rgba(107,33,168,0.3))",
+          ? "rgba(7,17,30,0.88)"
+          : `linear-gradient(135deg, rgba(13,27,50,0.95), rgba(37,64,116,0.28))`,
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
@@ -955,15 +1146,21 @@ function JeopardyCell({
         justifyContent: "center",
         gap: 4,
         transition: "all 0.2s",
-        opacity: answered ? 0.7 : 1,
+        opacity: answered ? 0.62 : 1,
       }}
       onMouseEnter={(e) => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = answered
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.boxShadow = answered
           ? "none"
-          : "0 0 20px rgba(34,211,238,0.4)";
+          : `0 0 18px rgba(237,130,64,0.28)`;
+        if (!answered) el.style.borderColor = `rgba(237,130,64,0.45)`;
       }}
       onMouseLeave={(e) => {
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+        const el = e.currentTarget as HTMLDivElement;
+        el.style.boxShadow = "none";
+        el.style.borderColor = answered
+          ? "rgba(37,64,116,0.22)"
+          : "rgba(83,143,238,0.25)";
       }}
     >
       {answered ? (
@@ -980,13 +1177,13 @@ function JeopardyCell({
             if (!team) return null;
             return (
               <div
-                key={ev.id}
+                key={String(ev.id)}
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   padding: "2px 6px",
                   borderRadius: 4,
-                  background: `${team.color}20`,
+                  background: `${team.color}1A`,
                   borderLeft: `2px solid ${team.color}`,
                   fontSize: 9,
                   fontWeight: 700,
@@ -998,7 +1195,7 @@ function JeopardyCell({
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
-                    maxWidth: 60,
+                    maxWidth: 58,
                   }}
                 >
                   {team.name}
@@ -1007,28 +1204,31 @@ function JeopardyCell({
               </div>
             );
           })}
+          {/* answered dot */}
           <div
             style={{
               position: "absolute",
               top: 4,
-              right: 4,
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "rgba(107,33,168,0.5)",
+              right: 5,
+              fontSize: 7,
+              color: "#34d399",
+              fontWeight: 900,
             }}
-          />
+          >
+            ✓
+          </div>
         </div>
       ) : (
         <span
           style={{
-            fontFamily: "'Orbitron', monospace",
-            fontSize: 11,
-            fontWeight: 700,
-            color: "#22d3ee",
+            ...orbitron,
+            fontSize: 12,
+            fontWeight: 900,
+            color: C.orange,
+            letterSpacing: "0.04em",
           }}
         >
-          ข้อ {question.number}
+          {label}
         </span>
       )}
     </div>
@@ -1051,6 +1251,11 @@ function QuestionModal({
   teams: RaceData["teams"];
   onClose: () => void;
 }) {
+  const label =
+    question.points != null
+      ? `+${question.points}`
+      : `+${question.number * 100}`;
+
   return (
     <div
       style={{
@@ -1060,23 +1265,25 @@ function QuestionModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "rgba(0,0,0,0.75)",
-        backdropFilter: "blur(4px)",
+        background: "rgba(0,0,0,0.78)",
+        backdropFilter: "blur(6px)",
       }}
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 12 }}
+        initial={{ scale: 0.9, opacity: 0, y: 14 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 12 }}
-        transition={{ type: "spring", stiffness: 300, damping: 28 }}
+        exit={{ scale: 0.9, opacity: 0, y: 14 }}
+        transition={{ type: "spring", stiffness: 300, damping: 26 }}
         style={{
-          ...glassPanel,
-          ...neonBorder,
           position: "relative",
-          padding: 40,
+          background: "rgba(10,20,38,0.97)",
+          border: `1px solid ${borderWarm}`,
+          borderRadius: 14,
+          padding: "36px 40px",
           width: 440,
           maxWidth: "90vw",
+          boxShadow: `0 0 40px rgba(237,130,64,0.12), 0 24px 60px rgba(0,0,0,0.55)`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -1084,73 +1291,84 @@ function QuestionModal({
           onClick={onClose}
           style={{
             position: "absolute",
-            top: 16,
+            top: 14,
             right: 16,
             background: "transparent",
             border: "none",
-            color: "rgba(245,240,232,0.5)",
+            color: C.textLo,
             cursor: "pointer",
+            fontSize: 18,
+            transition: "color .2s",
           }}
+          onMouseEnter={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.color = C.textHi)
+          }
+          onMouseLeave={(e) =>
+            ((e.currentTarget as HTMLButtonElement).style.color = C.textLo)
+          }
         >
           <X size={16} />
         </button>
-        <div style={{ marginBottom: 24 }}>
+
+        {/* Header */}
+        <div style={{ marginBottom: 22 }}>
           <p
             style={{
-              fontFamily: "'Orbitron', monospace",
-              color: "#22d3ee",
-              fontSize: 11,
-              letterSpacing: "0.2em",
-              marginBottom: 6,
+              ...orbitron,
+              color: C.blueLight,
+              fontSize: 9,
+              letterSpacing: "0.22em",
+              marginBottom: 8,
             }}
           >
             {category.name}
           </p>
           <h3
             style={{
-              fontFamily: "'Orbitron', monospace",
-              fontSize: 26,
+              ...orbitron,
+              fontSize: 40,
               fontWeight: 900,
-              color: "#f5f0e8",
-              margin: 0,
+              lineHeight: 1,
+              background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
             }}
           >
-            ข้อ {question.number}
+            {label}
           </h3>
         </div>
+
+        {/* Events */}
         {events.length === 0 ? (
           <div
             style={{
-              padding: "40px 0",
+              padding: "36px 0",
               textAlign: "center",
               borderRadius: 8,
-              border: "1px dashed rgba(34,211,238,0.2)",
+              border: "1px dashed rgba(83,143,238,0.2)",
             }}
           >
+            <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
             <p
               style={{
-                fontSize: 11,
-                color: "rgba(245,240,232,0.3)",
-                letterSpacing: "0.2em",
+                ...notoTH,
+                fontSize: 12,
+                color: C.textLo,
+                letterSpacing: "0.1em",
               }}
             >
               ยังไม่มีการให้คะแนนในข้อนี้
             </p>
-            <div>
-              <iframe
-                loading="lazy"
-                src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embed"
-                allow="fullscreen"
-              ></iframe>
-            </div>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <p
               style={{
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                color: "rgba(245,240,232,0.4)",
+                ...orbitron,
+                fontSize: 8,
+                letterSpacing: "0.22em",
+                color: C.textLo,
                 marginBottom: 4,
               }}
             >
@@ -1162,8 +1380,8 @@ function QuestionModal({
               const isPos = ev.delta > 0;
               return (
                 <motion.div
-                  key={ev.id}
-                  initial={{ x: -8, opacity: 0 }}
+                  key={String(ev.id)}
+                  initial={{ x: -10, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: i * 0.05 }}
                   style={{
@@ -1171,9 +1389,9 @@ function QuestionModal({
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "12px 16px",
-                    borderRadius: 10,
-                    background: `${team.color}11`,
-                    border: `1px solid ${team.color}44`,
+                    borderRadius: 9,
+                    background: `${team.color}0F`,
+                    border: `1px solid ${team.color}40`,
                   }}
                 >
                   <div
@@ -1189,6 +1407,7 @@ function QuestionModal({
                     />
                     <span
                       style={{
+                        ...notoTH,
                         fontSize: 14,
                         fontWeight: 700,
                         color: team.color,
@@ -1199,19 +1418,15 @@ function QuestionModal({
                   </div>
                   <span
                     style={{
-                      fontFamily: "'Orbitron', monospace",
-                      fontSize: 20,
+                      ...orbitron,
+                      fontSize: 22,
                       fontWeight: 900,
-                      color: isPos ? "#34d399" : "#f87171",
+                      color: isPos ? "#4ade80" : "#f87171",
                     }}
                   >
                     {isPos ? `+${ev.delta}` : ev.delta}
                     <span
-                      style={{
-                        fontSize: 9,
-                        color: "rgba(245,240,232,0.4)",
-                        marginLeft: 4,
-                      }}
+                      style={{ fontSize: 9, color: C.textLo, marginLeft: 4 }}
                     >
                       PTS
                     </span>
@@ -1227,13 +1442,12 @@ function QuestionModal({
 }
 
 // ---------------------------------------------------------------------------
-// Main Component
+// Main
 // ---------------------------------------------------------------------------
 export default function ViewerDashboard() {
   const totalSlides = 6;
   const [currentSlide, setCurrentSlide] = useState(1);
 
-  // Data state
   const [data, setData] = useState<RaceData>({
     teams: [],
     positions: [],
@@ -1244,7 +1458,6 @@ export default function ViewerDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataReady, setDataReady] = useState(false);
 
-  // Board modal
   const [selectedCell, setSelectedCell] = useState<{
     category: Category;
     question: Question;
@@ -1272,19 +1485,18 @@ export default function ViewerDashboard() {
     setIsRefreshing(false);
   };
 
-  // Navigation
   const goToSlide = useCallback((n: number) => setCurrentSlide(n), []);
   const nextSlide = () => setCurrentSlide((s) => Math.min(s + 1, totalSlides));
   const prevSlide = () => setCurrentSlide((s) => Math.max(s - 1, 1));
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
+    const h = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " ") nextSlide();
       if (e.key === "ArrowLeft") prevSlide();
       if (e.key === "Escape") setSelectedCell(null);
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, []);
 
   // Confetti
@@ -1292,11 +1504,26 @@ export default function ViewerDashboard() {
     const c = document.getElementById("confetti-root");
     if (!c) return;
     c.innerHTML = "";
-    const colors = ["#22d3ee", "#a78bfa", "#f472b6", "#34d399", "#e8d5b7"];
-    for (let i = 0; i < 80; i++) {
+    const colors = [
+      C.gold,
+      C.orange,
+      C.blueCore,
+      C.blueLight,
+      C.redAcc,
+      "#34d399",
+    ];
+    for (let i = 0; i < 90; i++) {
       const piece = document.createElement("div");
       const color = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.cssText = `position:absolute;left:${Math.random() * 100}%;top:-20px;width:${6 + Math.random() * 8}px;height:${6 + Math.random() * 8}px;background:${color};border-radius:${Math.random() > 0.5 ? "50%" : "2px"};animation:confettiFall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s infinite;`;
+      const size = 5 + Math.random() * 8;
+      piece.style.cssText = `
+        position:absolute;
+        left:${Math.random() * 100}%;top:-20px;
+        width:${size}px;height:${size}px;
+        background:${color};
+        border-radius:${Math.random() > 0.5 ? "50%" : "2px"};
+        animation:confettiFall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s infinite;
+      `;
       c.appendChild(piece);
     }
   };
@@ -1310,42 +1537,49 @@ export default function ViewerDashboard() {
       ? maxScoreAchieved
       : Math.max(10, maxScoreAchieved * 1.1);
 
-  const getEvents = (questionId: number) =>
-    scoreEvents.filter((e) => e.question_id === questionId);
-
+  const getEvents = (qId: number) =>
+    scoreEvents.filter((e) => e.question_id === qId);
   const answeredCount = categories.reduce(
-    (acc, cat) =>
-      acc +
-      (cat.questions?.filter((q) => getEvents(q.id).length > 0).length ?? 0),
+    (a, c) =>
+      a + (c.questions?.filter((q) => getEvents(q.id).length > 0).length ?? 0),
     0,
   );
   const totalQCount = categories.reduce(
-    (acc, cat) => acc + (cat.questions?.length ?? 0),
+    (a, c) => a + (c.questions?.length ?? 0),
     0,
   );
 
-  // Refresh button (shared)
+  // Shared refresh button
   const RefreshBtn = () => (
     <button
       onClick={handleRefresh}
       disabled={isRefreshing}
       style={{
-        ...navBtn,
         display: "flex",
         alignItems: "center",
         gap: 6,
-        background: isRefreshing
-          ? "rgba(34,211,238,0.1)"
-          : "rgba(34,211,238,0.2)",
-        opacity: isRefreshing ? 0.7 : 1,
+        padding: "6px 16px",
+        borderRadius: 20,
+        cursor: "pointer",
+        ...notoTH,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.08em",
+        color: C.blueLight,
+        background: "rgba(83,143,238,0.10)",
+        border: "1px solid rgba(83,143,238,0.25)",
+        transition: "all .2s",
+        opacity: isRefreshing ? 0.6 : 1,
       }}
     >
-      <RefreshCw size={13} className={isRefreshing ? "animate-spin" : ""} />
+      <RefreshCw size={12} className={isRefreshing ? "animate-spin" : ""} />
       Sync
     </button>
   );
 
-  // ---- Slide 1: Title -------------------------------------------------------
+  // =========================================================================
+  // SLIDE 1 — TITLE
+  // =========================================================================
   const Slide1 = () => (
     <div
       style={{
@@ -1359,79 +1593,111 @@ export default function ViewerDashboard() {
         padding: 32,
       }}
     >
+      {/* Planet deco */}
       <div
         style={{
           position: "absolute",
-          top: 40,
-          right: 64,
-          width: 96,
-          height: 96,
+          top: "12%",
+          right: "8%",
+          width: 100,
+          height: 100,
           borderRadius: "50%",
-          background: "radial-gradient(circle at 30% 30%, #e8d5b7, #8b7355)",
-          opacity: 0.6,
-          animation: "float 6s ease-in-out infinite",
-          boxShadow: "0 0 40px rgba(232,213,183,0.3)",
+          background:
+            "radial-gradient(circle at 32% 28%, #9CC8EE, #254074 58%, #0D1B2E)",
+          boxShadow: "0 0 40px rgba(83,143,238,0.35)",
+          animation: "float 7s ease-in-out infinite",
+          pointerEvents: "none",
         }}
-      />
+      >
+        {/* Ring */}
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: 170,
+            height: 42,
+            border: "1px solid rgba(156,200,238,0.22)",
+            borderRadius: "50%",
+            transform: "translate(-50%,-50%) rotateX(70deg)",
+          }}
+        />
+      </div>
+
+      {/* Title */}
       <h1
         style={{
-          fontFamily: "'Orbitron', monospace",
-          fontSize: "clamp(2.5rem,6vw,5rem)",
+          ...orbitron,
+          fontSize: "clamp(3rem,8vw,6.5rem)",
           fontWeight: 900,
           textAlign: "center",
-          color: "#22d3ee",
-          letterSpacing: 4,
-          animation: "glowPulse 3s ease-in-out infinite",
+          letterSpacing: "0.07em",
+          background: `linear-gradient(135deg, ${C.orange} 0%, ${C.gold} 45%, ${C.blueLight} 100%)`,
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          backgroundClip: "text",
+          animation: "glowPulse 4s ease-in-out infinite alternate",
           margin: 0,
         }}
       >
         ASTROPARTY
       </h1>
+
+      {/* Divider */}
       <div
         style={{
-          width: 192,
-          height: 4,
-          borderRadius: 4,
-          background:
-            "linear-gradient(90deg, transparent, #22d3ee, transparent)",
-          margin: "16px 0",
-          animation: "glowPulse 2s infinite",
+          width: 220,
+          height: 3,
+          borderRadius: 3,
+          margin: "18px auto",
+          background: `linear-gradient(90deg, transparent, ${C.orange}, ${C.gold}, ${C.blueLight}, transparent)`,
         }}
       />
+
       <p
         style={{
-          fontFamily: "'Orbitron', monospace",
-          fontSize: "clamp(1rem,2vw,1.25rem)",
+          ...orbitron,
+          fontSize: "clamp(0.9rem,1.8vw,1.15rem)",
           fontWeight: 700,
-          letterSpacing: "0.3em",
-          color: "#a78bfa",
-          margin: "0 0 8px 0",
+          letterSpacing: "0.32em",
+          color: C.slate,
+          textTransform: "uppercase",
+          margin: "0 0 6px",
         }}
       >
         AMSci 2026
       </p>
       <p
         style={{
-          fontSize: "clamp(0.9rem,2vw,1.1rem)",
+          ...notoTH,
+          fontSize: "clamp(0.9rem,1.6vw,1.05rem)",
           fontWeight: 300,
-          letterSpacing: "0.2em",
-          opacity: 0.7,
-          color: "#e8d5b7",
+          letterSpacing: "0.05em",
+          color: C.blueLight,
+          opacity: 0.75,
           margin: 0,
         }}
       >
-        9 August 2026
+        คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
       </p>
 
       {/* Status badges */}
-      <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          marginTop: 32,
+          flexWrap: "wrap",
+          justifyContent: "center",
+        }}
+      >
         <div
           style={{
-            ...glassPanel,
-            padding: "8px 20px",
+            ...glassCard(),
+            padding: "9px 22px",
             display: "flex",
             alignItems: "center",
-            gap: 8,
+            gap: 9,
           }}
         >
           <div
@@ -1439,26 +1705,28 @@ export default function ViewerDashboard() {
               width: 8,
               height: 8,
               borderRadius: "50%",
-              background: dataReady ? "#34d399" : "#f472b6",
+              background: dataReady ? "#4ade80" : "#f472b6",
               animation: "glowPulse 1.5s infinite",
             }}
           />
           <span
             style={{
+              ...notoTH,
               fontSize: 12,
-              letterSpacing: "0.15em",
-              color: dataReady ? "#34d399" : "#f472b6",
+              letterSpacing: "0.14em",
+              color: dataReady ? "#4ade80" : "#f472b6",
             }}
           >
             {dataReady ? "DATA LINKED" : "CONNECTING…"}
           </span>
         </div>
-        <div style={{ ...glassPanel, padding: "8px 20px" }}>
+
+        <div style={{ ...glassCard(), padding: "9px 22px" }}>
           <span
             style={{
-              fontFamily: "'Orbitron', monospace",
+              ...orbitron,
               fontSize: 12,
-              color: "#22d3ee",
+              color: C.blueLight,
               letterSpacing: "0.15em",
             }}
           >
@@ -1467,19 +1735,25 @@ export default function ViewerDashboard() {
         </div>
       </div>
 
-      <div style={{ marginTop: 32 }}>
+      <div style={{ marginTop: 28 }}>
         <div
           style={{
-            ...glassPanel,
-            ...neonBorder,
+            ...glassCard(true),
             padding: "12px 28px",
             display: "flex",
             alignItems: "center",
-            gap: 12,
+            gap: 14,
           }}
         >
-          <span style={{ fontSize: 14, letterSpacing: "0.15em", opacity: 0.6 }}>
-            Press → to begin
+          <span
+            style={{
+              ...notoTH,
+              fontSize: 13,
+              letterSpacing: "0.12em",
+              opacity: 0.55,
+            }}
+          >
+            กด → เพื่อเริ่ม
           </span>
           <RefreshBtn />
         </div>
@@ -1487,7 +1761,9 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 2: Round Info -------------------------------------------------
+  // =========================================================================
+  // SLIDE 2 — OVERVIEW
+  // =========================================================================
   const Slide2 = () => (
     <div
       style={{
@@ -1496,33 +1772,32 @@ export default function ViewerDashboard() {
         justifyContent: "center",
         width: "100%",
         height: "100%",
-        padding: 32,
+        padding: 28,
       }}
     >
       <div
         style={{
-          ...glassPanel,
-          ...neonBorder,
-          padding: 48,
-          maxWidth: 760,
+          ...glassCard(true),
+          padding: "40px 44px",
+          maxWidth: 820,
           width: "100%",
         }}
       >
+        {/* Title row */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 8,
+            marginBottom: 6,
           }}
         >
           <h2
             style={{
-              fontFamily: "'Orbitron', monospace",
-              fontSize: "clamp(2rem,4vw,3rem)",
+              ...orbitron,
+              fontSize: "clamp(1.8rem,3.5vw,2.8rem)",
               fontWeight: 900,
-              color: "#22d3ee",
-              animation: "glowPulse 3s infinite",
+              color: C.blueLight,
               margin: 0,
             }}
           >
@@ -1532,17 +1807,17 @@ export default function ViewerDashboard() {
             style={{
               padding: "6px 16px",
               borderRadius: 6,
-              background: "rgba(34,211,238,0.1)",
-              border: "1px solid rgba(34,211,238,0.3)",
+              background: "rgba(237,130,64,0.10)",
+              border: `1px solid ${borderWarm}`,
             }}
           >
             <span
               style={{
-                fontFamily: "'Orbitron', monospace",
-                fontSize: 12,
+                ...orbitron,
+                fontSize: 11,
                 fontWeight: 700,
-                color: data.state.status === "finished" ? "#34d399" : "#22d3ee",
                 letterSpacing: "0.15em",
+                color: data.state.status === "finished" ? "#4ade80" : C.orange,
               }}
             >
               {data.state.status.toUpperCase()}
@@ -1551,17 +1826,17 @@ export default function ViewerDashboard() {
         </div>
         <p
           style={{
-            textAlign: "left",
-            fontSize: 18,
-            color: "#e8d5b7",
-            opacity: 0.6,
+            ...notoTH,
+            fontSize: 17,
+            color: C.blueLight,
+            opacity: 0.55,
             marginBottom: 32,
           }}
         >
           Medical Science Competition
         </p>
 
-        {/* Stats row */}
+        {/* Stat cards */}
         <div
           style={{
             display: "grid",
@@ -1584,20 +1859,39 @@ export default function ViewerDashboard() {
             <div
               key={String(label)}
               style={{
-                ...glassPanel,
-                padding: "12px 16px",
+                ...glassCard(),
+                padding: "14px 16px",
                 textAlign: "center",
+                position: "relative",
+                overflow: "hidden",
               }}
             >
-              <div style={{ fontSize: 12, opacity: 0.6, marginBottom: 4 }}>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+                }}
+              />
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: 12,
+                  opacity: 0.55,
+                  marginBottom: 5,
+                }}
+              >
                 {label}
               </div>
               <div
                 style={{
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: 18,
+                  ...orbitron,
+                  fontSize: 20,
                   fontWeight: 900,
-                  color: "#22d3ee",
+                  color: C.textHi,
                 }}
               >
                 {val}
@@ -1610,20 +1904,27 @@ export default function ViewerDashboard() {
         {categories.length > 0 && (
           <>
             <h3
-              style={{ color: "#22d3ee", fontWeight: 700, margin: "0 0 10px" }}
+              style={{
+                ...notoTH,
+                color: C.blueLight,
+                fontWeight: 700,
+                fontSize: 13,
+                margin: "0 0 10px",
+              }}
             >
-              Categories:
+              หมวดคำถาม:
             </h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {categories.map((c) => (
                 <div
                   key={c.id}
                   style={{
-                    ...glassPanel,
+                    ...glassCard(),
                     padding: "6px 14px",
+                    ...notoTH,
                     fontSize: 13,
                     fontWeight: 600,
-                    color: "#e8d5b7",
+                    color: C.blueLight,
                   }}
                 >
                   {c.name}
@@ -1636,7 +1937,205 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 4(3->4): Space Race + Fleet Rankings --------------------------------
+  // =========================================================================
+  // SLIDE 3 — QUESTION BOARD
+  // =========================================================================
+  const Slide3 = () => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        padding: "0 24px 80px",
+        overflow: "hidden",
+      }}
+    >
+      <SlideHeader
+        title="Question Board"
+        right={
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "5px 13px",
+                borderRadius: 18,
+                background: "rgba(37,64,116,.28)",
+                border: `1px solid ${border}`,
+              }}
+            >
+              <Zap size={11} color={C.blueLight} />
+              <span style={{ ...orbitron, fontSize: 10, color: C.blueLight }}>
+                {answeredCount}/{totalQCount}
+              </span>
+            </div>
+            <RefreshBtn />
+          </>
+        }
+      />
+
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          padding: "12px 0",
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
+        {/* Progress */}
+        <div
+          style={{
+            height: 3,
+            background: "rgba(83,143,238,.10)",
+            borderRadius: 2,
+            marginBottom: 14,
+            flexShrink: 0,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: "100%",
+              borderRadius: 2,
+              background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+              width: totalQCount
+                ? `${(answeredCount / totalQCount) * 100}%`
+                : "0%",
+              transition: "width .8s ease",
+            }}
+          />
+        </div>
+
+        {categories.length === 0 ? (
+          <div
+            style={{
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <p style={{ ...notoTH, opacity: 0.3, fontSize: 13 }}>
+              No categories loaded — press Sync
+            </p>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${categories.length}, 1fr)`,
+              gap: 6,
+              flex: 1,
+              minHeight: 0,
+              overflowY: "auto",
+            }}
+          >
+            {/* Category headers */}
+            {categories.map((cat) => (
+              <div
+                key={cat.id}
+                style={{
+                  padding: "8px 6px",
+                  textAlign: "center",
+                  background: surfaceHi,
+                  border: `1px solid rgba(83,143,238,0.22)`,
+                  borderRadius: 6,
+                }}
+              >
+                <span
+                  style={{
+                    ...notoTH,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: C.blueLight,
+                    letterSpacing: "0.04em",
+                    lineHeight: 1.3,
+                    display: "block",
+                  }}
+                >
+                  {cat.name}
+                </span>
+              </div>
+            ))}
+
+            {/* Cells row by row */}
+            {Array.from({ length: 6 }, (_, qi) =>
+              categories.map((cat) => {
+                const q = cat.questions?.find((q) => q.number === qi + 1);
+                if (!q)
+                  return (
+                    <div key={`${cat.id}-${qi}`} style={{ minHeight: 62 }} />
+                  );
+                return (
+                  <JeopardyCell
+                    key={q.id}
+                    question={q}
+                    events={getEvents(q.id)}
+                    teams={data.teams}
+                    onClick={() =>
+                      setSelectedCell({ category: cat, question: q })
+                    }
+                  />
+                );
+              }),
+            )}
+          </div>
+        )}
+
+        {/* Legend */}
+        <div
+          style={{ display: "flex", gap: 20, paddingTop: 10, flexShrink: 0 }}
+        >
+          {[
+            [`rgba(237,130,64,0.55)`, "ยังไม่ตอบ"],
+            [`rgba(37,64,116,0.60)`, "ตอบแล้ว — กดเพื่อดูรายละเอียด"],
+          ].map(([color, label]) => (
+            <div
+              key={label}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 10,
+                color: C.textLo,
+                letterSpacing: "0.08em",
+              }}
+            >
+              <div
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: color,
+                }}
+              />
+              <span style={notoTH}>{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {selectedCell && (
+          <QuestionModal
+            category={selectedCell.category}
+            question={selectedCell.question}
+            events={getEvents(selectedCell.question.id)}
+            teams={data.teams}
+            onClose={() => setSelectedCell(null)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+
+  // =========================================================================
+  // SLIDE 4 — SPACE RACE
+  // =========================================================================
   const Slide4 = () => (
     <div
       style={{
@@ -1644,59 +2143,42 @@ export default function ViewerDashboard() {
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        padding: 24,
-        gap: 16,
+        padding: "0 24px 80px",
+        gap: 0,
       }}
     >
-      {/* Header */}
+      <SlideHeader title="Space Race" right={<RefreshBtn />} />
+
       <div
         style={{
           display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexShrink: 0,
+          gap: 14,
+          flex: 1,
+          minHeight: 0,
+          paddingTop: 14,
         }}
       >
-        <h2
-          style={{
-            fontFamily: "'Orbitron', monospace",
-            fontSize: "clamp(1.25rem,2.5vw,2rem)",
-            fontWeight: 900,
-            color: "#22d3ee",
-            animation: "glowPulse 3s infinite",
-            margin: 0,
-          }}
-        >
-          SPACE RACE
-        </h2>
-        <RefreshBtn />
-      </div>
-
-      {/* Track + Sidebar */}
-      <div style={{ display: "flex", gap: 16, flex: 1, minHeight: 0 }}>
         {/* Track */}
         <div
           style={{
             flex: 3,
             position: "relative",
-            ...glassPanel,
+            ...glassCard(),
             overflow: "hidden",
-            borderRadius: 12,
+            borderRadius: 10,
           }}
         >
-          {/* Grid background */}
+          {/* Grid bg */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              opacity: 0.08,
-              backgroundImage:
-                "linear-gradient(#22d3ee 1px, transparent 1px), linear-gradient(90deg, #22d3ee 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
+              opacity: 0.06,
+              backgroundImage: `linear-gradient(${C.blueLight} 1px, transparent 1px), linear-gradient(90deg, ${C.blueLight} 1px, transparent 1px)`,
+              backgroundSize: "44px 44px",
             }}
           />
-
-          {/* Scale marks */}
+          {/* Scale */}
           <div
             style={{
               position: "absolute",
@@ -1704,11 +2186,11 @@ export default function ViewerDashboard() {
               left: 48,
               right: 80,
               height: 24,
-              borderTop: "1px solid rgba(34,211,238,0.15)",
+              borderTop: `1px solid rgba(156,200,238,0.12)`,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
-              padding: "0 8px",
+              padding: "0 6px",
             }}
           >
             {[0, 0.25, 0.5, 0.75, 1].map((p) => (
@@ -1723,14 +2205,15 @@ export default function ViewerDashboard() {
                 <div
                   style={{
                     width: 1,
-                    height: 8,
-                    background: "rgba(34,211,238,0.2)",
+                    height: 7,
+                    background: "rgba(83,143,238,.2)",
                   }}
                 />
                 <span
                   style={{
-                    fontSize: 9,
-                    color: "rgba(245,240,232,0.3)",
+                    ...orbitron,
+                    fontSize: 8,
+                    color: "rgba(156,200,238,0.3)",
                     marginTop: 2,
                   }}
                 >
@@ -1740,6 +2223,19 @@ export default function ViewerDashboard() {
             ))}
           </div>
 
+          {/* Finish line */}
+          <div
+            style={{
+              position: "absolute",
+              right: 80,
+              top: 0,
+              bottom: 24,
+              width: 1,
+              background: `rgba(237,130,64,0.28)`,
+              borderRight: "1px dashed rgba(237,130,64,0.14)",
+            }}
+          />
+
           {/* Ships */}
           <div
             style={{
@@ -1748,7 +2244,7 @@ export default function ViewerDashboard() {
               right: 80,
               top: 0,
               bottom: 24,
-              padding: "16px 0",
+              padding: "14px 0",
             }}
           >
             <AnimatePresence>
@@ -1756,7 +2252,7 @@ export default function ViewerDashboard() {
                 const team = data.teams.find((t) => t.id === pos.teamId);
                 if (!team) return null;
                 const yPos = (index + 0.5) * (100 / 5);
-                const isNearRight = pos.score / visualTarget > 0.8;
+                const isNearRight = pos.score / visualTarget > 0.78;
                 return (
                   <motion.div
                     key={team.id}
@@ -1769,7 +2265,7 @@ export default function ViewerDashboard() {
                     transition={{ type: "spring", stiffness: 40, damping: 15 }}
                     style={{
                       position: "absolute",
-                      transform: "translate(-50%, -50%)",
+                      transform: "translate(-50%,-50%)",
                       zIndex: 10,
                     }}
                   >
@@ -1780,7 +2276,7 @@ export default function ViewerDashboard() {
                         alignItems: "center",
                       }}
                     >
-                      {/* Ship body */}
+                      {/* Ship */}
                       <div
                         style={{
                           width: 40,
@@ -1789,7 +2285,9 @@ export default function ViewerDashboard() {
                           clipPath:
                             "polygon(0% 0%, 100% 50%, 0% 100%, 25% 50%)",
                           backgroundColor: team.color,
-                          boxShadow: `0 0 20px ${team.color}`,
+                          color: team.color,
+                          animation:
+                            "shipGlow 2s ease-in-out infinite alternate",
                         }}
                       />
                       {/* Label */}
@@ -1810,39 +2308,34 @@ export default function ViewerDashboard() {
                       >
                         <div
                           style={{
-                            fontFamily: "'Orbitron', monospace",
+                            ...orbitron,
                             fontSize: 9,
                             fontWeight: 900,
                             padding: "2px 8px",
                             borderRadius: 4,
-                            background: "rgba(10,10,26,0.95)",
-                            border: `1px solid ${team.color}66`,
+                            background: "rgba(7,17,30,0.96)",
+                            border: `1px solid ${team.color}55`,
                             color: team.color,
-                            letterSpacing: "0.12em",
+                            letterSpacing: "0.10em",
                           }}
                         >
-                          <span style={{ opacity: 0.5 }}>#{index + 1}</span>{" "}
+                          <span style={{ opacity: 0.45 }}>#{index + 1}</span>{" "}
                           {team.name}
                         </div>
                         <div
                           style={{
-                            fontFamily: "'Orbitron', monospace",
+                            ...orbitron,
                             fontSize: 10,
                             fontWeight: 900,
                             padding: "1px 6px",
                             borderRadius: 3,
-                            background: "rgba(13,27,42,0.6)",
+                            background: "rgba(13,27,50,0.65)",
                             border: "1px solid rgba(255,255,255,0.05)",
-                            color: "#f5f0e8",
+                            color: C.textHi,
                           }}
                         >
                           {pos.score}{" "}
-                          <span
-                            style={{
-                              fontSize: 7,
-                              color: "rgba(245,240,232,0.4)",
-                            }}
-                          >
+                          <span style={{ fontSize: 7, color: C.textLo }}>
                             P
                           </span>
                         </div>
@@ -1860,7 +2353,7 @@ export default function ViewerDashboard() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "rgba(245,240,232,0.2)",
+                  color: "rgba(156,200,238,0.18)",
                   fontSize: 11,
                   letterSpacing: "0.2em",
                 }}
@@ -1869,53 +2362,19 @@ export default function ViewerDashboard() {
               </div>
             )}
           </div>
-
-          {/* Finish line */}
-          <div
-            style={{
-              position: "absolute",
-              right: 80,
-              top: 0,
-              bottom: 24,
-              width: 1,
-              background: "rgba(34,211,238,0.25)",
-            }}
-          />
         </div>
 
         {/* Fleet Rankings sidebar */}
         <div
           style={{
-            flex: 1,
-            minWidth: 220,
-            ...glassPanel,
+            flex: "0 0 220px",
+            ...glassCard(),
             display: "flex",
             flexDirection: "column",
-            minHeight: 0,
             overflow: "hidden",
           }}
         >
-          <div
-            style={{
-              padding: "12px 16px",
-              borderBottom: "1px solid rgba(34,211,238,0.15)",
-            }}
-          >
-            <div
-              style={{
-                fontFamily: "'Orbitron', monospace",
-                fontSize: 10,
-                fontWeight: 900,
-                color: "#22d3ee",
-                letterSpacing: "0.2em",
-                display: "flex",
-                justifyContent: "space-between",
-              }}
-            >
-              Fleet Rankings
-              <span style={{ opacity: 0.4 }}>LIVE</span>
-            </div>
-          </div>
+          <SectionHead title={<>🚀 Fleet Rankings</>} badge="LIVE" warm />
           <div
             style={{
               flex: 1,
@@ -1923,13 +2382,13 @@ export default function ViewerDashboard() {
               padding: 8,
               display: "flex",
               flexDirection: "column",
-              gap: 4,
+              gap: 5,
             }}
           >
             {sortedPositions.map((pos, index) => {
               const team = data.teams.find((t) => t.id === pos.teamId);
               if (!team) return null;
-              const isTop = index < 5;
+              const isTop3 = index < 3;
               return (
                 <div
                   key={team.id}
@@ -1937,43 +2396,67 @@ export default function ViewerDashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    background: isTop
-                      ? "rgba(34,211,238,0.05)"
-                      : "rgba(0,0,0,0.2)",
-                    border: isTop
-                      ? "1px solid rgba(34,211,238,0.2)"
-                      : "1px solid rgba(255,255,255,0.04)",
+                    padding: "9px 11px",
+                    borderRadius: 7,
+                    background: isTop3
+                      ? "rgba(37,64,116,.22)"
+                      : "rgba(0,0,0,.18)",
+                    border: isTop3
+                      ? `1px solid rgba(83,143,238,.18)`
+                      : "1px solid rgba(255,255,255,.03)",
+                    position: "relative",
+                    overflow: "hidden",
                   }}
                 >
+                  {/* rank accent */}
                   <div
-                    style={{ display: "flex", alignItems: "center", gap: 10 }}
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 2,
+                      background:
+                        index === 0
+                          ? `linear-gradient(180deg, ${C.gold}, ${C.orange})`
+                          : index === 1
+                            ? `linear-gradient(180deg, ${C.blueLight}, ${C.blueCore})`
+                            : index === 2
+                              ? `linear-gradient(180deg, ${C.orange}, ${C.redAcc})`
+                              : "transparent",
+                    }}
+                  />
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 9 }}
                   >
                     <span
                       style={{
-                        fontSize: 10,
+                        ...orbitron,
+                        fontSize: 9,
                         fontWeight: 700,
-                        width: 14,
-                        color: index < 3 ? "#34d399" : "rgba(245,240,232,0.4)",
+                        width: 16,
+                        textAlign: "center",
+                        color: isTop3
+                          ? [C.gold, C.blueLight, C.orange][index]
+                          : C.textLo,
                       }}
                     >
                       {index + 1}
                     </span>
                     <div
                       style={{
-                        width: 8,
-                        height: 8,
+                        width: 7,
+                        height: 7,
                         borderRadius: "50%",
                         background: team.color,
                       }}
                     />
                     <span
                       style={{
+                        ...notoTH,
                         fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: "0.05em",
-                        maxWidth: 90,
+                        fontWeight: 600,
+                        maxWidth: 88,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
@@ -1984,12 +2467,14 @@ export default function ViewerDashboard() {
                   </div>
                   <span
                     style={{
-                      fontFamily: "'Orbitron', monospace",
+                      ...orbitron,
                       fontSize: 10,
-                      color: "rgba(245,240,232,0.5)",
+                      color: isTop3
+                        ? [C.gold, C.blueLight, C.orange][index]
+                        : C.textLo,
                     }}
                   >
-                    {pos.score} <span style={{ fontSize: 8 }}>PTS</span>
+                    {pos.score} <span style={{ fontSize: 8 }}>P</span>
                   </span>
                 </div>
               );
@@ -2000,7 +2485,7 @@ export default function ViewerDashboard() {
                   padding: 32,
                   textAlign: "center",
                   fontSize: 10,
-                  color: "rgba(245,240,232,0.2)",
+                  color: C.textLo,
                   letterSpacing: "0.15em",
                 }}
               >
@@ -2011,13 +2496,14 @@ export default function ViewerDashboard() {
         </div>
       </div>
 
-      {/* Finish line label */}
+      {/* Finish label */}
       <div
         style={{
           textAlign: "right",
-          paddingRight: 92,
-          fontSize: 11,
-          opacity: 0.35,
+          paddingRight: 96,
+          paddingTop: 6,
+          fontSize: 10,
+          color: C.textLo,
           letterSpacing: "0.1em",
           flexShrink: 0,
         }}
@@ -2027,294 +2513,38 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 3(4->3): Jeopardy Board ---------------------------------------------
-  const Slide3 = () => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        height: "100%",
-        padding: 24,
-        overflowY: "auto",
-      }}
-    >
-      {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
-          flexShrink: 0,
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: "'Orbitron', monospace",
-            fontSize: "clamp(1.25rem,2.5vw,2rem)",
-            fontWeight: 900,
-            color: "#22d3ee",
-            animation: "glowPulse 3s infinite",
-            margin: 0,
-          }}
-        >
-          QUESTION BOARD
-        </h2>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 14px",
-              borderRadius: 8,
-              background: "rgba(34,211,238,0.08)",
-              border: "1px solid rgba(34,211,238,0.2)",
-            }}
-          >
-            <Zap size={12} color="#22d3ee" />
-            <span
-              style={{
-                fontFamily: "'Orbitron', monospace",
-                fontSize: 11,
-                color: "#22d3ee",
-              }}
-            >
-              {answeredCount}/{totalQCount}
-            </span>
-          </div>
-          <RefreshBtn />
-        </div>
-      </div>
-
-      {categories.length === 0 ? (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <p style={{ opacity: 0.3, letterSpacing: "0.15em", fontSize: 12 }}>
-            No categories loaded — press Sync
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Progress bar */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 12,
-              flexShrink: 0,
-            }}
-          >
-            <div
-              style={{
-                flex: 1,
-                height: 4,
-                borderRadius: 2,
-                background: "rgba(34,211,238,0.1)",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  background: "rgba(34,211,238,0.5)",
-                  width: totalQCount
-                    ? `${(answeredCount / totalQCount) * 100}%`
-                    : "0%",
-                  transition: "width 0.7s ease",
-                }}
-              />
-            </div>
-            <span
-              style={{
-                fontSize: 10,
-                color: "rgba(245,240,232,0.4)",
-                letterSpacing: "0.1em",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {answeredCount} / {totalQCount}
-            </span>
-          </div>
-
-          {/* Board grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: `repeat(${categories.length}, 1fr)`,
-              gap: 6,
-            }}
-          >
-            {/* Category headers */}
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                style={{
-                  padding: "8px 6px",
-                  textAlign: "center",
-                  background: "rgba(34,211,238,0.08)",
-                  border: "1px solid rgba(34,211,238,0.2)",
-                  borderRadius: 6,
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "'Orbitron', monospace",
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: "#22d3ee",
-                    letterSpacing: "0.1em",
-                    lineHeight: 1.3,
-                    display: "block",
-                  }}
-                >
-                  {cat.name}
-                </span>
-              </div>
-            ))}
-
-            {/* Question cells — row by row */}
-            {Array.from({ length: 6 }, (_, qi) =>
-              categories.map((cat) => {
-                const q = cat.questions?.find((q) => q.number === qi + 1);
-                if (!q)
-                  return (
-                    <div key={`${cat.id}-${qi}`} style={{ minHeight: 60 }} />
-                  );
-                return (
-                  <JeopardyCell
-                    key={q.id}
-                    question={q}
-                    events={getEvents(q.id)}
-                    teams={data.teams}
-                    onClick={() =>
-                      setSelectedCell({ category: cat, question: q })
-                    }
-                  />
-                );
-              }),
-            )}
-          </div>
-
-          {/* Legend */}
-          <div
-            style={{ display: "flex", gap: 20, paddingTop: 12, flexShrink: 0 }}
-          >
-            {[
-              ["rgba(34,211,238,0.4)", "ยังไม่ตอบ"],
-              ["rgba(107,33,168,0.5)", "ตอบแล้ว — กดเพื่อดูรายละเอียด"],
-            ].map(([color, label]) => (
-              <div
-                key={label}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 10,
-                  color: "rgba(245,240,232,0.4)",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                <div
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: color,
-                  }}
-                />
-                {label}
-              </div>
-            ))}
-            <div>
-              <iframe
-                loading="lazy"
-                src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embed"
-                allow="fullscreen"
-              ></iframe>
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Question detail modal */}
-      <AnimatePresence>
-        {selectedCell && (
-          <QuestionModal
-            category={selectedCell.category}
-            question={selectedCell.question}
-            events={getEvents(selectedCell.question.id)}
-            teams={data.teams}
-            onClose={() => setSelectedCell(null)}
-          />
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
-  // ---- Slide 5: Live Leaderboard -------------------------------------------
+  // =========================================================================
+  // SLIDE 5 — LIVE LEADERBOARD
+  // =========================================================================
   const Slide5 = () => (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "flex-start",
         width: "100%",
         height: "100%",
-        padding: 24,
+        padding: "0 24px 80px",
         overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 16,
-          marginBottom: 24,
-          flexShrink: 0,
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: "'Orbitron', monospace",
-            fontSize: "clamp(1.5rem,3vw,2.5rem)",
-            fontWeight: 900,
-            color: "#22d3ee",
-            animation: "glowPulse 3s infinite",
-            margin: 0,
-          }}
-        >
-          LIVE LEADERBOARD
-        </h2>
-        <RefreshBtn />
-      </div>
+      <SlideHeader title="Live Leaderboard" right={<RefreshBtn />} />
 
       <div
         style={{
           width: "100%",
-          maxWidth: 720,
+          maxWidth: 740,
           flex: 1,
           overflowY: "auto",
-          paddingRight: 8,
+          paddingTop: 16,
+          paddingRight: 4,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
         }}
       >
         {sortedPositions.length === 0 && (
-          <p
-            style={{
-              opacity: 0.4,
-              textAlign: "center",
-              letterSpacing: "0.15em",
-            }}
-          >
+          <p style={{ ...notoTH, opacity: 0.4, textAlign: "center" }}>
             No teams yet
           </p>
         )}
@@ -2322,55 +2552,110 @@ export default function ViewerDashboard() {
         {sortedPositions.map((pos, i) => {
           const team = data.teams.find((t) => t.id === pos.teamId);
           if (!team) return null;
+          const rankColor =
+            i === 0
+              ? C.gold
+              : i === 1
+                ? C.blueLight
+                : i === 2
+                  ? C.orange
+                  : C.textMid;
 
           return (
             <div
               key={team.id}
               style={{
-                ...glassPanel,
-                ...neonBorder,
+                ...glassCard(i < 3),
                 borderLeft: `4px solid ${team.color}`,
-                padding: 16,
-                marginBottom: 12,
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "space-between",
+                overflow: "hidden",
+                animation: `fadeUp .5s ease ${i * 0.07}s both`,
               }}
             >
+              {/* Medal */}
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  minWidth: 0,
+                  fontSize: i < 3 ? 28 : 20,
+                  padding: "14px 16px",
+                  flexShrink: 0,
                 }}
               >
-                <span style={{ fontSize: 30, flexShrink: 0 }}>{medals[i]}</span>
+                {medals[i]}
+              </div>
 
-                <span
+              {/* Info */}
+              <div style={{ flex: 1, padding: "14px 0", minWidth: 0 }}>
+                <div
                   style={{
-                    fontSize: 20,
+                    ...notoTH,
+                    fontSize: i < 3 ? 19 : 16,
                     fontWeight: 700,
+                    marginBottom: 5,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                   }}
                 >
                   {team.name}
-                </span>
+                </div>
+                {/* Progress bar */}
+                <div
+                  style={{
+                    height: 3,
+                    background: "rgba(255,255,255,.06)",
+                    borderRadius: 2,
+                    width: "90%",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      borderRadius: 2,
+                      width: `${Math.min(100, (pos.score / Math.max(1, sortedPositions[0]?.score ?? 1)) * 100)}%`,
+                      background:
+                        i === 0
+                          ? `linear-gradient(90deg, ${C.orange}, ${C.gold})`
+                          : i === 1
+                            ? `linear-gradient(90deg, ${C.blueCore}, ${C.blueLight})`
+                            : `linear-gradient(90deg, ${team.color}, ${team.color}99)`,
+                      transition: "width .8s ease",
+                    }}
+                  />
+                </div>
               </div>
 
-              <span
+              {/* Score */}
+              <div
                 style={{
-                  fontFamily: "'Orbitron', monospace",
-                  fontSize: 26,
-                  fontWeight: 900,
-                  color: team.color,
+                  padding: "14px 22px",
+                  textAlign: "right",
                   flexShrink: 0,
                 }}
               >
-                {pos.score}
-              </span>
+                <div
+                  style={{
+                    ...orbitron,
+                    fontSize: i < 3 ? 28 : 22,
+                    fontWeight: 900,
+                    color: rankColor,
+                    lineHeight: 1,
+                  }}
+                >
+                  {pos.score}
+                </div>
+                <div
+                  style={{
+                    ...orbitron,
+                    fontSize: 8,
+                    color: C.textLo,
+                    letterSpacing: "0.18em",
+                    marginTop: 3,
+                  }}
+                >
+                  POINTS
+                </div>
+              </div>
             </div>
           );
         })}
@@ -2378,7 +2663,9 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // ---- Slide 6: Final Results ----------------------------------------------
+  // =========================================================================
+  // SLIDE 6 — FINAL RESULTS
+  // =========================================================================
   function Slide6() {
     useEffect(() => {
       launchConfetti();
@@ -2394,10 +2681,9 @@ export default function ViewerDashboard() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "flex-start",
           width: "100%",
           height: "100%",
-          padding: 32,
+          padding: "28px 24px 80px",
           position: "relative",
           overflow: "hidden",
         }}
@@ -2414,9 +2700,9 @@ export default function ViewerDashboard() {
 
         <div
           style={{
-            fontSize: 64,
-            animation: "float 2s ease-in-out infinite",
-            marginBottom: 16,
+            fontSize: 58,
+            animation: "float 2.5s ease-in-out infinite",
+            marginBottom: 14,
             flexShrink: 0,
           }}
         >
@@ -2425,11 +2711,13 @@ export default function ViewerDashboard() {
 
         <h2
           style={{
-            fontFamily: "'Orbitron', monospace",
-            fontSize: "clamp(2rem,5vw,3.5rem)",
+            ...orbitron,
+            fontSize: "clamp(1.8rem,4.5vw,3.2rem)",
             fontWeight: 900,
-            color: "#22d3ee",
-            animation: "glowPulse 3s infinite",
+            background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
             marginBottom: 8,
             flexShrink: 0,
           }}
@@ -2440,41 +2728,44 @@ export default function ViewerDashboard() {
         {winner && (
           <p
             style={{
-              fontSize: 26,
-              fontWeight: 700,
+              ...notoTH,
+              fontSize: 24,
+              fontWeight: 800,
               color: winner.color,
-              marginBottom: 24,
+              marginBottom: 22,
               flexShrink: 0,
             }}
           >
-            {winner.name}
+            {winner.name} คือผู้ชนะ!
           </p>
         )}
 
         <div
           style={{
             width: "100%",
-            maxWidth: 600,
+            maxWidth: 620,
             flex: 1,
             overflowY: "auto",
-            paddingRight: 8,
+            paddingRight: 4,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
           }}
         >
           {sortedPositions.map((pos, i) => {
             const team = data.teams.find((t) => t.id === pos.teamId);
             if (!team) return null;
-
             return (
               <div
                 key={team.id}
                 style={{
-                  ...glassPanel,
-                  ...neonBorder,
-                  padding: "14px 20px",
-                  marginBottom: 10,
+                  ...glassCard(i < 3),
+                  padding: "13px 20px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  borderLeft: `3px solid ${team.color}`,
+                  animation: `fadeUp .5s ease ${i * 0.07}s both`,
                 }}
               >
                 <div
@@ -2485,13 +2776,13 @@ export default function ViewerDashboard() {
                     minWidth: 0,
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>
+                  <span style={{ fontSize: i < 3 ? 22 : 18, flexShrink: 0 }}>
                     {medals[i]}
                   </span>
-
                   <span
                     style={{
-                      fontSize: 17,
+                      ...notoTH,
+                      fontSize: 16,
                       fontWeight: 700,
                       color: team.color,
                       overflow: "hidden",
@@ -2502,13 +2793,13 @@ export default function ViewerDashboard() {
                     {team.name}
                   </span>
                 </div>
-
                 <span
                   style={{
-                    fontFamily: "'Orbitron', monospace",
+                    ...orbitron,
                     fontSize: 20,
                     fontWeight: 900,
                     flexShrink: 0,
+                    color: i === 0 ? C.gold : C.textHi,
                   }}
                 >
                   {pos.score}
@@ -2520,10 +2811,21 @@ export default function ViewerDashboard() {
 
         <button
           style={{
-            ...navBtn,
             marginTop: 20,
-            background: "rgba(34,211,238,0.15)",
             flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "9px 24px",
+            borderRadius: 22,
+            cursor: "pointer",
+            ...notoTH,
+            fontSize: 13,
+            fontWeight: 600,
+            color: C.blueLight,
+            background: "rgba(83,143,238,0.12)",
+            border: `1px solid rgba(83,143,238,0.28)`,
+            transition: "all .2s",
           }}
           onClick={() => goToSlide(1)}
         >
@@ -2533,80 +2835,147 @@ export default function ViewerDashboard() {
     );
   }
 
-  // ---- Nav bar -------------------------------------------------------------
+  // =========================================================================
+  // NAV BAR
+  // =========================================================================
   const NavBar = () => {
     const [showNav, setShowNav] = useState(false);
+
+    const pillStyle: React.CSSProperties = {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      background: "rgba(10,20,38,0.90)",
+      border: `1px solid ${border}`,
+      borderRadius: 28,
+      padding: "7px 14px",
+      backdropFilter: "blur(14px)",
+    };
+    const btnStyle: React.CSSProperties = {
+      ...notoTH,
+      fontSize: 12,
+      fontWeight: 600,
+      letterSpacing: "0.06em",
+      color: "rgba(156,200,238,.7)",
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      padding: "3px 9px",
+      borderRadius: 18,
+    };
 
     return (
       <div
         style={{
           position: "fixed",
-          bottom: 16,
-          left: "50%",
-          transform: "translateX(-50%)",
+          bottom: 0,
+          left: 0,
+          right: 0,
           zIndex: 50,
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          justifyContent: "center",
+          padding: "10px 20px 14px",
+          gap: 8,
+          background: "linear-gradient(0deg, rgba(7,17,30,.96), transparent)",
         }}
       >
-        {/* Toggle button */}
+        {/* Toggle */}
         <button
-          style={{ ...navBtn, padding: "6px 12px", fontSize: 12 }}
+          style={{
+            ...pillStyle,
+            padding: "7px 14px",
+            cursor: "pointer",
+            border: `1px solid ${border}`,
+          }}
           onClick={() => setShowNav((v) => !v)}
         >
-          {showNav ? "✕" : "☰"}
+          <span style={{ ...notoTH, fontSize: 14, color: C.textMid }}>
+            {showNav ? "✕" : "☰"}
+          </span>
         </button>
 
-        {/* ทุกอย่างซ่อน/แสดงพร้อมกัน */}
         {showNav && (
           <>
-            <button style={navBtn} onClick={prevSlide}>
-              ← Prev
-            </button>
-            <span
-              style={{
-                fontFamily: "'Orbitron', monospace",
-                fontSize: 13,
-                opacity: 0.5,
-                color: "#f5f0e8",
-              }}
-            >
-              {currentSlide} / {totalSlides}
-            </span>
-            <button style={navBtn} onClick={nextSlide}>
-              Next →
-            </button>
-
-            {[
-              ["😽", 1, "Intro"],
-              ["💻", 2, "Overview"],
-              ["📋", 3, "Board"],
-              ["🚀", 4, "Race"],
-              ["📊", 5, "Scores"],
-              ["🏆", 6, "Finals"],
-            ].map(([icon, n, label]) => (
-              <button
-                key={String(n)}
-                style={{
-                  ...navBtn,
-                  padding: "6px 12px",
-                  fontSize: 12,
-                  opacity: currentSlide === n ? 1 : 0.5,
-                }}
-                onClick={() => goToSlide(n as number)}
-                title={String(label)}
-              >
-                {icon}
+            <div style={pillStyle}>
+              <button style={btnStyle} onClick={prevSlide}>
+                ← Prev
               </button>
-            ))}
+              <div style={{ width: 1, height: 14, background: border }} />
+              <span
+                style={{
+                  ...orbitron,
+                  fontSize: 10,
+                  color: C.textLo,
+                  padding: "0 6px",
+                }}
+              >
+                {currentSlide} / {totalSlides}
+              </span>
+              <div style={{ width: 1, height: 14, background: border }} />
+              <button style={btnStyle} onClick={nextSlide}>
+                Next →
+              </button>
+            </div>
+
+            {/* Dot indicators */}
+            <div style={{ ...pillStyle, gap: 7 }}>
+              {Array.from({ length: totalSlides }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => goToSlide(i + 1)}
+                  style={{
+                    width: currentSlide === i + 1 ? 20 : 7,
+                    height: 7,
+                    borderRadius: currentSlide === i + 1 ? 3 : "50%",
+                    background:
+                      currentSlide === i + 1
+                        ? C.orange
+                        : "rgba(156,200,238,.25)",
+                    border: "none",
+                    cursor: "pointer",
+                    transition: "all .25s",
+                    boxShadow:
+                      currentSlide === i + 1
+                        ? `0 0 8px rgba(237,130,64,.6)`
+                        : "none",
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Slide jump buttons */}
+            <div style={{ ...pillStyle, padding: "5px 10px", gap: 2 }}>
+              {(["😽", "💻", "📋", "🚀", "📊", "🏆"] as const).map(
+                (icon, i) => (
+                  <button
+                    key={i}
+                    style={{
+                      ...btnStyle,
+                      fontSize: 16,
+                      opacity: currentSlide === i + 1 ? 1 : 0.45,
+                      padding: "3px 8px",
+                      background:
+                        currentSlide === i + 1
+                          ? "rgba(237,130,64,.12)"
+                          : "none",
+                    }}
+                    onClick={() => goToSlide(i + 1)}
+                  >
+                    {icon}
+                  </button>
+                ),
+              )}
+            </div>
           </>
         )}
       </div>
     );
   };
 
-  // ---- Slide map -----------------------------------------------------------
+  // =========================================================================
+  // RENDER
+  // =========================================================================
   const slides: Record<number, React.ReactNode> = {
     1: <Slide1 />,
     2: <Slide2 />,
@@ -2618,43 +2987,41 @@ export default function ViewerDashboard() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes twinkle { 0%,100%{opacity:.3} 50%{opacity:1} }
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-        @keyframes glowPulse {
-          0%,100%{text-shadow:0 0 20px rgba(34,211,238,.5),0 0 40px rgba(107,33,168,.3)}
-          50%{text-shadow:0 0 40px rgba(34,211,238,.8),0 0 80px rgba(107,33,168,.6),0 0 120px rgba(34,211,238,.3)}
-        }
-        @keyframes confettiFall {
-          0%{transform:translateY(-100%) rotate(0deg);opacity:1}
-          100%{transform:translateY(500%) rotate(720deg);opacity:0}
-        }
-        .star { position:absolute; background:white; border-radius:50%; animation:twinkle var(--dur) ease-in-out infinite; animation-delay:var(--delay); }
-      `}</style>
+      <style>{GLOBAL_CSS}</style>
 
       <div
         style={{
           position: "fixed",
           inset: 0,
-          background: "#0a0a1a",
-          fontFamily: "'Rajdhani', sans-serif",
-          color: "#f5f0e8",
+          background: `
+            radial-gradient(ellipse 88% 55% at 14% 5%,  rgba(37,64,116,0.58) 0%, transparent 62%),
+            radial-gradient(ellipse 52% 44% at 84% 84%, rgba(83,143,238,0.16) 0%, transparent 55%),
+            radial-gradient(ellipse 36% 28% at 52% 44%, rgba(237,130,64,0.07) 0%, transparent 52%),
+            #07111E
+          `,
+          fontFamily: "'Noto Sans Thai', sans-serif",
+          color: C.textHi,
           overflow: "hidden",
         }}
       >
-        <Starfield />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            zIndex: 10,
-          }}
-        >
-          {slides[currentSlide]}
+        <CosmosBackground />
+
+        {/* Slides */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -30 }}
+              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+              style={{ position: "absolute", inset: 0, display: "flex" }}
+            >
+              {slides[currentSlide]}
+            </motion.div>
+          </AnimatePresence>
         </div>
+
         <NavBar />
       </div>
     </>
