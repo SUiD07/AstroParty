@@ -1,787 +1,3 @@
-// // "use client";
-
-// // import { motion, AnimatePresence } from 'framer-motion';
-// // import { RefreshCw, Zap } from 'lucide-react';
-// // import { useState, useEffect } from 'react';
-// // import { RaceData } from '@/app/types';
-// // import { storage } from '@/lib/storage';
-
-// // export default function ViewerDashboard() {
-// //   const [data, setData] = useState<RaceData>(storage.load());
-// //   const [isRefreshing, setIsRefreshing] = useState(false);
-
-// //   const handleRefresh = () => {
-// //     setIsRefreshing(true);
-// //     // Simulate network delay
-// //     setTimeout(() => {
-// //       setData(storage.load());
-// //       setIsRefreshing(false);
-// //     }, 600);
-// //   };
-
-// //   useEffect(() => {
-// //     // Initial fetch
-// //     setData(storage.load());
-// //   }, []);
-
-// //   const sortedPositions = [...data.positions].sort((a, b) => b.score - a.score);
-// //   const topFive = sortedPositions.slice(0, 5);
-// //   // const others = sortedPositions.slice(5);
-
-// //   // Dynamic Scale: Calculate max achieved score for normalization
-// //   const maxScoreAchieved = Math.max(1, ...data.positions.map(p => p.score));
-// //   const visualTarget = data.state.status === 'finished' ? maxScoreAchieved : Math.max(10, maxScoreAchieved * 1.1);
-
-// //   return (
-// //     <div className="h-screen bg-brand-slate-dark text-slate-100 flex flex-col p-6 font-mono overflow-hidden">
-// //       {/* Header */}
-// //       <header className="flex justify-between items-end mb-6 border-b-2 border-brand-slate-border pb-4 shrink-0">
-// //         <div>
-// //           <h1 className="text-4xl font-black italic skew-x-[-10deg] neon-text tracking-tighter uppercase">
-// //             Astro <span className="text-white">Party</span>
-// //           </h1>
-// //           <div className="flex gap-4 mt-1">
-// //             <span className="text-[9px] uppercase tracking-widest text-slate-500">
-// //               UPLINK: <span className="text-brand-green border border-brand-green/20 px-1">ACTIVE</span>
-// //             </span>
-// //             <span className="text-[9px] uppercase tracking-widest text-slate-500">
-// //               FIELD: <span className="text-brand-cyan">DYNAMIC RANGE</span>
-// //             </span>
-// //           </div>
-// //         </div>
-
-// //         <div className="flex items-center gap-4">
-// //           <div className="px-3 py-1 bg-brand-slate-mid border border-brand-slate-border rounded-sm text-[10px] font-bold uppercase tracking-widest text-brand-cyan">
-// //              ROUND {data.state.round} • <span className={data.state.status === 'finished' ? 'text-brand-green' : ''}>{data.state.status.toUpperCase()}</span>
-// //           </div>
-// //           <button
-// //             onClick={handleRefresh}
-// //             disabled={isRefreshing}
-// //             className="flex items-center gap-2 px-4 py-2 bg-brand-cyan text-brand-slate-dark font-black uppercase text-xs tracking-widest hover:scale-105 transition-all disabled:opacity-50"
-// //           >
-// //             <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-// //             Sync
-// //           </button>
-// //         </div>
-// //       </header>
-
-// //       {/* Main Container: Track + Sidebar */}
-// //       <div className="flex-1 flex gap-6 min-h-0 overflow-hidden">
-// //         {/* Track Area */}
-// //         <div className="flex-[3] relative border-2 border-brand-slate-border bg-black/40 backdrop-blur-sm overflow-hidden rounded-lg">
-// //           {/* Background Grid */}
-// //           <div
-// //             className="absolute inset-0 opacity-10"
-// //             style={{
-// //               backgroundImage: `linear-gradient(#22d3ee 1px, transparent 1px), linear-gradient(90deg, #22d3ee 1px, transparent 1px)`,
-// //               backgroundSize: '40px 40px'
-// //             }}
-// //           />          {/* Scale Marks */}
-// //           <div className="absolute bottom-0 left-12 right-24 h-6 border-t border-brand-slate-border flex justify-between px-2">
-// //             {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-// //               <div key={p} className="flex flex-col items-center">
-// //                 <div className="h-2 w-px bg-brand-slate-border" />
-// //                 <span className="text-[8px] text-slate-500 mt-1">{Math.floor(p * visualTarget)}</span>
-// //               </div>
-// //             ))}
-// //           </div>
-
-// //           {/* Spaceships (Top 5 Only) */}
-// //           <div className="absolute inset-x-0 bottom-6 top-0 pl-12 pr-24 py-8">
-// //             <AnimatePresence>
-// //               {topFive.map((pos, index) => {
-// //                 const team = data.teams.find(t => t.id === pos.teamId);
-// //                 if (!team) return null;
-
-// //                 // Position Y based on rank (0-4 for top 5)
-// //                 const yPos = (index + 0.5) * (100 / 5);
-
-// //                 return (
-// //                   <motion.div
-// //                     key={team.id}
-// //                     layoutId={team.id}
-// //                     initial={false}
-// //                     animate={{
-// //                       left: `${Math.min(100, (pos.score / visualTarget) * 100)}%`,
-// //                       top: `${yPos}%`
-// //                     }}
-// //                     transition={{ type: "spring", stiffness: 40, damping: 15 }}
-// //                     className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-// //                   >
-// //                     <div className="group relative flex flex-col items-center">
-// //                       {/* Labels and Score Grouped ABOVE Ship */}
-// //                       <div className="absolute bottom-full mb-3 flex flex-col items-center gap-1 group-hover:scale-110 transition-transform">
-// //                          {/* Rank and Name */}
-// //                          <div
-// //                           className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-brand-slate-dark/95 border rounded flex items-center gap-2 whitespace-nowrap ${pos.score >= visualTarget && data.state.status === 'finished' ? 'border-brand-green bg-brand-green/20' : ''}`}
-// //                           style={{ borderColor: pos.score >= visualTarget && data.state.status === 'finished' ? '#4ade80' : `${team.color}66`, color: pos.score >= visualTarget && data.state.status === 'finished' ? '#4ade80' : team.color }}
-// //                         >
-// //                           <span className="opacity-50">#{index + 1}</span> {team.name}
-// //                           {pos.score >= visualTarget && data.state.status === 'finished' && <Zap className="w-2 h-2 animate-pulse" />}
-// //                         </div>
-// //                         {/* Score Tag */}
-// //                         <div className="text-[10px] font-black text-white tabular-nums bg-brand-slate-mid/60 px-1.5 rounded-sm border border-white/5">
-// //                           {pos.score} <span className="text-[7px] text-slate-500">P</span>
-// //                         </div>
-// //                       </div>
-
-// //                       {/* Ship Graphics */}
-// //                       <div
-// //                         className="w-10 h-7 [clip-path:polygon(0%_0%,100%_50%,0%_100%,25%_50%)] shadow-[0_0_20px_currentColor]"
-// //                         style={{ backgroundColor: team.color, color: team.color }}
-// //                       />
-// //                     </div>
-// //                   </motion.div>
-// //                 );
-// //               })}
-// //             </AnimatePresence>
-
-// //             {topFive.length === 0 && (
-// //               <div className="absolute inset-0 flex items-center justify-center text-slate-600 uppercase text-[10px] tracking-widest italic opacity-30">
-// //                 Awaiting fleet transmission...
-// //               </div>
-// //             )}
-// //           </div>
-// //         </div>
-
-// //         {/* Sidebar: Ranking List for others */}
-// //         <div className="flex-1 min-w-[280px] bg-brand-slate-mid/50 border-2 border-brand-slate-border rounded-lg flex flex-col min-h-0 overflow-hidden">
-// //           <div className="p-4 border-b border-brand-slate-border bg-brand-slate-mid">
-// //             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-brand-cyan flex items-center justify-between">
-// //               Fleet Rankings
-// //               <span className="text-[10px] text-slate-500">LIVE</span>
-// //             </h2>
-// //           </div>
-
-// //           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-// //             {sortedPositions.map((pos, index) => {
-// //               const team = data.teams.find(t => t.id === pos.teamId);
-// //               if (!team) return null;
-// //               const isTopFive = index < 5;
-
-// //               return (
-// //                 <div
-// //                   key={team.id}
-// //                   className={`flex items-center justify-between p-3 border rounded transition-all ${isTopFive ? 'bg-brand-cyan/5 border-brand-cyan/20' : 'bg-black/20 border-white/5'}`}
-// //                 >
-// //                   <div className="flex items-center gap-3">
-// //                     <span className={`text-[10px] font-bold w-4 ${index < 3 ? 'text-brand-green' : 'text-slate-500'}`}>
-// //                       {index + 1}
-// //                     </span>
-// //                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: team.color }} />
-// //                     <span className="text-[11px] font-bold uppercase truncate max-w-[120px]">
-// //                       {team.name}
-// //                     </span>
-// //                   </div>
-// //                   <div className="flex items-center gap-3">
-// //                     <div className="text-[10px] font-mono text-slate-400">
-// //                       {pos.score} <span className="text-[8px]">PTS</span>
-// //                     </div>
-// //                   </div>
-// //                 </div>
-// //               );
-// //             })}
-// //             {data.teams.length === 0 && (
-// //               <div className="p-8 text-center text-[10px] text-slate-600 uppercase italic">No data</div>
-// //             )}
-// //           </div>
-// //         </div>
-// //       </div>
-
-// //       {/* Footer Info */}
-// //       <footer className="mt-4 flex justify-between items-center text-[9px] text-slate-500 uppercase tracking-widest shrink-0">
-// //         <div className="flex gap-6">
-// //           <span>Total Fleet: {data.teams.length}</span>
-// //           <span>Lead Pilot: {
-// //             data.positions.length > 0
-// //               ? data.teams.find(t => t.id === sortedPositions[0].teamId)?.name
-// //               : 'NONE'
-// //           }</span>
-// //         </div>
-// //         <div className="flex items-center gap-4">
-// //           <a href="/admin" className="text-brand-cyan/30 hover:text-brand-cyan transition-colors underline decoration-dotted underline-offset-4">ADMIN_LINK</a>
-// //           <div className="flex items-center gap-2">
-// //             <Zap className="w-3 h-3 text-brand-cyan" />
-// //             <span>Sync Control: Manual</span>
-// //           </div>
-// //         </div>
-// //       </footer>
-// //     </div>
-// //   );
-// // }
-// "use client";
-
-// import { motion, AnimatePresence } from "framer-motion";
-// import { RefreshCw, Zap, X } from "lucide-react";
-// import { useState, useEffect, useCallback } from "react";
-// import { RaceData } from "@/app/types";
-// import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
-
-// // ── Types ─────────────────────────────────────────────────────────────────────
-// interface Question {
-//   id: number;
-//   number: number;
-// }
-// interface Category {
-//   id: number;
-//   name: string;
-//   position: number;
-//   questions: Question[];
-// }
-// interface ScoreEvent {
-//   id: string;
-//   team_id: string;
-//   question_id: number;
-//   delta: number;
-// }
-
-// // ── Jeopardy Cell ─────────────────────────────────────────────────────────────
-// function JeopardyCell({
-//   question,
-//   events,
-//   teams,
-//   onClick,
-// }: {
-//   question: Question;
-//   events: ScoreEvent[];
-//   teams: RaceData["teams"];
-//   onClick: () => void;
-// }) {
-//   const answered = events.length > 0;
-
-//   return (
-//     <button
-//       onClick={onClick}
-//       className={`
-//         relative w-full border text-center transition-all duration-300
-//         flex flex-col items-center justify-center gap-1 group overflow-hidden
-//         min-h-[64px] py-2 px-1
-//         ${
-//           answered
-//             ? "bg-brand-slate-dark/60 border-brand-slate-border/30 opacity-60 cursor-pointer"
-//             : "bg-black/40 border-brand-slate-border hover:border-brand-cyan/60 hover:bg-brand-cyan/5 cursor-pointer"
-//         }
-//       `}
-//     >
-//       {/* Hover glow (unanswered only) */}
-//       {!answered && (
-//         <div
-//           className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-//           style={{
-//             background:
-//               "radial-gradient(circle at center, rgba(34,211,238,0.07) 0%, transparent 70%)",
-//           }}
-//         />
-//       )}
-
-//       {answered ? (
-//         // Answered: team chips
-//         <div className="flex flex-col gap-0.5 w-full">
-//           {events.map((ev) => {
-//             const team = teams.find((t) => t.id === ev.team_id);
-//             if (!team) return null;
-//             return (
-//               <div
-//                 key={ev.id}
-//                 className="flex items-center justify-between px-1.5 py-0.5 rounded text-[8px] font-bold"
-//                 style={{
-//                   backgroundColor: `${team.color}20`,
-//                   borderLeft: `2px solid ${team.color}`,
-//                   color: ev.delta > 0 ? team.color : "#f87171",
-//                 }}
-//               >
-//                 <span className="truncate max-w-[50px]">{team.name}</span>
-//                 <span className="ml-1 tabular-nums shrink-0">
-//                   {ev.delta > 0 ? `+${ev.delta}` : ev.delta}
-//                 </span>
-//               </div>
-//             );
-//           })}
-//         </div>
-//       ) : (
-//         // Unanswered: question number
-//         <span className="text-[11px] font-black text-slate-400 group-hover:text-brand-cyan transition-colors">
-//           ข้อ {question.number}
-//         </span>
-//       )}
-
-//       {/* Answered dot */}
-//       {answered && (
-//         <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-slate-600" />
-//       )}
-//     </button>
-//   );
-// }
-
-// // ── Question Detail Modal ─────────────────────────────────────────────────────
-// function QuestionModal({
-//   category,
-//   question,
-//   events,
-//   teams,
-//   onClose,
-// }: {
-//   category: Category;
-//   question: Question;
-//   events: ScoreEvent[];
-//   teams: RaceData["teams"];
-//   onClose: () => void;
-// }) {
-//   return (
-//     <div
-//       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
-//       onClick={onClose}
-//     >
-//       <motion.div
-//         initial={{ scale: 0.9, opacity: 0, y: 12 }}
-//         animate={{ scale: 1, opacity: 1, y: 0 }}
-//         exit={{ scale: 0.9, opacity: 0, y: 12 }}
-//         transition={{ type: "spring", stiffness: 300, damping: 28 }}
-//         className="relative bg-brand-slate-dark border-2 border-brand-slate-border rounded-lg p-8 w-[440px] max-w-[90vw] shadow-[0_0_60px_rgba(34,211,238,0.12)]"
-//         onClick={(e) => e.stopPropagation()}
-//       >
-//         {/* Close */}
-//         <button
-//           onClick={onClose}
-//           className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
-//         >
-//           <X className="w-4 h-4" />
-//         </button>
-
-//         {/* Header */}
-//         <div className="mb-6">
-//           <p className="text-[9px] uppercase tracking-[0.25em] text-brand-cyan mb-1">
-//             {category.name}
-//           </p>
-//           <h3 className="text-2xl font-black text-white">ข้อ {question.number}</h3>
-//         </div>
-
-//         {/* Events */}
-//         {events.length === 0 ? (
-//           <div className="py-10 text-center border border-dashed border-brand-slate-border rounded">
-//             <p className="text-[10px] text-slate-600 uppercase tracking-widest italic">
-//               ยังไม่มีการให้คะแนนในข้อนี้
-//             </p>
-//           </div>
-//         ) : (
-//           <div className="space-y-2">
-//             <p className="text-[9px] uppercase tracking-widest text-slate-500 mb-3">
-//               ผลคะแนนที่บันทึกไว้
-//             </p>
-//             {events.map((ev, i) => {
-//               const team = teams.find((t) => t.id === ev.team_id);
-//               if (!team) return null;
-//               const isPos = ev.delta > 0;
-//               return (
-//                 <motion.div
-//                   key={ev.id}
-//                   initial={{ x: -8, opacity: 0 }}
-//                   animate={{ x: 0, opacity: 1 }}
-//                   transition={{ delay: i * 0.05 }}
-//                   className="flex items-center justify-between px-4 py-3 rounded border"
-//                   style={{
-//                     backgroundColor: `${team.color}11`,
-//                     borderColor: `${team.color}44`,
-//                   }}
-//                 >
-//                   <div className="flex items-center gap-3">
-//                     <div
-//                       className="w-2.5 h-2.5 rounded-full"
-//                       style={{ backgroundColor: team.color }}
-//                     />
-//                     <span
-//                       className="text-sm font-bold uppercase tracking-wide"
-//                       style={{ color: team.color }}
-//                     >
-//                       {team.name}
-//                     </span>
-//                   </div>
-//                   <span
-//                     className={`text-xl font-black tabular-nums ${
-//                       isPos ? "text-brand-green" : "text-red-400"
-//                     }`}
-//                   >
-//                     {isPos ? `+${ev.delta}` : ev.delta}
-//                     <span className="text-[9px] ml-1 font-normal text-slate-500">PTS</span>
-//                   </span>
-//                 </motion.div>
-//               );
-//             })}
-//           </div>
-//         )}
-//       </motion.div>
-//     </div>
-//   );
-// }
-
-// // ── Jeopardy Board ────────────────────────────────────────────────────────────
-// function JeopardyBoard({
-//   categories,
-//   scoreEvents,
-//   teams,
-// }: {
-//   categories: Category[];
-//   scoreEvents: ScoreEvent[];
-//   teams: RaceData["teams"];
-// }) {
-//   const [selected, setSelected] = useState<{
-//     category: Category;
-//     question: Question;
-//   } | null>(null);
-
-//   const getEvents = (questionId: number) =>
-//     scoreEvents.filter((e) => e.question_id === questionId);
-
-//   const answeredCount = categories.reduce((acc, cat) => {
-//     return (
-//       acc +
-//       (cat.questions?.filter((q) => getEvents(q.id).length > 0).length ?? 0)
-//     );
-//   }, 0);
-//   const totalCount = categories.reduce(
-//     (acc, cat) => acc + (cat.questions?.length ?? 0),
-//     0
-//   );
-
-//   return (
-//     <div className="space-y-3">
-//       {/* Progress bar */}
-//       <div className="flex items-center gap-3">
-//         <div className="flex-1 h-1 bg-brand-slate-mid rounded-full overflow-hidden">
-//           <div
-//             className="h-full bg-brand-cyan/50 transition-all duration-700"
-//             style={{ width: totalCount ? `${(answeredCount / totalCount) * 100}%` : "0%" }}
-//           />
-//         </div>
-//         <span className="text-[9px] text-slate-500 tabular-nums">
-//           {answeredCount}/{totalCount}
-//         </span>
-//       </div>
-
-//       {/* Grid */}
-//       <div
-//         className="grid gap-1"
-//         style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)` }}
-//       >
-//         {/* Category headers */}
-//         {categories.map((cat) => (
-//           <div
-//             key={cat.id}
-//             className="py-2 px-2 text-center bg-brand-cyan/10 border border-brand-cyan/20 rounded-sm"
-//           >
-//             <span className="text-[9px] font-black uppercase tracking-[0.12em] text-brand-cyan leading-tight block">
-//               {cat.name}
-//             </span>
-//           </div>
-//         ))}
-
-//         {/* Question cells — row-by-row (6 rows) */}
-//         {Array.from({ length: 6 }, (_, qi) =>
-//           categories.map((cat) => {
-//             const q = cat.questions?.find((q) => q.number === qi + 1);
-//             if (!q) return <div key={`${cat.id}-${qi}`} className="min-h-[64px]" />;
-//             return (
-//               <JeopardyCell
-//                 key={q.id}
-//                 question={q}
-//                 events={getEvents(q.id)}
-//                 teams={teams}
-//                 onClick={() => setSelected({ category: cat, question: q })}
-//               />
-//             );
-//           })
-//         )}
-//       </div>
-
-//       {/* Legend */}
-//       <div className="flex items-center gap-5 text-[8px] uppercase tracking-widest text-slate-600 pt-1">
-//         <div className="flex items-center gap-1.5">
-//           <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan/40" />
-//           ยังไม่ตอบ
-//         </div>
-//         <div className="flex items-center gap-1.5">
-//           <div className="w-1.5 h-1.5 rounded-full bg-slate-600" />
-//           ตอบแล้ว — กดเพื่อดูรายละเอียด
-//         </div>
-//       </div>
-
-//       {/* Modal */}
-//       <AnimatePresence>
-//         {selected && (
-//           <QuestionModal
-//             category={selected.category}
-//             question={selected.question}
-//             events={getEvents(selected.question.id)}
-//             teams={teams}
-//             onClose={() => setSelected(null)}
-//           />
-//         )}
-//       </AnimatePresence>
-//     </div>
-//   );
-// }
-
-// // ── Main ViewerDashboard ──────────────────────────────────────────────────────
-// export default function ViewerDashboard() {
-//   const [data, setData] = useState<RaceData>({
-//     teams: [],
-//     positions: [],
-//     state: { status: "idle", round: 1 },
-//   });
-//   const [categories, setCategories] = useState<Category[]>([]);
-//   const [scoreEvents, setScoreEvents] = useState<ScoreEvent[]>([]);
-//   const [isRefreshing, setIsRefreshing] = useState(false);
-
-//   const fetchAll = useCallback(async () => {
-//     const [fresh, cats, evs] = await Promise.all([
-//       loadData(),
-//       loadCategories(),
-//       loadScoreEvents(),
-//     ]);
-//     setData(fresh);
-//     setCategories(cats);
-//     setScoreEvents(evs);
-//   }, []);
-
-//   useEffect(() => {
-//     fetchAll();
-//   }, [fetchAll]);
-
-//   const handleRefresh = async () => {
-//     setIsRefreshing(true);
-//     await fetchAll();
-//     setIsRefreshing(false);
-//   };
-
-//   const sortedPositions = [...data.positions].sort((a, b) => b.score - a.score);
-//   const topFive = sortedPositions.slice(0, 5);
-//   const maxScoreAchieved = Math.max(1, ...data.positions.map((p) => p.score));
-//   const visualTarget =
-//     data.state.status === "finished"
-//       ? maxScoreAchieved
-//       : Math.max(10, maxScoreAchieved * 1.1);
-
-//   return (
-//     <div className="min-h-screen bg-brand-slate-dark text-slate-100 flex flex-col p-6 font-mono">
-
-//       {/* ── Header ── */}
-//       <header className="flex justify-between items-end mb-6 border-b-2 border-brand-slate-border pb-4 shrink-0">
-//         <div>
-//           <h1 className="text-4xl font-black italic skew-x-[-10deg] neon-text tracking-tighter uppercase">
-//             Astro <span className="text-white">Party</span>
-//           </h1>
-//           <div className="flex gap-4 mt-1">
-//             <span className="text-[9px] uppercase tracking-widest text-slate-500">
-//               UPLINK:{" "}
-//               <span className="text-brand-green border border-brand-green/20 px-1">
-//                 ACTIVE
-//               </span>
-//             </span>
-//             <span className="text-[9px] uppercase tracking-widest text-slate-500">
-//               FIELD: <span className="text-brand-cyan">DYNAMIC RANGE</span>
-//             </span>
-//           </div>
-//         </div>
-//         <div className="flex items-center gap-4">
-//           <div className="px-3 py-1 bg-brand-slate-mid border border-brand-slate-border rounded-sm text-[10px] font-bold uppercase tracking-widest text-brand-cyan">
-//             ROUND {data.state.round} •{" "}
-//             <span className={data.state.status === "finished" ? "text-brand-green" : ""}>
-//               {data.state.status.toUpperCase()}
-//             </span>
-//           </div>
-//           <button
-//             onClick={handleRefresh}
-//             disabled={isRefreshing}
-//             className="flex items-center gap-2 px-4 py-2 bg-brand-cyan text-brand-slate-dark font-black uppercase text-xs tracking-widest hover:scale-105 transition-all disabled:opacity-50"
-//           >
-//             <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin" : ""}`} />
-//             Sync
-//           </button>
-//         </div>
-//       </header>
-
-//       {/* ── Track + Sidebar (fixed height) ── */}
-//       <div className="flex gap-6 overflow-hidden" style={{ height: "46vh" }}>
-//         {/* Track */}
-//         <div className="flex-[3] relative border-2 border-brand-slate-border bg-black/40 backdrop-blur-sm overflow-hidden rounded-lg">
-//           <div
-//             className="absolute inset-0 opacity-10"
-//             style={{
-//               backgroundImage: `linear-gradient(#22d3ee 1px, transparent 1px), linear-gradient(90deg, #22d3ee 1px, transparent 1px)`,
-//               backgroundSize: "40px 40px",
-//             }}
-//           />
-//           <div className="absolute bottom-0 left-12 right-24 h-6 border-t border-brand-slate-border flex justify-between px-2">
-//             {[0, 0.25, 0.5, 0.75, 1].map((p) => (
-//               <div key={p} className="flex flex-col items-center">
-//                 <div className="h-2 w-px bg-brand-slate-border" />
-//                 <span className="text-[8px] text-slate-500 mt-1">
-//                   {Math.floor(p * visualTarget)}
-//                 </span>
-//               </div>
-//             ))}
-//           </div>
-//           <div className="absolute inset-x-0 bottom-6 top-0 pl-12 pr-24 py-8">
-//             <AnimatePresence>
-//               {topFive.map((pos, index) => {
-//                 const team = data.teams.find((t) => t.id === pos.teamId);
-//                 if (!team) return null;
-//                 const yPos = (index + 0.5) * (100 / 5);
-//                 const isNearRightEdge = pos.score / visualTarget > 0.8;
-//                 return (
-//                   <motion.div
-//                     key={team.id}
-//                     layoutId={team.id}
-//                     initial={false}
-//                     animate={{
-//                       left: `${Math.min(100, (pos.score / visualTarget) * 100)}%`,
-//                       top: `${yPos}%`,
-//                     }}
-//                     transition={{ type: "spring", stiffness: 40, damping: 15 }}
-//                     className="absolute z-10 -translate-x-1/2 -translate-y-1/2"
-//                   >
-//                     <div className="group relative flex items-center">
-//                       <div
-//                         className="w-10 h-7 shrink-0 [clip-path:polygon(0%_0%,100%_50%,0%_100%,25%_50%)] shadow-[0_0_20px_currentColor]"
-//                         style={{ backgroundColor: team.color, color: team.color }}
-//                       />
-//                       <div
-//                         className={`absolute flex flex-col gap-1 -translate-y-1/2 top-1/2 group-hover:scale-110 transition-transform ${
-//                           isNearRightEdge
-//                             ? "right-full mr-3 items-end"
-//                             : "left-full ml-3 items-start"
-//                         }`}
-//                       >
-//                         <div
-//                           className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 bg-brand-slate-dark/95 border rounded flex items-center gap-2 whitespace-nowrap ${
-//                             pos.score >= visualTarget && data.state.status === "finished"
-//                               ? "border-brand-green bg-brand-green/20"
-//                               : ""
-//                           }`}
-//                           style={{
-//                             borderColor:
-//                               pos.score >= visualTarget && data.state.status === "finished"
-//                                 ? "#4ade80"
-//                                 : `${team.color}66`,
-//                             color:
-//                               pos.score >= visualTarget && data.state.status === "finished"
-//                                 ? "#4ade80"
-//                                 : team.color,
-//                           }}
-//                         >
-//                           <span className="opacity-50">#{index + 1}</span> {team.name}
-//                           {pos.score >= visualTarget && data.state.status === "finished" && (
-//                             <Zap className="w-3 h-2 animate-pulse" />
-//                           )}
-//                         </div>
-//                         <div className="flex items-center gap-1 text-[10px] font-black text-white tabular-nums bg-brand-slate-mid/60 px-1.5 rounded-sm border border-white/5">
-//                           <span>{pos.score}</span>
-//                           <span className="text-[7px] text-slate-500">P</span>
-//                         </div>
-//                       </div>
-//                     </div>
-//                   </motion.div>
-//                 );
-//               })}
-//             </AnimatePresence>
-//             {topFive.length === 0 && (
-//               <div className="absolute inset-0 flex items-center justify-center text-slate-600 uppercase text-[10px] tracking-widest italic opacity-30">
-//                 Awaiting fleet transmission...
-//               </div>
-//             )}
-//           </div>
-//         </div>
-
-//         {/* Sidebar Rankings */}
-//         <div className="flex-1 min-w-[260px] bg-brand-slate-mid/50 border-2 border-brand-slate-border rounded-lg flex flex-col min-h-0 overflow-hidden">
-//           <div className="p-4 border-b border-brand-slate-border bg-brand-slate-mid">
-//             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-brand-cyan flex items-center justify-between">
-//               Fleet Rankings
-//               <span className="text-[10px] text-slate-500">LIVE</span>
-//             </h2>
-//           </div>
-//           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
-//             {sortedPositions.map((pos, index) => {
-//               const team = data.teams.find((t) => t.id === pos.teamId);
-//               if (!team) return null;
-//               const isTopFive = index < 5;
-//               return (
-//                 <div
-//                   key={team.id}
-//                   className={`flex items-center justify-between p-3 border rounded transition-all ${
-//                     isTopFive
-//                       ? "bg-brand-cyan/5 border-brand-cyan/20"
-//                       : "bg-black/20 border-white/5"
-//                   }`}
-//                 >
-//                   <div className="flex items-center gap-3">
-//                     <span className={`text-[10px] font-bold w-4 ${index < 3 ? "text-brand-green" : "text-slate-500"}`}>
-//                       {index + 1}
-//                     </span>
-//                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: team.color }} />
-//                     <span className="text-[11px] font-bold uppercase truncate max-w-[110px]">
-//                       {team.name}
-//                     </span>
-//                   </div>
-//                   <div className="text-[10px] font-mono text-slate-400">
-//                     {pos.score} <span className="text-[8px]">PTS</span>
-//                   </div>
-//                 </div>
-//               );
-//             })}
-//             {data.teams.length === 0 && (
-//               <div className="p-8 text-center text-[10px] text-slate-600 uppercase italic">No data</div>
-//             )}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* ── Jeopardy Board ── */}
-//       {categories.length > 0 && (
-//         <section className="mt-6 border-2 border-brand-slate-border rounded-lg overflow-hidden">
-//           <div className="px-5 py-3 bg-brand-slate-mid border-b border-brand-slate-border flex items-center justify-between">
-//             <h2 className="text-xs font-black uppercase tracking-[0.2em] text-brand-cyan flex items-center gap-2">
-//               <Zap className="w-3.5 h-3.5" />
-//               Question Board
-//             </h2>
-//           </div>
-//           <div className="p-4 bg-black/20">
-//             <JeopardyBoard
-//               categories={categories}
-//               scoreEvents={scoreEvents}
-//               teams={data.teams}
-//             />
-//           </div>
-//         </section>
-//       )}
-
-//       {/* ── Footer ── */}
-//       <footer className="mt-4 flex justify-between items-center text-[9px] text-slate-500 uppercase tracking-widest shrink-0">
-//         <div className="flex gap-6">
-//           <span>Total Fleet: {data.teams.length}</span>
-//           <span>
-//             Lead Pilot:{" "}
-//             {data.positions.length > 0
-//               ? data.teams.find((t) => t.id === sortedPositions[0]?.teamId)?.name
-//               : "NONE"}
-//           </span>
-//         </div>
-//         <div className="flex items-center gap-4">
-//           <a
-//             href="/admin"
-//             className="text-brand-cyan/30 hover:text-brand-cyan transition-colors underline decoration-dotted underline-offset-4"
-//           >
-//             ADMIN_LINK
-//           </a>
-//           <div className="flex items-center gap-2">
-//             <Zap className="w-3 h-3 text-brand-cyan" />
-//             <span>Sync Control: Manual</span>
-//           </div>
-//         </div>
-//       </footer>
-//     </div>
-//   );
-// }
 "use client";
 
 /**
@@ -1576,7 +792,130 @@ export default function ViewerDashboard() {
       Sync
     </button>
   );
+  // =========================================================================
+  // STATUS PILL  (วางไว้เหนือ Slide1 หรือในไฟล์เดียวกัน)
+  // =========================================================================
+  const StatusPill = ({
+    dataReady,
+    round,
+  }: {
+    dataReady: boolean;
+    round: number;
+  }) => {
+    const [open, setOpen] = useState(false);
 
+    const pillStyle: React.CSSProperties = {
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      background: "rgba(10,20,38,0.90)",
+      border: `1px solid ${border}`,
+      borderRadius: 28,
+      padding: "7px 14px",
+      backdropFilter: "blur(14px)",
+    };
+
+    return (
+      <div
+        style={{
+          position: "fixed",
+          bottom: 58, // ← เหนือ NavBar (NavBar อยู่ที่ bottom 0 + padding ~14px)
+          left: 0,
+          right: 0,
+          zIndex: 49, // ← ต่ำกว่า NavBar (50) นิดนึง
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          pointerEvents: "none", // ← ให้ click-through ในส่วนที่ไม่มีปุ่ม
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            pointerEvents: "auto",
+          }}
+        >
+          {/* Toggle button */}
+          <button
+            style={{ ...pillStyle, cursor: "pointer" }}
+            onClick={() => setOpen((v) => !v)}
+          >
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: dataReady ? "#4ade80" : "#f472b6",
+                boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
+                animation: "glowPulse 1.5s infinite",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                ...orbitron,
+                fontSize: 10,
+                color: C.textMid,
+                letterSpacing: "0.15em",
+              }}
+            >
+              {open ? "✕" : "···"}
+            </span>
+          </button>
+
+          {open && (
+            <>
+              {/* Status */}
+              <div style={pillStyle}>
+                <div
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    background: dataReady ? "#4ade80" : "#f472b6",
+                    boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
+                    flexShrink: 0,
+                  }}
+                />
+                <span
+                  style={{
+                    ...notoTH,
+                    fontSize: 11,
+                    letterSpacing: "0.16em",
+                    color: dataReady ? "#4ade80" : "#f472b6",
+                  }}
+                >
+                  {dataReady ? "DATA LINKED" : "CONNECTING…"}
+                </span>
+              </div>
+
+              {/* Round */}
+              <div style={pillStyle}>
+                <span
+                  style={{
+                    ...orbitron,
+                    fontSize: 11,
+                    color: C.blueLight,
+                    letterSpacing: "0.2em",
+                  }}
+                >
+                  ROUND {round}
+                </span>
+              </div>
+
+              {/* Sync */}
+              <div style={{ ...pillStyle, padding: "5px 10px" }}>
+                <RefreshBtn />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
   // =========================================================================
   // SLIDE 1 — TITLE
   // =========================================================================
@@ -1593,171 +932,233 @@ export default function ViewerDashboard() {
         padding: 32,
       }}
     >
-      {/* Planet deco */}
+      {/* Corner accent lines — top-left */}
       <div
         style={{
           position: "absolute",
-          top: "12%",
-          right: "8%",
-          width: 100,
-          height: 100,
+          top: 24,
+          left: 24,
+          width: 40,
+          height: 40,
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 40,
+            height: 1.5,
+            background: "rgba(156,200,238,0.25)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: 1.5,
+            height: 40,
+            background: "rgba(156,200,238,0.25)",
+          }}
+        />
+      </div>
+      {/* Corner accent lines — bottom-right */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 24,
+          right: 24,
+          width: 40,
+          height: 40,
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 40,
+            height: 1.5,
+            background: "rgba(156,200,238,0.25)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: 1.5,
+            height: 40,
+            background: "rgba(156,200,238,0.25)",
+          }}
+        />
+      </div>
+
+      {/* Planet deco — top right */}
+      <div
+        style={{
+          position: "absolute",
+          top: "10%",
+          right: "7%",
+          width: 110,
+          height: 110,
           borderRadius: "50%",
           background:
             "radial-gradient(circle at 32% 28%, #9CC8EE, #254074 58%, #0D1B2E)",
-          boxShadow: "0 0 40px rgba(83,143,238,0.35)",
+          boxShadow: "0 0 50px rgba(83,143,238,0.3)",
           animation: "float 7s ease-in-out infinite",
           pointerEvents: "none",
         }}
       >
-        {/* Ring */}
         <div
           style={{
             position: "absolute",
             top: "50%",
             left: "50%",
-            width: 170,
-            height: 42,
-            border: "1px solid rgba(156,200,238,0.22)",
+            width: 186,
+            height: 46,
+            border: "1.5px solid rgba(156,200,238,0.2)",
+            borderRadius: "50%",
+            transform: "translate(-50%,-50%) rotateX(70deg)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: 162,
+            height: 38,
+            border: "1px solid rgba(156,200,238,0.1)",
             borderRadius: "50%",
             transform: "translate(-50%,-50%) rotateX(70deg)",
           }}
         />
       </div>
 
+      {/* Small planet — bottom left */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "14%",
+          left: "6%",
+          width: 56,
+          height: 56,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at 38% 32%, #C4A8F0, #4B2A8A 60%, #1A0D2E)",
+          opacity: 0.55,
+          animation: "float 5s ease-in-out infinite 1.5s",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: 94,
+            height: 22,
+            border: "1px solid rgba(196,168,240,0.2)",
+            borderRadius: "50%",
+            transform: "translate(-50%,-50%) rotateX(70deg)",
+          }}
+        />
+      </div>
+
+      {/* Ambient glow behind logo */}
+      <div
+        style={{
+          position: "absolute",
+          width: 260,
+          height: 260,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(83,143,238,0.07) 0%, transparent 70%)",
+          pointerEvents: "none",
+          marginBottom: 0,
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -62%)",
+        }}
+      />
+
+      {/* Logo */}
+      <img
+        src="/logo.png"
+        alt="AMSci Logo"
+        style={{
+          width: "clamp(30rem,18vw,30rem)",
+          height: "auto",
+          // marginBottom: 20,
+          filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
+          animation: "float 6s ease-in-out infinite",
+        }}
+      />
+
       {/* Title */}
       <h1
         style={{
           ...orbitron,
-          fontSize: "clamp(3rem,8vw,6.5rem)",
+          fontSize: "clamp(2rem,4.5vw,5em)",
           fontWeight: 900,
           textAlign: "center",
-          letterSpacing: "0.07em",
+          letterSpacing: "0.08em",
           background: `linear-gradient(135deg, ${C.orange} 0%, ${C.gold} 45%, ${C.blueLight} 100%)`,
           WebkitBackgroundClip: "text",
           WebkitTextFillColor: "transparent",
           backgroundClip: "text",
           animation: "glowPulse 4s ease-in-out infinite alternate",
           margin: 0,
+          lineHeight: 1,
         }}
       >
-        ASTROPARTY
+        {/* ASTROPARTY */}
+        Final Round
       </h1>
 
       {/* Divider */}
       <div
         style={{
-          width: 220,
-          height: 3,
-          borderRadius: 3,
-          margin: "18px auto",
+          width: 260,
+          height: 2.5,
+          borderRadius: 2,
+          margin: "20px auto",
           background: `linear-gradient(90deg, transparent, ${C.orange}, ${C.gold}, ${C.blueLight}, transparent)`,
+          opacity: 0.9,
         }}
       />
 
-      <p
+      {/* AMSci subtitle */}
+      {/* <p
         style={{
           ...orbitron,
-          fontSize: "clamp(0.9rem,1.8vw,1.15rem)",
+          fontSize: "clamp(0.85rem,1.7vw,1.1rem)",
           fontWeight: 700,
-          letterSpacing: "0.32em",
+          letterSpacing: "0.35em",
           color: C.slate,
           textTransform: "uppercase",
-          margin: "0 0 6px",
+          margin: "0 0 8px",
         }}
       >
         AMSci 2026
-      </p>
+      </p> */}
       <p
         style={{
           ...notoTH,
-          fontSize: "clamp(0.9rem,1.6vw,1.05rem)",
+          fontSize: "clamp(0.85rem,1.5vw,1rem)",
           fontWeight: 300,
           letterSpacing: "0.05em",
           color: C.blueLight,
-          opacity: 0.75,
+          opacity: 0.7,
           margin: 0,
         }}
       >
         คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
       </p>
-
-      {/* Status badges */}
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          marginTop: 32,
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
-        <div
-          style={{
-            ...glassCard(),
-            padding: "9px 22px",
-            display: "flex",
-            alignItems: "center",
-            gap: 9,
-          }}
-        >
-          <div
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: dataReady ? "#4ade80" : "#f472b6",
-              animation: "glowPulse 1.5s infinite",
-            }}
-          />
-          <span
-            style={{
-              ...notoTH,
-              fontSize: 12,
-              letterSpacing: "0.14em",
-              color: dataReady ? "#4ade80" : "#f472b6",
-            }}
-          >
-            {dataReady ? "DATA LINKED" : "CONNECTING…"}
-          </span>
-        </div>
-
-        <div style={{ ...glassCard(), padding: "9px 22px" }}>
-          <span
-            style={{
-              ...orbitron,
-              fontSize: 12,
-              color: C.blueLight,
-              letterSpacing: "0.15em",
-            }}
-          >
-            ROUND {data.state.round}
-          </span>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 28 }}>
-        <div
-          style={{
-            ...glassCard(true),
-            padding: "12px 28px",
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-          }}
-        >
-          <span
-            style={{
-              ...notoTH,
-              fontSize: 13,
-              letterSpacing: "0.12em",
-              opacity: 0.55,
-            }}
-          >
-            กด → เพื่อเริ่ม
-          </span>
-          <RefreshBtn />
-        </div>
-      </div>
     </div>
   );
 
@@ -3023,6 +2424,7 @@ export default function ViewerDashboard() {
         </div>
 
         <NavBar />
+        <StatusPill dataReady={dataReady} round={data.state.round} />
       </div>
     </>
   );
