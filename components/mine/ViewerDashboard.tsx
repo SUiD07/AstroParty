@@ -792,130 +792,7 @@ export default function ViewerDashboard() {
       Sync
     </button>
   );
-  // =========================================================================
-  // STATUS PILL  (วางไว้เหนือ Slide1 หรือในไฟล์เดียวกัน)
-  // =========================================================================
-  const StatusPill = ({
-    dataReady,
-    round,
-  }: {
-    dataReady: boolean;
-    round: number;
-  }) => {
-    const [open, setOpen] = useState(false);
 
-    const pillStyle: React.CSSProperties = {
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      background: "rgba(10,20,38,0.90)",
-      border: `1px solid ${border}`,
-      borderRadius: 28,
-      padding: "7px 14px",
-      backdropFilter: "blur(14px)",
-    };
-
-    return (
-      <div
-        style={{
-          position: "fixed",
-          bottom: 58, // ← เหนือ NavBar (NavBar อยู่ที่ bottom 0 + padding ~14px)
-          left: 0,
-          right: 0,
-          zIndex: 49, // ← ต่ำกว่า NavBar (50) นิดนึง
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 8,
-          pointerEvents: "none", // ← ให้ click-through ในส่วนที่ไม่มีปุ่ม
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            pointerEvents: "auto",
-          }}
-        >
-          {/* Toggle button */}
-          <button
-            style={{ ...pillStyle, cursor: "pointer" }}
-            onClick={() => setOpen((v) => !v)}
-          >
-            <div
-              style={{
-                width: 7,
-                height: 7,
-                borderRadius: "50%",
-                background: dataReady ? "#4ade80" : "#f472b6",
-                boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
-                animation: "glowPulse 1.5s infinite",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                ...orbitron,
-                fontSize: 10,
-                color: C.textMid,
-                letterSpacing: "0.15em",
-              }}
-            >
-              {open ? "✕" : "···"}
-            </span>
-          </button>
-
-          {open && (
-            <>
-              {/* Status */}
-              <div style={pillStyle}>
-                <div
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    background: dataReady ? "#4ade80" : "#f472b6",
-                    boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
-                    flexShrink: 0,
-                  }}
-                />
-                <span
-                  style={{
-                    ...notoTH,
-                    fontSize: 11,
-                    letterSpacing: "0.16em",
-                    color: dataReady ? "#4ade80" : "#f472b6",
-                  }}
-                >
-                  {dataReady ? "DATA LINKED" : "CONNECTING…"}
-                </span>
-              </div>
-
-              {/* Round */}
-              <div style={pillStyle}>
-                <span
-                  style={{
-                    ...orbitron,
-                    fontSize: 11,
-                    color: C.blueLight,
-                    letterSpacing: "0.2em",
-                  }}
-                >
-                  ROUND {round}
-                </span>
-              </div>
-
-              {/* Sync */}
-              <div style={{ ...pillStyle, padding: "5px 10px" }}>
-                <RefreshBtn />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
   // =========================================================================
   // SLIDE 1 — TITLE
   // =========================================================================
@@ -1091,7 +968,7 @@ export default function ViewerDashboard() {
         src="/logo.png"
         alt="AMSci Logo"
         style={{
-          width: "clamp(30rem,18vw,30rem)",
+          width: "clamp(42rem,18vw,42rem)",
           height: "auto",
           // marginBottom: 20,
           filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
@@ -2240,139 +2117,171 @@ export default function ViewerDashboard() {
   // NAV BAR
   // =========================================================================
   const NavBar = () => {
-    const [showNav, setShowNav] = useState(false);
+  const [showNav, setShowNav] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
 
-    const pillStyle: React.CSSProperties = {
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      background: "rgba(10,20,38,0.90)",
-      border: `1px solid ${border}`,
-      borderRadius: 28,
-      padding: "7px 14px",
-      backdropFilter: "blur(14px)",
-    };
-    const btnStyle: React.CSSProperties = {
-      ...notoTH,
-      fontSize: 12,
-      fontWeight: 600,
-      letterSpacing: "0.06em",
-      color: "rgba(156,200,238,.7)",
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-      padding: "3px 9px",
-      borderRadius: 18,
-    };
-
-    return (
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 50,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "10px 20px 14px",
-          gap: 8,
-          background: "linear-gradient(0deg, rgba(7,17,30,.96), transparent)",
-        }}
-      >
-        {/* Toggle */}
-        <button
-          style={{
-            ...pillStyle,
-            padding: "7px 14px",
-            cursor: "pointer",
-            border: `1px solid ${border}`,
-          }}
-          onClick={() => setShowNav((v) => !v)}
-        >
-          <span style={{ ...notoTH, fontSize: 14, color: C.textMid }}>
-            {showNav ? "✕" : "☰"}
-          </span>
-        </button>
-
-        {showNav && (
-          <>
-            <div style={pillStyle}>
-              <button style={btnStyle} onClick={prevSlide}>
-                ← Prev
-              </button>
-              <div style={{ width: 1, height: 14, background: border }} />
-              <span
-                style={{
-                  ...orbitron,
-                  fontSize: 10,
-                  color: C.textLo,
-                  padding: "0 6px",
-                }}
-              >
-                {currentSlide} / {totalSlides}
-              </span>
-              <div style={{ width: 1, height: 14, background: border }} />
-              <button style={btnStyle} onClick={nextSlide}>
-                Next →
-              </button>
-            </div>
-
-            {/* Dot indicators */}
-            <div style={{ ...pillStyle, gap: 7 }}>
-              {Array.from({ length: totalSlides }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => goToSlide(i + 1)}
-                  style={{
-                    width: currentSlide === i + 1 ? 20 : 7,
-                    height: 7,
-                    borderRadius: currentSlide === i + 1 ? 3 : "50%",
-                    background:
-                      currentSlide === i + 1
-                        ? C.orange
-                        : "rgba(156,200,238,.25)",
-                    border: "none",
-                    cursor: "pointer",
-                    transition: "all .25s",
-                    boxShadow:
-                      currentSlide === i + 1
-                        ? `0 0 8px rgba(237,130,64,.6)`
-                        : "none",
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Slide jump buttons */}
-            <div style={{ ...pillStyle, padding: "5px 10px", gap: 2 }}>
-              {(["😽", "💻", "📋", "🚀", "📊", "🏆"] as const).map(
-                (icon, i) => (
-                  <button
-                    key={i}
-                    style={{
-                      ...btnStyle,
-                      fontSize: 16,
-                      opacity: currentSlide === i + 1 ? 1 : 0.45,
-                      padding: "3px 8px",
-                      background:
-                        currentSlide === i + 1
-                          ? "rgba(237,130,64,.12)"
-                          : "none",
-                    }}
-                    onClick={() => goToSlide(i + 1)}
-                  >
-                    {icon}
-                  </button>
-                ),
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    );
+  const pillStyle: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "rgba(10,20,38,0.90)",
+    border: `1px solid ${border}`,
+    borderRadius: 28,
+    padding: "7px 14px",
+    backdropFilter: "blur(14px)",
   };
+  const btnStyle: React.CSSProperties = {
+    ...notoTH,
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.06em",
+    color: "rgba(156,200,238,.7)",
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: "3px 9px",
+    borderRadius: 18,
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "10px 20px 14px",
+        gap: 8,
+        background: "linear-gradient(0deg, rgba(7,17,30,.96), transparent)",
+        flexWrap: "wrap",
+      }}
+    >
+      {/* ── STATUS TOGGLE ── */}
+      <button
+        style={{ ...pillStyle, cursor: "pointer" }}
+        onClick={() => setShowStatus((v) => !v)}
+      >
+        <div
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: dataReady ? "#4ade80" : "#f472b6",
+            boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
+            animation: "glowPulse 1.5s infinite",
+            flexShrink: 0,
+          }}
+        />
+        <span style={{ ...orbitron, fontSize: 10, color: C.textMid, letterSpacing: "0.15em" }}>
+          {showStatus ? "✕" : "···"}
+        </span>
+      </button>
+
+      {showStatus && (
+        <>
+          {/* Status */}
+          <div style={pillStyle}>
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: dataReady ? "#4ade80" : "#f472b6",
+                boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ ...notoTH, fontSize: 11, letterSpacing: "0.16em", color: dataReady ? "#4ade80" : "#f472b6" }}>
+              {dataReady ? "DATA LINKED" : "CONNECTING…"}
+            </span>
+          </div>
+
+          {/* Round */}
+          <div style={pillStyle}>
+            <span style={{ ...orbitron, fontSize: 11, color: C.blueLight, letterSpacing: "0.2em" }}>
+              ROUND {data.state.round}
+            </span>
+          </div>
+
+          {/* Sync */}
+          <div style={{ ...pillStyle, padding: "5px 10px" }}>
+            <RefreshBtn />
+          </div>
+        </>
+      )}
+
+      {/* ── DIVIDER ── */}
+      <div style={{ width: 1, height: 20, background: border }} />
+
+      {/* ── NAV TOGGLE ── */}
+      <button
+        style={{ ...pillStyle, cursor: "pointer" }}
+        onClick={() => setShowNav((v) => !v)}
+      >
+        <span style={{ ...notoTH, fontSize: 14, color: C.textMid }}>
+          {showNav ? "✕" : "☰"}
+        </span>
+      </button>
+
+      {showNav && (
+        <>
+          <div style={pillStyle}>
+            <button style={btnStyle} onClick={prevSlide}>← Prev</button>
+            <div style={{ width: 1, height: 14, background: border }} />
+            <span style={{ ...orbitron, fontSize: 10, color: C.textLo, padding: "0 6px" }}>
+              {currentSlide} / {totalSlides}
+            </span>
+            <div style={{ width: 1, height: 14, background: border }} />
+            <button style={btnStyle} onClick={nextSlide}>Next →</button>
+          </div>
+
+          {/* Dot indicators */}
+          <div style={{ ...pillStyle, gap: 7 }}>
+            {Array.from({ length: totalSlides }, (_, i) => (
+              <button
+                key={i}
+                onClick={() => goToSlide(i + 1)}
+                style={{
+                  width: currentSlide === i + 1 ? 20 : 7,
+                  height: 7,
+                  borderRadius: currentSlide === i + 1 ? 3 : "50%",
+                  background: currentSlide === i + 1 ? C.orange : "rgba(156,200,238,.25)",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all .25s",
+                  boxShadow: currentSlide === i + 1 ? `0 0 8px rgba(237,130,64,.6)` : "none",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Slide jump buttons */}
+          <div style={{ ...pillStyle, padding: "5px 10px", gap: 2 }}>
+            {(["😽", "💻", "📋", "🚀", "📊", "🏆"] as const).map((icon, i) => (
+              <button
+                key={i}
+                style={{
+                  ...btnStyle,
+                  fontSize: 16,
+                  opacity: currentSlide === i + 1 ? 1 : 0.45,
+                  padding: "3px 8px",
+                  background: currentSlide === i + 1 ? "rgba(237,130,64,.12)" : "none",
+                }}
+                onClick={() => goToSlide(i + 1)}
+              >
+                {icon}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
   // =========================================================================
   // RENDER
@@ -2424,7 +2333,6 @@ export default function ViewerDashboard() {
         </div>
 
         <NavBar />
-        <StatusPill dataReady={dataReady} round={data.state.round} />
       </div>
     </>
   );
