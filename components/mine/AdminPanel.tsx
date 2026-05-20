@@ -1,234 +1,3 @@
-// "use client";
-
-// import { useState } from 'react';
-// import { Trash2, RotateCcw, Trophy, Users, Zap } from 'lucide-react';
-// import { storage } from '@/lib/storage';
-// // import { RaceData, Team, Position, GameStatus } from '../types';
-// import { RaceData, Team, Position, GameStatus} from '@/app/types';
-// import { COLORS } from '@/app/constants';
-// import Link from 'next/link';
-
-// export default function AdminPanel() {
-//   const [data, setData] = useState<RaceData>(storage.load());
-//   const [newTeamName, setNewTeamName] = useState('');
-//   const [newTeamColor, setNewTeamColor] = useState(COLORS[0]);
-
-//   const saveData = (updated: RaceData) => {
-//     setData(updated);
-//     storage.save(updated);
-//   };
-
-//   const addTeam = () => {
-//     if (!newTeamName.trim()) return;
-//     const id = Math.random().toString(36).substr(2, 9);
-//     const newTeam: Team = { id, name: newTeamName, color: newTeamColor };
-    
-//     const newPosition: Position = { teamId: id, score: 0 };
-
-//     saveData({
-//       ...data,
-//       teams: [...data.teams, newTeam],
-//       positions: [...data.positions, newPosition]
-//     });
-//     setNewTeamName('');
-//   };
-
-//   const removeTeam = (id: string) => {
-//     saveData({
-//       ...data,
-//       teams: data.teams.filter(t => t.id !== id),
-//       positions: data.positions.filter(p => p.teamId !== id)
-//     });
-//   };
-
-//   const updateScore = (teamId: string, score: number) => {
-//     saveData({
-//       ...data,
-//       positions: data.positions.map(p => p.teamId === teamId ? { ...p, score: Math.max(0, score) } : p)
-//     });
-//   };
-
-//   const resetProgress = () => {
-//     if (!confirm('RESET ALL SCORES?')) return;
-//     saveData({
-//       ...data,
-//       positions: data.positions.map(p => ({ ...p, score: 0 })),
-//       state: { ...data.state, status: 'idle' }
-//     });
-//   };
-
-//   const updateStatus = (status: GameStatus) => {
-//     saveData({ ...data, state: { ...data.state, status } });
-//   };
-
-//   const incrementRound = () => {
-//     saveData({ ...data, state: { ...data.state, round: data.state.round + 1 } });
-//   };
-
-//   return (
-//     <div className="min-h-screen bg-brand-slate-dark text-slate-100 p-8 font-mono">
-//       <div className="max-w-6xl mx-auto space-y-8">
-        
-//         {/* Header */}
-//         <div className="flex justify-between items-center border-b-2 border-brand-slate-border pb-6">
-//           <div>
-//             <h1 className="text-3xl font-black italic neon-text uppercase">Control Center</h1>
-//             <p className="text-[10px] text-slate-500 tracking-[0.2em] mt-1">AUTHORIZATION: GRANTED</p>
-//           </div>
-//           <div className="flex gap-4">
-//              <button 
-//               onClick={resetProgress}
-//               className="px-4 py-2 bg-red-500/10 border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white transition-all text-xs font-bold uppercase flex items-center gap-2"
-//             >
-//               <RotateCcw className="w-3 h-3" /> Reset Track
-//             </button>
-//             <Link href="/" className="px-4 py-2 bg-brand-cyan text-brand-slate-dark font-bold text-xs uppercase flex items-center gap-2">
-//               Go To Viewer
-//             </Link>
-//           </div>
-//         </div>
-
-//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-//           {/* Left: Team Management */}
-//           <section className="space-y-6">
-//             <div className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
-//               <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
-//                 <Users className="w-4 h-4" /> Fleet Management
-//               </h2>
-              
-//               <div className="space-y-3">
-//                 <input 
-//                   type="text" 
-//                   value={newTeamName}
-//                   onChange={e => setNewTeamName(e.target.value)}
-//                   placeholder="TEAM CALLSIGN EX: NEON-1"
-//                   className="w-full bg-[#020617] border border-brand-slate-border p-3 text-xs focus:border-brand-cyan outline-none"
-//                 />
-//                 <div className="flex flex-wrap gap-2">
-//                   {COLORS.map(c => (
-//                     <button 
-//                       key={c}
-//                       onClick={() => setNewTeamColor(c)}
-//                       className={`w-8 h-8 border-2 transition-all ${newTeamColor === c ? 'border-white scale-110' : 'border-transparent'}`}
-//                       style={{ backgroundColor: c }}
-//                     />
-//                   ))}
-//                 </div>
-//                 <button 
-//                   onClick={addTeam}
-//                   className="w-full py-3 bg-brand-cyan text-brand-slate-dark font-black uppercase text-xs tracking-widest"
-//                 >
-//                   Register Pilot
-//                 </button>
-//               </div>
-
-//               <div className="space-y-2 mt-6">
-//                 {data.teams.map(team => (
-//                   <div key={team.id} className="flex items-center justify-between p-3 bg-[#020617] border border-brand-slate-border text-xs">
-//                     <div className="flex items-center gap-3">
-//                       <div className="w-3 h-3" style={{ backgroundColor: team.color }} />
-//                       <span className="font-bold">{team.name}</span>
-//                     </div>
-//                     <button onClick={() => removeTeam(team.id)} className="text-slate-500 hover:text-red-500">
-//                       <Trash2 className="w-4 h-4" />
-//                     </button>
-//                   </div>
-//                 ))}
-//               </div>
-//             </div>
-
-//             {/* Game Controls */}
-//             <div className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
-//                <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
-//                 <Trophy className="w-4 h-4" /> Session Config
-//               </h2>
-              
-//               <div className="grid grid-cols-2 gap-2">
-//                 <button 
-//                   onClick={() => updateStatus('running')}
-//                   className={`p-2 text-[10px] font-bold uppercase border ${data.state.status === 'running' ? 'bg-brand-green text-black border-brand-green' : 'border-brand-slate-border'}`}
-//                 >
-//                   Set Running
-//                 </button>
-//                 <button 
-//                    onClick={() => updateStatus('finished')}
-//                    className={`p-2 text-[10px] font-bold uppercase border ${data.state.status === 'finished' ? 'bg-brand-green text-black border-brand-green' : 'border-brand-slate-border'}`}
-//                 >
-//                   Set Finished
-//                 </button>
-//               </div>
-
-//               <button 
-//                 onClick={incrementRound}
-//                 className="w-full py-2 border border-brand-slate-border text-[10px] font-bold uppercase hover:bg-white/5"
-//               >
-//                 Round: {data.state.round} (NEXT)
-//               </button>
-//             </div>
-//           </section>
-
-//           {/* Right: Scoreboard Updates */}
-//           <section className="lg:col-span-2 p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg">
-//             <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2 mb-6">
-//               <Zap className="w-4 h-4" /> Live Position Injection
-//             </h2>
-
-//             <div className="space-y-6">
-//               {data.teams.map(team => {
-//                 const pos = data.positions.find(p => p.teamId === team.id);
-//                 if (!pos) return null;
-
-//                 return (
-//                   <div key={team.id} className="p-4 bg-[#020617] border border-brand-slate-border space-y-4">
-//                     <div className="flex justify-between items-center text-xs">
-//                       <div className="flex items-center gap-3">
-//                         <div className="w-3 h-3" style={{ backgroundColor: team.color }} />
-//                         <span className="font-bold tracking-widest text-sm">{team.name}</span>
-//                       </div>
-//                       <div className="flex items-center gap-4">
-//                         <div className="flex gap-1 mr-4">
-//                           {[-5, -1, 1, 5, 10].map(amt => (
-//                             <button 
-//                               key={amt}
-//                               onClick={() => updateScore(team.id, pos.score + amt)}
-//                               className={`px-2 py-1 bg-brand-slate-mid border border-brand-slate-border text-[10px] transition-colors ${amt > 0 ? 'text-brand-cyan hover:bg-brand-cyan hover:text-brand-slate-dark' : 'text-red-400 hover:bg-red-400 hover:text-white'}`}
-//                             >
-//                               {amt > 0 ? `+${amt}` : amt}
-//                             </button>
-//                           ))}
-//                         </div>
-                        
-//                         <div className="flex flex-col items-end min-w-[60px]">
-//                             <span className="text-brand-green font-black text-lg">{pos.score}</span>
-//                             <span className="text-[8px] text-slate-600 uppercase">Pts</span>
-//                          </div>
-//                       </div>
-//                     </div>
-                    
-//                     <div className="relative h-2 bg-brand-slate-mid rounded overflow-hidden">
-//                       <div 
-//                         className="absolute inset-y-0 left-0 bg-brand-cyan/20 transition-all duration-500"
-//                         style={{ width: `${Math.min(100, (pos.score / Math.max(1, ...data.positions.map(p => p.score))) * 100)}%` }}
-//                       />
-//                     </div>
-//                   </div>
-//                 );
-//               })}
-
-//               {data.teams.length === 0 && (
-//                 <div className="h-64 flex items-center justify-center border border-dashed border-brand-slate-border text-slate-600 text-xs uppercase italic">
-//                   No active ships in current sector
-//                 </div>
-//               )}
-//             </div>
-//           </section>
-
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -248,8 +17,18 @@ import { ScoreEvent } from "@/lib/db";
 import Link from "next/link";
 
 // ---- Types ----
-interface Question { id: number; number: number; label?: string }
-interface Category { id: number; name: string; position: number; questions: Question[] }
+interface Question {
+  id: number;
+  number: number;
+  points: number;
+  label?: string;
+}
+interface Category {
+  id: number;
+  name: string;
+  position: number;
+  questions: Question[];
+}
 
 // ===========================================================================
 // ScoreEntryAndLog — เพิ่มคะแนน + history ในกล่องเดียว
@@ -262,8 +41,12 @@ function ScoreEntryAndLog({
   onRefreshScores: () => void;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null,
+  );
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
+    null,
+  );
   const [selectedTeamId, setSelectedTeamId] = useState<string>("");
   const [delta, setDelta] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -274,7 +57,9 @@ function ScoreEntryAndLog({
   const [eventsLoading, setEventsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
-  const PRESET_DELTAS = [-1000, -800, -600, -400, -200, -100, 100, 200, 400, 600, 800, 1000];
+  const PRESET_DELTAS = [
+    -1000, -800, -600, -400, -200, -100, 100, 200, 400, 600, 800, 1000,
+  ];
 
   const refreshEvents = useCallback(async () => {
     setEventsLoading(true);
@@ -296,15 +81,24 @@ function ScoreEntryAndLog({
     setDelta(null);
   }, [selectedCategory]);
 
-  const canSubmit = selectedCategory && selectedQuestion && selectedTeamId && delta !== null;
+  const canSubmit =
+    selectedCategory && selectedQuestion && selectedTeamId && delta !== null;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await addScoreEvent(selectedTeamId, selectedCategory!.id, selectedQuestion!.id, delta!, note || undefined);
+      await addScoreEvent(
+        selectedTeamId,
+        selectedCategory!.id,
+        selectedQuestion!.id,
+        delta!,
+        note || undefined,
+      );
       const team = teams.find((t) => t.id === selectedTeamId);
-      setLastSaved(`${team?.name} • ${selectedCategory!.name} ข้อ ${selectedQuestion!.number} • ${delta! > 0 ? "+" : ""}${delta}`);
+      setLastSaved(
+        `${team?.name} • ${selectedCategory!.name} ข้อ ${selectedQuestion!.number} • ${delta! > 0 ? "+" : ""}${delta}`,
+      );
       setSelectedQuestion(null);
       setDelta(null);
       setNote("");
@@ -329,7 +123,11 @@ function ScoreEntryAndLog({
   };
 
   const formatTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    new Date(iso).toLocaleTimeString("th-TH", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
 
   return (
     <div className="space-y-6">
@@ -347,13 +145,16 @@ function ScoreEntryAndLog({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-
           {/* ① Category */}
           <div className="space-y-2">
-            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">① หมวด</label>
+            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">
+              ① หมวด
+            </label>
             <div className="space-y-1">
               {categories.map((cat) => (
-                <button key={cat.id} onClick={() => setSelectedCategory(cat)}
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat)}
                   className={`w-full text-left px-3 py-2 text-[11px] font-bold uppercase border transition-all ${
                     selectedCategory?.id === cat.id
                       ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan"
@@ -368,39 +169,59 @@ function ScoreEntryAndLog({
 
           {/* ② Question */}
           <div className="space-y-2">
-            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">② ข้อ</label>
+            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">
+              ② ข้อ
+            </label>
             <div className="grid grid-cols-3 gap-1">
               {(selectedCategory?.questions ?? [])
                 .sort((a, b) => a.number - b.number)
                 .map((q) => (
-                  <button key={q.id} onClick={() => setSelectedQuestion(q)}
+                  <button
+                    key={q.id}
+                    onClick={() => {
+                      setSelectedQuestion(q);
+                      setDelta(q.points); // auto-fill delta เป็น points ของข้อนั้น
+                    }}
                     className={`py-2 text-[11px] font-black border transition-all ${
                       selectedQuestion?.id === q.id
                         ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan"
                         : "bg-black/30 border-brand-slate-border text-slate-300 hover:border-brand-cyan/40"
                     }`}
                   >
-                    ข้อ {q.number}
+                    +{q.points}
                   </button>
                 ))}
             </div>
-            {!selectedCategory && <p className="text-[9px] text-slate-600 italic">เลือกหมวดก่อน</p>}
+            {!selectedCategory && (
+              <p className="text-[9px] text-slate-600 italic">เลือกหมวดก่อน</p>
+            )}
           </div>
 
           {/* ③ Team */}
           <div className="space-y-2">
-            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">③ ทีม</label>
+            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">
+              ③ ทีม
+            </label>
             <div className="space-y-1">
               {teams.map((team) => (
-                <button key={team.id} onClick={() => setSelectedTeamId(team.id)}
+                <button
+                  key={team.id}
+                  onClick={() => setSelectedTeamId(team.id)}
                   className={`w-full text-left px-3 py-2 text-[11px] font-bold flex items-center gap-2 border transition-all ${
                     selectedTeamId === team.id
                       ? "border-white/40 bg-white/5"
                       : "border-brand-slate-border bg-black/30 hover:border-white/20"
                   }`}
-                  style={selectedTeamId === team.id ? { borderColor: `${team.color}88`, color: team.color } : {}}
+                  style={
+                    selectedTeamId === team.id
+                      ? { borderColor: `${team.color}88`, color: team.color }
+                      : {}
+                  }
                 >
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: team.color }} />
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: team.color }}
+                  />
                   {team.name}
                 </button>
               ))}
@@ -409,29 +230,42 @@ function ScoreEntryAndLog({
 
           {/* ④ Delta + Submit */}
           <div className="space-y-2 flex flex-col">
-            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">④ คะแนน (+/-)</label>
+            {/* <label className="text-[9px] uppercase tracking-widest text-slate-500 block">
+              ④ คะแนน (+/-)
+            </label>
             <div className="grid grid-cols-2 gap-1">
               {PRESET_DELTAS.map((d) => (
-                <button key={d} onClick={() => setDelta(d)}
+                <button
+                  key={d}
+                  onClick={() => setDelta(d)}
                   className={`py-2 text-[11px] font-black border transition-all ${
                     delta === d
-                      ? d > 0 ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan" : "bg-red-500 text-white border-red-500"
-                      : d > 0 ? "text-brand-cyan border-brand-slate-border bg-black/30 hover:border-brand-cyan/40"
-                              : "text-red-400 border-brand-slate-border bg-black/30 hover:border-red-400/40"
+                      ? d > 0
+                        ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan"
+                        : "bg-red-500 text-white border-red-500"
+                      : d > 0
+                        ? "text-brand-cyan border-brand-slate-border bg-black/30 hover:border-brand-cyan/40"
+                        : "text-red-400 border-brand-slate-border bg-black/30 hover:border-red-400/40"
                   }`}
                 >
                   {d > 0 ? `+${d}` : d}
                 </button>
               ))}
-            </div>
+            </div> */}
 
-            <input type="number" placeholder="กรอกเองได้..."
-              value={delta !== null && !PRESET_DELTAS.includes(delta) ? delta : ""}
+            <input
+              type="number"
+              placeholder="กรอกเองได้..."
+              value={
+                delta !== null && !PRESET_DELTAS.includes(delta) ? delta : ""
+              }
               onChange={(e) => setDelta(Number(e.target.value))}
               className="w-full bg-black/30 border border-brand-slate-border px-3 py-2 text-xs text-white outline-none focus:border-brand-cyan placeholder:text-slate-600"
             />
 
-            <input type="text" placeholder="หมายเหตุ (optional)..."
+            <input
+              type="text"
+              placeholder="หมายเหตุ (optional)..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
               className="w-full bg-black/30 border border-brand-slate-border px-3 py-2 text-xs text-white outline-none focus:border-brand-cyan placeholder:text-slate-600"
@@ -439,17 +273,43 @@ function ScoreEntryAndLog({
 
             {/* Summary */}
             <div className="flex-1 p-3 bg-black/40 border border-dashed border-brand-slate-border rounded text-[10px] text-slate-400 space-y-1">
-              <div>หมวด: <span className="text-white">{selectedCategory?.name ?? "—"}</span></div>
-              <div>ข้อ: <span className="text-white">{selectedQuestion ? `ข้อ ${selectedQuestion.number}` : "—"}</span></div>
-              <div>ทีม: <span className="text-white">{teams.find((t) => t.id === selectedTeamId)?.name ?? "—"}</span></div>
-              <div>คะแนน:{" "}
-                <span className={delta != null ? (delta > 0 ? "text-brand-green font-black" : "text-red-400 font-black") : "text-white"}>
+              <div>
+                หมวด:{" "}
+                <span className="text-white">
+                  {selectedCategory?.name ?? "—"}
+                </span>
+              </div>
+              <div>
+                ข้อ:{" "}
+                <span className="text-white">
+                  {selectedQuestion ? `+${selectedQuestion.points}` : "—"}
+                </span>
+              </div>
+              <div>
+                ทีม:{" "}
+                <span className="text-white">
+                  {teams.find((t) => t.id === selectedTeamId)?.name ?? "—"}
+                </span>
+              </div>
+              <div>
+                คะแนน:{" "}
+                <span
+                  className={
+                    delta != null
+                      ? delta > 0
+                        ? "text-brand-green font-black"
+                        : "text-red-400 font-black"
+                      : "text-white"
+                  }
+                >
                   {delta != null ? (delta > 0 ? `+${delta}` : delta) : "—"}
                 </span>
               </div>
             </div>
 
-            <button onClick={handleSubmit} disabled={!canSubmit || submitting}
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit || submitting}
               className={`w-full py-3 font-black uppercase text-xs tracking-widest transition-all ${
                 canSubmit && !submitting
                   ? "bg-brand-green text-brand-slate-dark hover:opacity-90"
@@ -467,10 +327,18 @@ function ScoreEntryAndLog({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
             <Clock className="w-4 h-4" /> Score Event Log
-            <span className="text-slate-500 font-normal normal-case tracking-normal text-[9px]">— กดลบเพื่อ Undo</span>
+            <span className="text-slate-500 font-normal normal-case tracking-normal text-[9px]">
+              — กดลบเพื่อ Undo
+            </span>
           </h2>
-          <button onClick={refreshEvents} disabled={eventsLoading} className="text-slate-500 hover:text-brand-cyan transition-colors">
-            <RefreshCw className={`w-4 h-4 ${eventsLoading ? "animate-spin" : ""}`} />
+          <button
+            onClick={refreshEvents}
+            disabled={eventsLoading}
+            className="text-slate-500 hover:text-brand-cyan transition-colors"
+          >
+            <RefreshCw
+              className={`w-4 h-4 ${eventsLoading ? "animate-spin" : ""}`}
+            />
           </button>
         </div>
 
@@ -494,24 +362,45 @@ function ScoreEntryAndLog({
               </thead>
               <tbody className="divide-y divide-brand-slate-border/40">
                 {events.map((event) => (
-                  <tr key={event.id}
+                  <tr
+                    key={event.id}
                     className={`transition-opacity ${deletingId === event.id ? "opacity-30" : "hover:bg-white/[0.02]"}`}
                   >
-                    <td className="py-2 pr-3 text-slate-500">{formatTime(event.created_at)}</td>
+                    <td className="py-2 pr-3 text-slate-500">
+                      {formatTime(event.created_at)}
+                    </td>
                     <td className="py-2 pr-3">
                       <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: event.team_color }} />
-                        <span className="font-bold" style={{ color: event.team_color }}>{event.team_name}</span>
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: event.team_color }}
+                        />
+                        <span
+                          className="font-bold"
+                          style={{ color: event.team_color }}
+                        >
+                          {event.team_name}
+                        </span>
                       </div>
                     </td>
-                    <td className="py-2 pr-3 text-slate-300">{event.category_name}</td>
-                    <td className="py-2 pr-3 text-slate-300">ข้อ {event.question_number}</td>
-                    <td className="py-2 pr-3 text-slate-500 italic">{event.note ?? "—"}</td>
-                    <td className={`py-2 pr-3 text-right font-black text-sm ${event.delta > 0 ? "text-brand-green" : "text-red-400"}`}>
+                    <td className="py-2 pr-3 text-slate-300">
+                      {event.category_name}
+                    </td>
+                    <td className="py-2 pr-3 text-slate-300">
+                      ข้อ {event.question_number}
+                    </td>
+                    <td className="py-2 pr-3 text-slate-500 italic">
+                      {event.note ?? "—"}
+                    </td>
+                    <td
+                      className={`py-2 pr-3 text-right font-black text-sm ${event.delta > 0 ? "text-brand-green" : "text-red-400"}`}
+                    >
                       {event.delta > 0 ? `+${event.delta}` : event.delta}
                     </td>
                     <td className="py-2">
-                      <button onClick={() => handleDelete(event)} disabled={deletingId !== null}
+                      <button
+                        onClick={() => handleDelete(event)}
+                        disabled={deletingId !== null}
                         className="text-slate-600 hover:text-red-500 transition-colors disabled:cursor-not-allowed"
                         title="Undo / ลบรายการนี้"
                       >
@@ -525,7 +414,9 @@ function ScoreEntryAndLog({
           </div>
         )}
         {events.length > 0 && (
-          <p className="text-[9px] text-slate-600 text-right">{events.length} รายการล่าสุด</p>
+          <p className="text-[9px] text-slate-600 text-right">
+            {events.length} รายการล่าสุด
+          </p>
         )}
       </section>
     </div>
@@ -536,7 +427,11 @@ function ScoreEntryAndLog({
 // Main AdminPanel
 // ===========================================================================
 export default function AdminPanel() {
-  const [data, setData] = useState<RaceData>({ teams: [], positions: [], state: { status: "idle", round: 1 } });
+  const [data, setData] = useState<RaceData>({
+    teams: [],
+    positions: [],
+    state: { status: "idle", round: 1 },
+  });
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamColor, setNewTeamColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(true);
@@ -547,7 +442,10 @@ export default function AdminPanel() {
   }, []);
 
   useEffect(() => {
-    loadData().then((d) => { setData(d); setLoading(false); });
+    loadData().then((d) => {
+      setData(d);
+      setLoading(false);
+    });
   }, []);
 
   const addTeam = async () => {
@@ -567,7 +465,9 @@ export default function AdminPanel() {
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-slate-dark text-slate-100 flex items-center justify-center font-mono">
-        <span className="text-xs uppercase tracking-widest text-brand-cyan animate-pulse">Initializing...</span>
+        <span className="text-xs uppercase tracking-widest text-brand-cyan animate-pulse">
+          Initializing...
+        </span>
       </div>
     );
   }
@@ -575,14 +475,20 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-brand-slate-dark text-slate-100 p-8 font-mono">
       <div className="max-w-6xl mx-auto space-y-8">
-
         {/* Header */}
         <div className="flex justify-between items-center border-b-2 border-brand-slate-border pb-6">
           <div>
-            <h1 className="text-3xl font-black italic neon-text uppercase">Control Center</h1>
-            <p className="text-[10px] text-slate-500 tracking-[0.2em] mt-1">AUTHORIZATION: GRANTED</p>
+            <h1 className="text-3xl font-black italic neon-text uppercase">
+              Control Center
+            </h1>
+            <p className="text-[10px] text-slate-500 tracking-[0.2em] mt-1">
+              AUTHORIZATION: GRANTED
+            </p>
           </div>
-          <Link href="/" className="px-4 py-2 bg-brand-cyan text-brand-slate-dark font-bold text-xs uppercase">
+          <Link
+            href="/"
+            className="px-4 py-2 bg-brand-cyan text-brand-slate-dark font-bold text-xs uppercase"
+          >
             Go To Viewer
           </Link>
         </div>
@@ -594,7 +500,9 @@ export default function AdminPanel() {
           </h2>
 
           <div className="flex gap-4 items-end flex-wrap">
-            <input type="text" value={newTeamName}
+            <input
+              type="text"
+              value={newTeamName}
               onChange={(e) => setNewTeamName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addTeam()}
               placeholder="TEAM CALLSIGN EX: NEON-1"
@@ -602,13 +510,16 @@ export default function AdminPanel() {
             />
             <div className="flex flex-wrap gap-2">
               {COLORS.map((c) => (
-                <button key={c} onClick={() => setNewTeamColor(c)}
+                <button
+                  key={c}
+                  onClick={() => setNewTeamColor(c)}
                   className={`w-8 h-8 border-2 transition-all ${newTeamColor === c ? "border-white scale-110" : "border-transparent"}`}
                   style={{ backgroundColor: c }}
                 />
               ))}
             </div>
-            <button onClick={addTeam}
+            <button
+              onClick={addTeam}
               className="px-6 py-3 bg-brand-cyan text-brand-slate-dark font-black uppercase text-xs tracking-widest"
             >
               + Register
@@ -621,13 +532,22 @@ export default function AdminPanel() {
               {data.teams.map((team) => {
                 const pos = data.positions.find((p) => p.teamId === team.id);
                 return (
-                  <div key={team.id}
+                  <div
+                    key={team.id}
                     className="flex items-center gap-3 px-4 py-2 bg-[#020617] border border-brand-slate-border text-xs"
                   >
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: team.color }} />
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: team.color }}
+                    />
                     <span className="font-bold">{team.name}</span>
-                    <span className="text-brand-green font-black">{pos?.score ?? 0} pts</span>
-                    <button onClick={() => removeTeam(team.id)} className="text-slate-500 hover:text-red-500 ml-1">
+                    <span className="text-brand-green font-black">
+                      {pos?.score ?? 0} pts
+                    </span>
+                    <button
+                      onClick={() => removeTeam(team.id)}
+                      className="text-slate-500 hover:text-red-500 ml-1"
+                    >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -639,7 +559,6 @@ export default function AdminPanel() {
 
         {/* Score Entry + Log */}
         <ScoreEntryAndLog teams={data.teams} onRefreshScores={refresh} />
-
       </div>
     </div>
   );

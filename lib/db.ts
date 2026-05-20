@@ -15,13 +15,14 @@ export interface ScoreEvent {
   team_color?: string;
   category_name?: string;
   question_number?: number;
+  question_points?: number;   // เพิ่ม
 }
 
 // ---- Load ----
 export async function loadData(): Promise<RaceData> {
   const [{ data: teams }, { data: scores }, { data: gameState }] = await Promise.all([
     supabase.from('teams').select('*'),
-    supabase.from('team_scores').select('*'),   // จาก view
+    supabase.from('team_scores').select('*'),
     supabase.from('game_state').select('*').eq('id', 1).single(),
   ]);
 
@@ -35,11 +36,9 @@ export async function loadData(): Promise<RaceData> {
 // ---- Teams ----
 export async function saveTeam(team: Team) {
   await supabase.from('teams').upsert(team);
-  // ไม่ต้อง upsert positions แล้ว
 }
 
 export async function deleteTeam(id: string) {
-  // score_events จะลบ cascade ตาม team_id
   await supabase.from('teams').delete().eq('id', id);
 }
 
@@ -49,7 +48,6 @@ export async function updateGameState(patch: Partial<{ status: GameStatus; round
 }
 
 export async function resetScores() {
-  // ลบ events ทั้งหมด → score กลับเป็น 0 ทุกทีมทันที
   await supabase.from('score_events').delete().neq('id', 0);
   await supabase.from('game_state').update({ status: 'idle' }).eq('id', 1);
 }
@@ -79,7 +77,6 @@ export async function addScoreEvent(
     note: note ?? null,
   });
   if (error) throw error;
-  // ไม่ต้องอัปเดต positions แล้ว — view คำนวณเองอัตโนมัติ
 }
 
 export async function deleteScoreEvent(eventId: number) {
@@ -88,7 +85,6 @@ export async function deleteScoreEvent(eventId: number) {
     .delete()
     .eq('id', eventId);
   if (error) throw error;
-  // score อัปเดตอัตโนมัติผ่าน view
 }
 
 export async function loadScoreEvents(): Promise<ScoreEvent[]> {
@@ -104,14 +100,13 @@ export async function loadScoreEvents(): Promise<ScoreEvent[]> {
       created_at,
       teams ( name, color ),
       categories ( name ),
-      questions ( number )
+      questions ( number, points )
     `)
     .order('created_at', { ascending: false })
     .limit(100);
 
   if (error) throw error;
 
-  // flatten joined fields
   return (data ?? []).map((e: any) => ({
     id: e.id,
     team_id: e.team_id,
@@ -124,5 +119,6 @@ export async function loadScoreEvents(): Promise<ScoreEvent[]> {
     team_color: e.teams?.color,
     category_name: e.categories?.name,
     question_number: e.questions?.number,
+    question_points: e.questions?.points,  // เพิ่ม
   }));
 }

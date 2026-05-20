@@ -22,6 +22,7 @@ interface Question {
   id: number;
   number: number;
   points?: number;
+  label?: string;
 }
 interface Category {
   id: number;
