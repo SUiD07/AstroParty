@@ -337,10 +337,10 @@ function JeopardyCell({
   onClick: () => void;
 }) {
   const answered = events.length > 0;
-  const label =
-    question.points != null
-      ? `+${question.points}`
-      : `+${question.number * 100}`;
+  // const label =
+  //   question.points != null
+  //     ? `+${question.points}`
+  //     : `+${question.number * 100}`;
 
   return (
     <div
@@ -445,7 +445,8 @@ function JeopardyCell({
             letterSpacing: "0.04em",
           }}
         >
-          {label}
+          {/* {label} */}
+          ข้อ {question.number}
         </span>
       )}
     </div>
@@ -468,10 +469,10 @@ function QuestionModal({
   teams: RaceData["teams"];
   onClose: () => void;
 }) {
-  const label =
-    question.points != null
-      ? `+${question.points}`
-      : `+${question.number * 100}`;
+  // const label =
+  //   question.points != null
+  //     ? `+${question.points}`
+  //     : `+${question.number * 100}`;
 
   return (
     <div
@@ -552,7 +553,8 @@ function QuestionModal({
               backgroundClip: "text",
             }}
           >
-            {label}
+            {/* {label} */}
+            ข้อ {question.number}
           </h3>
         </div>
         {/* Events */}

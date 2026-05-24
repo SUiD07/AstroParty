@@ -100,7 +100,7 @@ export async function loadScoreEvents(): Promise<ScoreEvent[]> {
       created_at,
       teams ( name, color ),
       categories ( name ),
-      questions ( number, points )
+      questions ( number )
     `)
     .order('created_at', { ascending: false })
     .limit(100);
@@ -119,6 +119,6 @@ export async function loadScoreEvents(): Promise<ScoreEvent[]> {
     team_color: e.teams?.color,
     category_name: e.categories?.name,
     question_number: e.questions?.number,
-    question_points: e.questions?.points,  // เพิ่ม
+    // question_points: e.questions?.points,  
   }));
 }

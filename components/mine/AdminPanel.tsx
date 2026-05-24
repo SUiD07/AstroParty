@@ -58,7 +58,7 @@ function ScoreEntryAndLog({
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const PRESET_DELTAS = [
-    -1000, -800, -600, -400, -200, -100, 100, 200, 400, 600, 800, 1000,
+    -600, -500, -400, -300, -200, -100, 100, 200, 300, 400, 500, 600,
   ];
 
   const refreshEvents = useCallback(async () => {
@@ -157,8 +157,8 @@ function ScoreEntryAndLog({
                   onClick={() => setSelectedCategory(cat)}
                   className={`w-full text-left px-3 py-2 text-[11px] font-bold uppercase border transition-all ${
                     selectedCategory?.id === cat.id
-                      ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan"
-                      : "bg-black/30 border-brand-slate-border text-slate-300 hover:border-brand-cyan/40"
+                      ? "bg-red-500 text-brand-slate-dark border-red-500"
+                      : "bg-black/30 border-brand-slate-border text-slate-300 hover:border-red-500/40"
                   }`}
                 >
                   {cat.name}
@@ -180,15 +180,15 @@ function ScoreEntryAndLog({
                     key={q.id}
                     onClick={() => {
                       setSelectedQuestion(q);
-                      setDelta(q.points); // auto-fill delta เป็น points ของข้อนั้น
+                      // setDelta(q.points); // auto-fill delta เป็น points ของข้อนั้น
                     }}
                     className={`py-2 text-[11px] font-black border transition-all ${
                       selectedQuestion?.id === q.id
-                        ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan"
-                        : "bg-black/30 border-brand-slate-border text-slate-300 hover:border-brand-cyan/40"
+                        ? "bg-red-500 text-brand-slate-dark border-red-500"
+                        : "bg-black/30 border-brand-slate-border text-slate-300 hover:border-red-500/40"
                     }`}
                   >
-                    +{q.points}
+                    ข้อ {q.number}
                   </button>
                 ))}
             </div>
@@ -230,7 +230,7 @@ function ScoreEntryAndLog({
 
           {/* ④ Delta + Submit */}
           <div className="space-y-2 flex flex-col">
-            {/* <label className="text-[9px] uppercase tracking-widest text-slate-500 block">
+            <label className="text-[9px] uppercase tracking-widest text-slate-500 block">
               ④ คะแนน (+/-)
             </label>
             <div className="grid grid-cols-2 gap-1">
@@ -241,7 +241,7 @@ function ScoreEntryAndLog({
                   className={`py-2 text-[11px] font-black border transition-all ${
                     delta === d
                       ? d > 0
-                        ? "bg-brand-cyan text-brand-slate-dark border-brand-cyan"
+                        ? "bg-red-500 text-brand-slate-dark border-red-500 hover:border-red-400/40"
                         : "bg-red-500 text-white border-red-500"
                       : d > 0
                         ? "text-brand-cyan border-brand-slate-border bg-black/30 hover:border-brand-cyan/40"
@@ -251,7 +251,7 @@ function ScoreEntryAndLog({
                   {d > 0 ? `+${d}` : d}
                 </button>
               ))}
-            </div> */}
+            </div>
 
             <input
               type="number"
@@ -282,7 +282,7 @@ function ScoreEntryAndLog({
               <div>
                 ข้อ:{" "}
                 <span className="text-white">
-                  {selectedQuestion ? `+${selectedQuestion.points}` : "—"}
+                  {selectedQuestion ? `ข้อ ${selectedQuestion.number}` : "—"}
                 </span>
               </div>
               <div>
