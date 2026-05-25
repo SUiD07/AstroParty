@@ -69,7 +69,7 @@ const notoTH: React.CSSProperties = {
   fontFamily: "'Noto Sans Thai', sans-serif",
 };
 
-const medals = ["🥇", "🥈", "🥉", "🏅", "🏅", "🏅", "🏅", "🏅"];
+const medals = ["🥇", "🥈", "🥉"];
 
 // ---------------------------------------------------------------------------
 // Global CSS (injected once)
@@ -407,14 +407,7 @@ function JeopardyCell({
                   color: ev.delta > 0 ? team.color : "#f87171",
                 }}
               >
-                <span
-                  style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    maxWidth: 58,
-                  }}
-                >
+                <span style={{ wordBreak: "break-all", lineHeight: 1.3 }}>
                   {team.name}
                 </span>
                 <span>{ev.delta > 0 ? `+${ev.delta}` : ev.delta}</span>
@@ -439,7 +432,7 @@ function JeopardyCell({
         <span
           style={{
             ...orbitron,
-            fontSize: 12,
+            fontSize: 20,
             fontWeight: 900,
             color: C.orange,
             letterSpacing: "0.04em",
@@ -757,12 +750,14 @@ export default function ViewerDashboard() {
 
   // Derived
   const sortedPositions = [...data.positions].sort((a, b) => b.score - a.score);
-  const topFive = sortedPositions.slice(0, 5);
+  const topEight = sortedPositions.slice(0, 8);
   const maxScoreAchieved = Math.max(1, ...data.positions.map((p) => p.score));
   const visualTarget =
     data.state.status === "finished"
       ? maxScoreAchieved
       : Math.max(10, maxScoreAchieved * 1.1);
+  const minScore = Math.min(0, ...data.positions.map((p) => p.score));
+  const scoreRange = visualTarget - minScore;
 
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
@@ -1135,10 +1130,10 @@ export default function ViewerDashboard() {
           }}
         >
           {[
-            ["👥 Teams", data.teams.length],
-            ["✅ Answered", `${answeredCount} / ${totalQCount}`],
+            ["Teams", data.teams.length],
+            ["Answered", `${answeredCount} / ${totalQCount}`],
             [
-              "🏆 Leader",
+              "Leader",
               sortedPositions[0]
                 ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)
                     ?.name ?? "—")
@@ -1506,7 +1501,7 @@ export default function ViewerDashboard() {
                     marginTop: 2,
                   }}
                 >
-                  {Math.floor(p * visualTarget)}
+                  {Math.floor(minScore + p * scoreRange)}
                 </span>
               </div>
             ))}
@@ -1537,18 +1532,19 @@ export default function ViewerDashboard() {
             }}
           >
             <AnimatePresence>
-              {topFive.map((pos, index) => {
+              {topEight.map((pos, index) => {
                 const team = data.teams.find((t) => t.id === pos.teamId);
                 if (!team) return null;
-                const yPos = (index + 0.5) * (100 / 5);
-                const isNearRight = pos.score / visualTarget > 0.78;
+                const yPos = (index + 0.5) * (100 / 8);
+                const leftPct = ((pos.score - minScore) / scoreRange) * 100;
+                const isNearRight = leftPct > 78;
                 return (
                   <motion.div
                     key={team.id}
                     layoutId={`ship-${team.id}`}
                     initial={false}
                     animate={{
-                      left: `${Math.min(100, (pos.score / visualTarget) * 100)}%`,
+                      left: `${Math.min(100, leftPct)}%`,
                       top: `${yPos}%`,
                     }}
                     transition={{ type: "spring", stiffness: 40, damping: 15 }}
@@ -1634,7 +1630,7 @@ export default function ViewerDashboard() {
                 );
               })}
             </AnimatePresence>
-            {topFive.length === 0 && (
+            {topEight.length === 0 && (
               <div
                 style={{
                   position: "absolute",
@@ -1797,7 +1793,7 @@ export default function ViewerDashboard() {
           flexShrink: 0,
         }}
       >
-        🏁 FINISH LINE ({Math.floor(visualTarget)} PTS) →
+        {/* 🏁 FINISH LINE ({Math.floor(visualTarget)} PTS) → */}
       </div>
     </div>
   );
@@ -1889,7 +1885,7 @@ export default function ViewerDashboard() {
                   {team.name}
                 </div>
                 {/* Progress bar */}
-                <div
+                {/* <div
                   style={{
                     height: 3,
                     background: "rgba(255,255,255,.06)",
@@ -1911,7 +1907,7 @@ export default function ViewerDashboard() {
                       transition: "width .8s ease",
                     }}
                   />
-                </div>
+                </div> */}
               </div>
 
               {/* Score */}
@@ -2098,7 +2094,7 @@ export default function ViewerDashboard() {
           })}
         </div>
 
-        <button
+        {/* <button
           style={{
             marginTop: 20,
             flexShrink: 0,
@@ -2119,7 +2115,7 @@ export default function ViewerDashboard() {
           onClick={() => goToSlide(1)}
         >
           ↩ Back to Start
-        </button>
+        </button> */}
       </div>
     );
   }
