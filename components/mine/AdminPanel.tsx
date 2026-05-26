@@ -15,6 +15,7 @@ import { RaceData, Team } from "@/app/types";
 import { COLORS } from "@/app/constants";
 import { ScoreEvent } from "@/lib/db";
 import Link from "next/link";
+import { AuditMatrix } from "@/components/mine/AuditMatrix";
 
 // ---- Types ----
 interface Question {
@@ -560,6 +561,12 @@ export default function AdminPanel() {
         {/* Score Entry + Log */}
         <ScoreEntryAndLog teams={data.teams} onRefreshScores={refresh} />
       </div>
+      <section className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
+            📊 Score Audit Matrix
+        </h2>
+        <AuditMatrix teams={data.teams} />
+      </section>
     </div>
   );
 }
