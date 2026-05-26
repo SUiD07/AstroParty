@@ -122,3 +122,31 @@ export async function loadScoreEvents(): Promise<ScoreEvent[]> {
     // question_points: e.questions?.points,  
   }));
 }
+//score audit matrix
+export async function getAuditMatrix() {
+  const { data, error } = await supabase
+    .from('score_events')
+    .select(`
+      id,
+      team_id,
+      delta,
+      created_at,
+      teams ( name, color ),
+      categories ( name ),
+      questions ( number )
+    `)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  return (data ?? []).map((e: any) => ({
+    id: e.id,
+    team_id: e.team_id,
+    team_name: e.teams?.name,
+    team_color: e.teams?.color,
+    category_name: e.categories?.name,
+    question_number: e.questions?.number,
+    delta: e.delta,
+    created_at: e.created_at,
+  }));
+}
