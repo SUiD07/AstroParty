@@ -563,7 +563,7 @@ export default function AdminPanel() {
       </div>
       <section className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
         <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
-            📊 Score Audit Matrix
+            Score Audit Matrix
         </h2>
         <AuditMatrix teams={data.teams} />
       </section>

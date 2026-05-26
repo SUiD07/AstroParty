@@ -35,24 +35,29 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
     setLoading(false);
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("th-TH", {
-      hour: "2-digit", minute: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
 
-  if (loading) return (
-    <div className="h-24 flex items-center justify-center text-xs text-slate-500 animate-pulse">
-      Loading...
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="h-24 flex items-center justify-center text-xs text-slate-500 animate-pulse">
+        Loading...
+      </div>
+    );
 
-  if (events.length === 0) return (
-    <div className="h-24 flex items-center justify-center border border-dashed border-brand-slate-border text-slate-600 text-xs italic">
-      ยังไม่มีข้อมูล
-    </div>
-  );
+  if (events.length === 0)
+    return (
+      <div className="h-24 flex items-center justify-center border border-dashed border-brand-slate-border text-slate-600 text-xs italic">
+        ยังไม่มีข้อมูล
+      </div>
+    );
 
   // ── สร้าง colGroups ──────────────────────────────────────
   const colGroups: ColGroup[] = [];
@@ -79,12 +84,14 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
 
   // ── sortedTeams ───────────────────────────────────────────
   const sortedTeams = [...teams].sort((a, b) =>
-    a.name.localeCompare(b.name, "th")
+    a.name.localeCompare(b.name, "th"),
   );
 
   // ── runningTotals[teamId][colIndex] ──────────────────────
   const runningTotals: Record<string, number[]> = {};
-  sortedTeams.forEach((t) => { runningTotals[t.id] = []; });
+  sortedTeams.forEach((t) => {
+    runningTotals[t.id] = [];
+  });
 
   const cumulative: Record<string, number> = {};
   colGroups.forEach((col) => {
@@ -99,30 +106,37 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
   // ── final total + rank ────────────────────────────────────
   const finalTotal = (teamId: string) => cumulative[teamId] ?? 0;
   const ranked = [...sortedTeams].sort(
-    (a, b) => finalTotal(b.id) - finalTotal(a.id)
+    (a, b) => finalTotal(b.id) - finalTotal(a.id),
   );
   const rankMap: Record<string, number> = {};
-  ranked.forEach((t, i) => { rankMap[t.id] = i + 1; });
+  ranked.forEach((t, i) => {
+    rankMap[t.id] = i + 1;
+  });
 
   const rankColor = (r: number) =>
-    r === 1 ? "text-yellow-400"
-    : r === 2 ? "text-slate-300"
-    : r === 3 ? "text-orange-400"
-    : "text-slate-500";
+    r === 1
+      ? "text-yellow-400"
+      : r === 2
+        ? "text-slate-300"
+        : r === 3
+          ? "text-orange-400"
+          : "text-slate-500";
 
   return (
     <div className="space-y-3">
       {/* toolbar */}
       <div className="flex items-center justify-between">
         <p className="text-[9px] text-slate-500 uppercase tracking-widest">
-          {colGroups.length} กลุ่มคำถาม · {events.length} events
+          {colGroups.length} คำถาม · {events.length} events
         </p>
         <button
           onClick={refresh}
           disabled={loading}
           className="text-slate-500 hover:text-brand-cyan transition-colors"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+          />
         </button>
       </div>
 
@@ -143,7 +157,9 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
                   <div className="text-brand-cyan font-bold truncate max-w-[68px]">
                     {col.category_name}
                   </div>
-                  <div className="text-slate-400">ข้อ {col.question_number}</div>
+                  <div className="text-slate-400">
+                    ข้อ {col.question_number}
+                  </div>
                 </th>
               ))}
               <th className="px-3 py-2 text-center border-b border-r border-brand-slate-border text-brand-cyan min-w-[60px]">
@@ -165,7 +181,8 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
                   {formatTime(col.timeStart)}
                   {col.timeStart !== col.timeEnd && (
                     <span className="text-slate-700">
-                      {" "}–{formatTime(col.timeEnd)}
+                      {" "}
+                      –{formatTime(col.timeEnd)}
                     </span>
                   )}
                 </th>
@@ -193,22 +210,49 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
 
                 {/* delta per colGroup */}
                 {colGroups.map((col, ci) => {
-                  const ev = col.events.find((e) => e.team_id === team.id);
+                  // ✅ แก้จาก .find() เป็น .filter()
+                  const teamEvents = col.events.filter(
+                    (e) => e.team_id === team.id,
+                  );
+                  const totalDelta = teamEvents.reduce(
+                    (sum, e) => sum + e.delta,
+                    0,
+                  );
                   const snapshot = runningTotals[team.id][ci];
+
                   return (
                     <td
                       key={ci}
                       className="px-2 py-2 text-center border-b border-r border-brand-slate-border/30"
                     >
-                      {ev ? (
+                      {teamEvents.length > 0 ? (
                         <div className="flex flex-col items-center gap-0.5">
-                          <span
-                            className={`font-black text-xs ${
-                              ev.delta > 0 ? "text-brand-green" : "text-red-400"
-                            }`}
-                          >
-                            {ev.delta > 0 ? `+${ev.delta}` : ev.delta}
-                          </span>
+                          {teamEvents.map((e) => (
+                            <span
+                              key={e.id}
+                              className={`text-[9px] font-bold ${
+                                e.delta > 0
+                                  ? "text-brand-green"
+                                  : "text-red-400"
+                              }`}
+                            >
+                              {e.delta > 0 ? `+${e.delta}` : e.delta}
+                            </span>
+                          ))}
+                          {teamEvents.length > 1 && (
+                            <>
+                              <div className="w-full border-t border-slate-700 my-0.5" />
+                              <span
+                                className={`font-black text-xs ${
+                                  totalDelta > 0
+                                    ? "text-brand-green"
+                                    : "text-red-400"
+                                }`}
+                              >
+                                {totalDelta > 0 ? `+${totalDelta}` : totalDelta}
+                              </span>
+                            </>
+                          )}
                           <span className="text-slate-500 text-[8px]">
                             ({snapshot})
                           </span>
@@ -227,8 +271,8 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
                       finalTotal(team.id) > 0
                         ? "text-brand-green"
                         : finalTotal(team.id) < 0
-                        ? "text-red-400"
-                        : "text-slate-400"
+                          ? "text-red-400"
+                          : "text-slate-400"
                     }`}
                   >
                     {finalTotal(team.id)}
