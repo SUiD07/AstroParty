@@ -15,7 +15,7 @@ import { RaceData, Team } from "@/app/types";
 import { COLORS } from "@/app/constants";
 import { ScoreEvent } from "@/lib/db";
 import Link from "next/link";
-import { AuditMatrix } from "@/components/mine/AuditMatrix";
+import { AuditMatrix } from "../AuditMatrix";
 
 // ---- Types ----
 interface Question {
