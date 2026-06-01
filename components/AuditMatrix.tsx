@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { RefreshCw } from "lucide-react";
 import { getAuditMatrix } from "@/lib/db";
 import { Team } from "@/app/types";
-
 interface AuditEvent {
   id: number;
   team_id: string;
@@ -24,7 +23,13 @@ interface ColGroup {
   timeEnd: string;
 }
 
-export function AuditMatrix({ teams }: { teams: Team[] }) {
+export function AuditMatrix({
+  teams,
+  refreshVersion,
+}: {
+  teams: Team[];
+  refreshVersion: number;
+}) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -37,7 +42,7 @@ export function AuditMatrix({ teams }: { teams: Team[] }) {
 
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, refreshVersion]);
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("th-TH", {

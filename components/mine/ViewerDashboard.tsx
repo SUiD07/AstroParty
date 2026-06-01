@@ -13,6 +13,7 @@ import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
 import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
 import type { ScoreEvent } from "@/lib/db";
+import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 // import Image from "next/image";
 
 // ---------------------------------------------------------------------------
@@ -696,7 +697,17 @@ export default function ViewerDashboard() {
   }, []);
 
   useEffect(() => {
+    //โหลดครั้งแรก
     fetchAll();
+
+    // subscribe realtime
+    const channel = subscribeToScoreEvents(() => {
+      fetchAll(); //refetch ทุกครั้งที่มีการเปลี่ยนแปลง
+    });
+
+    return () => {
+      unsubscribe(channel);
+    };
   }, [fetchAll]);
 
   const handleRefresh = async () => {
@@ -1087,7 +1098,7 @@ export default function ViewerDashboard() {
           >
             Round {data.state.round}
           </h2>
-          <div
+          {/* <div
             style={{
               padding: "6px 16px",
               borderRadius: 6,
@@ -1106,7 +1117,7 @@ export default function ViewerDashboard() {
             >
               {data.state.status.toUpperCase()}
             </span>
-          </div>
+          </div> */}
         </div>
         <p
           style={{
@@ -1117,7 +1128,7 @@ export default function ViewerDashboard() {
             marginBottom: 32,
           }}
         >
-          Medical Science Competition
+          AMSci 2026 Final Round — คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย
         </p>
 
         {/* Stat cards */}
@@ -1255,7 +1266,7 @@ export default function ViewerDashboard() {
                 {answeredCount}/{totalQCount}
               </span>
             </div>
-            <RefreshBtn />
+            {/* <RefreshBtn /> */}
           </>
         }
       />
@@ -1431,7 +1442,10 @@ export default function ViewerDashboard() {
         gap: 0,
       }}
     >
-      <SlideHeader title="Space Race" right={<RefreshBtn />} />
+      <SlideHeader
+        title="Space Race"
+        // right={<RefreshBtn />}
+      />
 
       <div
         style={{
@@ -1813,7 +1827,10 @@ export default function ViewerDashboard() {
         overflow: "hidden",
       }}
     >
-      <SlideHeader title="Live Leaderboard" right={<RefreshBtn />} />
+      <SlideHeader
+        title="Live Leaderboard"
+        // right={<RefreshBtn />}
+      />
 
       <div
         style={{

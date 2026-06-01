@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { RaceData, Team, GameStatus } from '@/app/types';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 // ---- Types ----
 export interface ScoreEvent {
@@ -61,6 +62,27 @@ export async function loadCategories() {
   return data ?? [];
 }
 
+// subscribe ให้ callback ทำงานทุกครั้งที่ score_events เปลี่ยน
+export function subscribeToScoreEvents(callback: () => void) {
+  const channel = supabase
+    .channel('score-events-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'score_events',
+      },
+      callback
+    )
+    .subscribe();
+
+  return channel;
+}
+
+export function unsubscribe(channel: RealtimeChannel) {
+  supabase.removeChannel(channel);
+}
 // ---- Score Events ----
 export async function addScoreEvent(
   teamId: string,
