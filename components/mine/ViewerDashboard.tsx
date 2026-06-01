@@ -342,6 +342,9 @@ function JeopardyCell({
   //   question.points != null
   //     ? `+${question.points}`
   //     : `+${question.number * 100}`;
+  const MAX_VISIBLE = 9;
+  const visibleEvents = events.slice(0, MAX_VISIBLE);
+  const hiddenCount = Math.max(0, events.length - MAX_VISIBLE);
 
   return (
     <div
@@ -371,7 +374,10 @@ function JeopardyCell({
         el.style.boxShadow = answered
           ? "none"
           : `0 0 18px rgba(237,130,64,0.28)`;
-        if (!answered) el.style.borderColor = `rgba(237,130,64,0.45)`;
+
+        if (!answered) {
+          el.style.borderColor = `rgba(237,130,64,0.45)`;
+        }
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLDivElement;
@@ -382,39 +388,58 @@ function JeopardyCell({
       }}
     >
       {answered ? (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-            width: "100%",
-          }}
-        >
-          {events.map((ev) => {
-            const team = teams.find((t) => t.id === ev.team_id);
-            if (!team) return null;
-            return (
-              <div
-                key={String(ev.id)}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "2px 6px",
-                  borderRadius: 4,
-                  background: `${team.color}1A`,
-                  borderLeft: `2px solid ${team.color}`,
-                  fontSize: 20,
-                  fontWeight: 700,
-                  color: ev.delta > 0 ? team.color : "#f87171",
-                }}
-              >
-                <span style={{ wordBreak: "break-all", lineHeight: 1.3 }}>
-                  {team.name}
-                </span>
-                <span>{ev.delta > 0 ? `+${ev.delta}` : ev.delta}</span>
-              </div>
-            );
-          })}
+        <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 3,
+              width: "100%",
+            }}
+          >
+            {visibleEvents.map((ev) => {
+              const team = teams.find((t) => t.id === ev.team_id);
+              if (!team) return null;
+
+              return (
+                <div
+                  key={String(ev.id)}
+                  style={{
+                    padding: "2px 4px",
+                    borderRadius: 4,
+                    background: `${team.color}1A`,
+                    borderLeft: `2px solid ${team.color}`,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: ev.delta > 0 ? team.color : "#f87171",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={`${team.name} ${
+                    ev.delta > 0 ? `+${ev.delta}` : ev.delta
+                  }`}
+                >
+                  {team.name} {ev.delta > 0 ? `+${ev.delta}` : ev.delta}
+                </div>
+              );
+            })}
+          </div>
+
+          {hiddenCount > 0 && (
+            <div
+              style={{
+                marginTop: 4,
+                textAlign: "center",
+                fontSize: 10,
+                fontWeight: 700,
+                color: C.textLo,
+              }}
+            >
+              +{hiddenCount} more
+            </div>
+          )}
+
           {/* answered dot */}
           <div
             style={{
@@ -428,7 +453,7 @@ function JeopardyCell({
           >
             ✓
           </div>
-        </div>
+        </>
       ) : (
         <span
           style={{
@@ -439,7 +464,6 @@ function JeopardyCell({
             letterSpacing: "0.04em",
           }}
         >
-          {/* {label} */}
           ข้อ {question.number}
         </span>
       )}
