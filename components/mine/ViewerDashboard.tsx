@@ -13,6 +13,7 @@ import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
 import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
 import type { ScoreEvent } from "@/lib/db";
+import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 // import Image from "next/image";
 
 // ---------------------------------------------------------------------------
@@ -696,7 +697,17 @@ export default function ViewerDashboard() {
   }, []);
 
   useEffect(() => {
+    //โหลดครั้งแรก
     fetchAll();
+
+    // subscribe realtime
+    const channel = subscribeToScoreEvents(() => {
+      fetchAll(); //refetch ทุกครั้งที่มีการเปลี่ยนแปลง
+    });
+
+    return () => {
+      unsubscribe(channel);
+    };
   }, [fetchAll]);
 
   const handleRefresh = async () => {
@@ -1431,9 +1442,10 @@ export default function ViewerDashboard() {
         gap: 0,
       }}
     >
-      <SlideHeader title="Space Race" 
-      // right={<RefreshBtn />}
-       />
+      <SlideHeader
+        title="Space Race"
+        // right={<RefreshBtn />}
+      />
 
       <div
         style={{
@@ -1815,8 +1827,9 @@ export default function ViewerDashboard() {
         overflow: "hidden",
       }}
     >
-      <SlideHeader title="Live Leaderboard" 
-      // right={<RefreshBtn />} 
+      <SlideHeader
+        title="Live Leaderboard"
+        // right={<RefreshBtn />}
       />
 
       <div

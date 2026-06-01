@@ -16,6 +16,7 @@ import { COLORS } from "@/app/constants";
 import { ScoreEvent } from "@/lib/db";
 import Link from "next/link";
 import { AuditMatrix } from "../AuditMatrix";
+import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 
 // ---- Types ----
 interface Question {
@@ -433,6 +434,9 @@ export default function AdminPanel() {
     positions: [],
     state: { status: "idle", round: 1 },
   });
+
+  const [refreshVersion, setRefreshVersion] = useState(0);
+
   const [newTeamName, setNewTeamName] = useState("");
   const [newTeamColor, setNewTeamColor] = useState(COLORS[0]);
   const [loading, setLoading] = useState(true);
@@ -447,6 +451,17 @@ export default function AdminPanel() {
       setData(d);
       setLoading(false);
     });
+
+    const channel = subscribeToScoreEvents(async () => {
+      const fresh = await loadData();
+      setData(fresh);
+
+      setRefreshVersion((v) => v + 1);
+    });
+
+    return () => {
+      unsubscribe(channel);
+    };
   }, []);
 
   const addTeam = async () => {
@@ -563,9 +578,9 @@ export default function AdminPanel() {
       </div>
       <section className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
         <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
-            Score Audit Matrix
+          Score Audit Matrix
         </h2>
-        <AuditMatrix teams={data.teams} />
+        <AuditMatrix teams={data.teams} refreshVersion={refreshVersion} />
       </section>
     </div>
   );
