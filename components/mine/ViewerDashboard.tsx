@@ -676,7 +676,7 @@ function QuestionModal({
           <iframe
             // loading="lazy"
             // style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
-            src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embed"
+            src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embedpage=#20"
             allowFullScreen
             allow="fullscreen"
           ></iframe>
