@@ -35,6 +35,16 @@ export async function loadData(): Promise<RaceData> {
 }
 
 // ---- Teams ----
+export function subscribeToTeams(callback: () => void) {
+  return supabase
+    .channel("teams-realtime")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "teams" },
+      callback,
+    )
+    .subscribe();
+}
 export async function saveTeam(team: Team) {
   await supabase.from('teams').upsert(team);
 }

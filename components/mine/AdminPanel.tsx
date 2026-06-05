@@ -10,6 +10,7 @@ import {
   loadScoreEvents,
   addScoreEvent,
   deleteScoreEvent,
+  subscribeToTeams,
 } from "@/lib/db";
 import { RaceData, Team } from "@/app/types";
 import { COLORS } from "@/app/constants";
@@ -38,9 +39,11 @@ interface Category {
 function ScoreEntryAndLog({
   teams,
   onRefreshScores,
+  refreshVersion,
 }: {
   teams: Team[];
   onRefreshScores: () => void;
+  refreshVersion: number;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -70,13 +73,21 @@ function ScoreEntryAndLog({
     setEventsLoading(false);
   }, []);
 
+  //(แยก 2 useEffect)
+  // กันลืม
+  // ปัญหาคือ AdminPanel และ ScoreEntryAndLog ต่างก็ subscribe channel ชื่อ "score-events-realtime" ซ้ำกัน Supabase ไม่อนุญาตให้ผูก callback เพิ่มหลัง subscribe() แล้ว
+  // แก้คือ lift subscription ขึ้นไปไว้ที่ AdminPanel อย่างเดียว แล้วส่ง refreshVersion ลงมาให้ ScoreEntryAndLog ใช้ react กับมัน
+
   useEffect(() => {
     loadCategories().then((cats: Category[]) => {
       setCategories(cats);
       if (cats.length > 0) setSelectedCategory(cats[0]);
     });
+  }, []);
+
+  useEffect(() => {
     refreshEvents();
-  }, [refreshEvents]);
+  }, [refreshEvents, refreshVersion]); // re-fetch ทุกครั้งที่ parent บอก
 
   useEffect(() => {
     setSelectedQuestion(null);
@@ -452,15 +463,20 @@ export default function AdminPanel() {
       setLoading(false);
     });
 
-    const channel = subscribeToScoreEvents(async () => {
+    const scoreChannel = subscribeToScoreEvents(async () => {
       const fresh = await loadData();
       setData(fresh);
-
       setRefreshVersion((v) => v + 1);
     });
 
+    const teamChannel = subscribeToTeams(async () => {
+      const fresh = await loadData();
+      setData(fresh);
+    });
+
     return () => {
-      unsubscribe(channel);
+      unsubscribe(scoreChannel);
+      unsubscribe(teamChannel);
     };
   }, []);
 
@@ -574,7 +590,11 @@ export default function AdminPanel() {
         </section>
 
         {/* Score Entry + Log */}
-        <ScoreEntryAndLog teams={data.teams} onRefreshScores={refresh} />
+        <ScoreEntryAndLog
+          teams={data.teams}
+          onRefreshScores={refresh}
+          refreshVersion={refreshVersion}
+        />
       </div>
       <section className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
         <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">

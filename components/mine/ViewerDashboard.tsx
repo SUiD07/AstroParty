@@ -11,7 +11,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
-import { loadData, loadCategories, loadScoreEvents } from "@/lib/db";
+import { loadData, loadCategories, loadScoreEvents, subscribeToTeams } from "@/lib/db";
 import type { ScoreEvent } from "@/lib/db";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 // import Image from "next/image";
@@ -724,13 +724,16 @@ export default function ViewerDashboard() {
     //โหลดครั้งแรก
     fetchAll();
 
-    // subscribe realtime
-    const channel = subscribeToScoreEvents(() => {
-      fetchAll(); //refetch ทุกครั้งที่มีการเปลี่ยนแปลง
+    const scoreChannel = subscribeToScoreEvents(() => {
+      fetchAll();
+    });
+    const teamChannel = subscribeToTeams(() => {
+      fetchAll();
     });
 
     return () => {
-      unsubscribe(channel);
+      unsubscribe(scoreChannel);
+      unsubscribe(teamChannel);
     };
   }, [fetchAll]);
 
