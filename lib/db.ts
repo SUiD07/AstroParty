@@ -182,3 +182,26 @@ export async function getAuditMatrix() {
     created_at: e.created_at,
   }));
 }
+// ---- Canva Links ----
+export async function loadCanvaLinks(): Promise<Record<number, string>> {
+  const { data } = await supabase
+    .from("questions")
+    .select("id, canva_url")
+    .not("canva_url", "is", null);
+  if (!data) return {};
+  return Object.fromEntries(data.map((r) => [r.id, r.canva_url]));
+}
+
+export async function saveCanvaLink(questionId: number, url: string) {
+  await supabase
+    .from("questions")
+    .update({ canva_url: url })
+    .eq("id", questionId);
+}
+
+export async function deleteCanvaLink(questionId: number) {
+  await supabase
+    .from("questions")
+    .update({ canva_url: null })
+    .eq("id", questionId);
+}

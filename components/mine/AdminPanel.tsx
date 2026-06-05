@@ -16,8 +16,9 @@ import { RaceData, Team } from "@/app/types";
 import { COLORS } from "@/app/constants";
 import { ScoreEvent } from "@/lib/db";
 import Link from "next/link";
-import { AuditMatrix } from "../AuditMatrix";
+import { AuditMatrix } from "./AuditMatrix";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
+import { CanvaLinkManager } from "./CanvaLinkManager";
 
 // ---- Types ----
 interface Question {
@@ -601,6 +602,9 @@ export default function AdminPanel() {
           Score Audit Matrix
         </h2>
         <AuditMatrix teams={data.teams} refreshVersion={refreshVersion} />
+      </section>
+      <section className="p-6 bg-brand-slate-mid border border-brand-slate-border rounded-lg space-y-4">
+        <CanvaLinkManager />
       </section>
     </div>
   );

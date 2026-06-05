@@ -11,9 +11,15 @@ import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RefreshCw, Zap, X } from "lucide-react";
 import { RaceData } from "@/app/types";
-import { loadData, loadCategories, loadScoreEvents, subscribeToTeams } from "@/lib/db";
+import {
+  loadData,
+  loadCategories,
+  loadScoreEvents,
+  subscribeToTeams,
+} from "@/lib/db";
 import type { ScoreEvent } from "@/lib/db";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
+import { loadCanvaLinks } from "@/lib/db";
 // import Image from "next/image";
 
 // ---------------------------------------------------------------------------
@@ -479,12 +485,14 @@ function QuestionModal({
   question,
   events,
   teams,
+  canvaLinks,
   onClose,
 }: {
   category: Category;
   question: Question;
   events: ScoreEvent[];
   teams: RaceData["teams"];
+  canvaLinks: Record<number, string>; // ← เพิ่ม
   onClose: () => void;
 }) {
   // const label =
@@ -516,170 +524,198 @@ function QuestionModal({
           background: "rgba(10,20,38,0.97)",
           border: `1px solid ${borderWarm}`,
           borderRadius: 14,
-          padding: "36px 40px",
           width: 440,
           maxWidth: "90vw",
+          maxHeight: "85vh",
+          display: "flex",
+          flexDirection: "column",
           boxShadow: `0 0 40px rgba(237,130,64,0.12), 0 24px 60px rgba(0,0,0,0.55)`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={onClose}
+        {/* ── Sticky header with close button ── */}
+        <div
           style={{
-            position: "absolute",
-            top: 14,
-            right: 16,
-            background: "transparent",
-            border: "none",
-            color: C.textLo,
-            cursor: "pointer",
-            fontSize: 18,
-            transition: "color .2s",
+            padding: "28px 40px 0",
+            flexShrink: 0,
+            position: "relative",
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.color = C.textHi)
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLButtonElement).style.color = C.textLo)
-          }
         >
-          <X size={16} />
-        </button>
+          <button
+            onClick={onClose}
+            style={{
+              position: "absolute",
+              top: 14,
+              right: 16,
+              background: "transparent",
+              border: "none",
+              color: C.textLo,
+              cursor: "pointer",
+              fontSize: 18,
+              transition: "color .2s",
+            }}
+            onMouseEnter={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.color = C.textHi)
+            }
+            onMouseLeave={(e) =>
+              ((e.currentTarget as HTMLButtonElement).style.color = C.textLo)
+            }
+          >
+            <X size={16} />
+          </button>
 
-        {/* Header */}
-        <div style={{ marginBottom: 22 }}>
-          <p
-            style={{
-              ...orbitron,
-              color: C.blueLight,
-              fontSize: 9,
-              letterSpacing: "0.22em",
-              marginBottom: 8,
-            }}
-          >
-            {category.name}
-          </p>
-          <h3
-            style={{
-              ...orbitron,
-              fontSize: 40,
-              fontWeight: 900,
-              lineHeight: 1,
-              background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
-            {/* {label} */}
-            ข้อ {question.number}
-          </h3>
-        </div>
-        {/* Events */}
-        {events.length === 0 ? (
-          <div
-            style={{
-              padding: "36px 0",
-              textAlign: "center",
-              borderRadius: 8,
-              border: "1px dashed rgba(83,143,238,0.2)",
-            }}
-          >
-            <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
-            <p
-              style={{
-                ...notoTH,
-                fontSize: 12,
-                color: C.textLo,
-                letterSpacing: "0.1em",
-              }}
-            >
-              ยังไม่มีการให้คะแนนในข้อนี้
-            </p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Header */}
+          <div style={{ marginBottom: 22 }}>
             <p
               style={{
                 ...orbitron,
-                fontSize: 8,
+                color: C.blueLight,
+                fontSize: 9,
                 letterSpacing: "0.22em",
-                color: C.textLo,
-                marginBottom: 4,
+                marginBottom: 8,
               }}
             >
-              ผลคะแนนที่บันทึกไว้
+              {category.name}
             </p>
-            {events.map((ev, i) => {
-              const team = teams.find((t) => t.id === ev.team_id);
-              if (!team) return null;
-              const isPos = ev.delta > 0;
-              return (
-                <motion.div
-                  key={String(ev.id)}
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "12px 16px",
-                    borderRadius: 9,
-                    background: `${team.color}0F`,
-                    border: `1px solid ${team.color}40`,
-                  }}
-                >
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 10 }}
-                  >
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: "50%",
-                        background: team.color,
-                      }}
-                    />
-                    <span
-                      style={{
-                        ...notoTH,
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: team.color,
-                      }}
-                    >
-                      {team.name}
-                    </span>
-                  </div>
-                  <span
+            <h3
+              style={{
+                ...orbitron,
+                fontSize: 40,
+                fontWeight: 900,
+                lineHeight: 1,
+                background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              ข้อ {question.number}
+            </h3>
+          </div>
+        </div>
+
+        {/* ── Scrollable content ── */}
+        <div
+          style={{
+            overflowY: "auto",
+            padding: "0 40px 36px",
+            flex: 1,
+          }}
+        >
+          {/* Events */}
+          {events.length === 0 ? (
+            <div
+              style={{
+                padding: "36px 0",
+                textAlign: "center",
+                borderRadius: 8,
+                border: "1px dashed rgba(83,143,238,0.2)",
+              }}
+            >
+              <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
+              <p
+                style={{
+                  ...notoTH,
+                  fontSize: 12,
+                  color: C.textLo,
+                  letterSpacing: "0.1em",
+                }}
+              >
+                ยังไม่มีการให้คะแนนในข้อนี้
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <p
+                style={{
+                  ...orbitron,
+                  fontSize: 8,
+                  letterSpacing: "0.22em",
+                  color: C.textLo,
+                  marginBottom: 4,
+                }}
+              >
+                ผลคะแนนที่บันทึกไว้
+              </p>
+              {events.map((ev, i) => {
+                const team = teams.find((t) => t.id === ev.team_id);
+                if (!team) return null;
+                const isPos = ev.delta > 0;
+                return (
+                  <motion.div
+                    key={String(ev.id)}
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: i * 0.05 }}
                     style={{
-                      ...orbitron,
-                      fontSize: 22,
-                      fontWeight: 900,
-                      color: isPos ? "#4ade80" : "#f87171",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "12px 16px",
+                      borderRadius: 9,
+                      background: `${team.color}0F`,
+                      border: `1px solid ${team.color}40`,
                     }}
                   >
-                    {isPos ? `+${ev.delta}` : ev.delta}
-                    <span
-                      style={{ fontSize: 9, color: C.textLo, marginLeft: 4 }}
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 10 }}
                     >
-                      PTS
+                      <div
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          background: team.color,
+                        }}
+                      />
+                      <span
+                        style={{
+                          ...notoTH,
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: team.color,
+                        }}
+                      >
+                        {team.name}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        ...orbitron,
+                        fontSize: 22,
+                        fontWeight: 900,
+                        color: isPos ? "#4ade80" : "#f87171",
+                      }}
+                    >
+                      {isPos ? `+${ev.delta}` : ev.delta}
+                      <span
+                        style={{ fontSize: 9, color: C.textLo, marginLeft: 4 }}
+                      >
+                        PTS
+                      </span>
                     </span>
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
-        <div className="p-4">
-          <iframe
-            // loading="lazy"
-            // style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0;margin: 0;"
-            src="https://www.canva.com/design/DAHJcsfAYkA/uw5444kV3WhaQGvVdCxuMQ/view?embed#20"
-            allowFullScreen
-            allow="fullscreen"
-          ></iframe>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Canva iframe */}
+          {canvaLinks[question.id] && (
+            <div style={{ marginTop: 16 }}>
+              <iframe
+                src={canvaLinks[question.id]}
+                allowFullScreen
+                allow="fullscreen"
+                style={{
+                  width: "100%",
+                  height: 320,
+                  border: "none",
+                  borderRadius: 8,
+                }}
+              />
+            </div>
+          )}
         </div>
       </motion.div>
     </div>
@@ -708,15 +744,19 @@ export default function ViewerDashboard() {
     question: Question;
   } | null>(null);
 
+  const [canvaLinks, setCanvaLinks] = useState<Record<number, string>>({});
+
   const fetchAll = useCallback(async () => {
-    const [fresh, cats, evs] = await Promise.all([
+    const [fresh, cats, evs, links] = await Promise.all([
       loadData(),
       loadCategories(),
       loadScoreEvents(),
+      loadCanvaLinks(),
     ]);
     setData(fresh);
     setCategories(cats);
     setScoreEvents(evs);
+    setCanvaLinks(links);
     setDataReady(true);
   }, []);
 
@@ -1448,6 +1488,7 @@ export default function ViewerDashboard() {
             question={selectedCell.question}
             events={getEvents(selectedCell.question.id)}
             teams={data.teams}
+            canvaLinks={canvaLinks} // ← เพิ่ม
             onClose={() => setSelectedCell(null)}
           />
         )}
