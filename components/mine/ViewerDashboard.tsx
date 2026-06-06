@@ -71,7 +71,11 @@ const glassCard = (warm = false): React.CSSProperties => ({
   backdropFilter: "blur(10px)",
 });
 
-const orbitron: React.CSSProperties = { fontFamily: "'Orbitron', monospace" };
+// const orbitron: React.CSSProperties = { fontFamily: "'Orbitron', monospace" };
+// const orbitron: React.CSSProperties = { fontFamily: "'Cormorant Garamond', serif" };
+const orbitron: React.CSSProperties = {
+  fontFamily: "'Noto Sans Thai', sans-serif",
+};
 const notoTH: React.CSSProperties = {
   fontFamily: "'Noto Sans Thai', sans-serif",
 };
@@ -81,9 +85,11 @@ const medals = ["🥇", "🥈", "🥉"];
 // ---------------------------------------------------------------------------
 // Global CSS (injected once)
 // ---------------------------------------------------------------------------
-const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
+// @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
+// @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
 
+const GLOBAL_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 @keyframes twinkle  { 0%,100%{opacity:.15} 50%{opacity:.9} }
@@ -106,6 +112,22 @@ const GLOBAL_CSS = `
   from { opacity:0; transform:translateX(-12px); }
   to   { opacity:1; transform:translateX(0); }
 }
+@keyframes dotPulse {
+  0%,100% { transform:scale(1); opacity:.7; }
+  50%     { transform:scale(1.4); opacity:1; }
+}
+  .grad-gold {
+  background: linear-gradient(135deg, #ED8240 0%, #FCD47D 45%, #fffbe8 80%, #FCD47D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.grad-blue {
+  background: linear-gradient(135deg, #9CC8EE, #fff, #9CC8EE);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .ap-star {
   position: absolute; border-radius: 50%; background: white;
@@ -114,6 +136,15 @@ const GLOBAL_CSS = `
 .ap-nebula {
   position: absolute; border-radius: 50%;
   filter: blur(88px); pointer-events: none;
+}
+@keyframes tickerScroll {
+  0%   { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+.ap-ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+  animation: tickerScroll 28s linear infinite;
 }
 
 /* custom scrollbar */
@@ -726,7 +757,7 @@ function QuestionModal({
 // Main
 // ---------------------------------------------------------------------------
 export default function ViewerDashboard() {
-  const totalSlides = 6;
+  const totalSlides = 7;
   const [currentSlide, setCurrentSlide] = useState(1);
 
   const [data, setData] = useState<RaceData>({
@@ -1309,7 +1340,7 @@ export default function ViewerDashboard() {
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        padding: "0 24px 80px",
+        padding: "0 24px 56px",
         overflow: "hidden",
       }}
     >
@@ -1506,7 +1537,7 @@ export default function ViewerDashboard() {
         flexDirection: "column",
         width: "100%",
         height: "100%",
-        padding: "0 24px 80px",
+        padding: "0 24px 56px",
         gap: 0,
       }}
     >
@@ -1891,7 +1922,7 @@ export default function ViewerDashboard() {
         alignItems: "center",
         width: "100%",
         height: "100%",
-        padding: "0 24px 80px",
+        padding: "0 24px 56px",
         overflow: "hidden",
       }}
     >
@@ -2053,7 +2084,7 @@ export default function ViewerDashboard() {
           alignItems: "center",
           width: "100%",
           height: "100%",
-          padding: "28px 24px 80px",
+          padding: "28px 24px 56px",
           position: "relative",
           overflow: "hidden",
         }}
@@ -2204,7 +2235,1125 @@ export default function ViewerDashboard() {
       </div>
     );
   }
+  // =========================================================================
+  // SLIDE 7 — GRAND FINALE REVEAL
+  // =========================================================================
+  function Slide7() {
+    const REVEAL_STAGES = [
+      "title",
+      "calculating",
+      "5th8th",
+      "4th",
+      "top3",
+      "3rd",
+      "runnerup",
+      "champion",
+    ] as const;
+    type RevealStage = (typeof REVEAL_STAGES)[number];
 
+    const [revealStage, setRevealStage] = useState<RevealStage>("title");
+    const [visible, setVisible] = useState(true);
+
+    const stageIndex = REVEAL_STAGES.indexOf(revealStage);
+    const goReveal = (dir: 1 | -1) => {
+      const next = stageIndex + dir;
+      if (next < 0 || next >= REVEAL_STAGES.length) return;
+      setVisible(false);
+      setTimeout(() => {
+        setRevealStage(REVEAL_STAGES[next]);
+        setVisible(true);
+      }, 350);
+    };
+
+    // launch confetti imperatively on champion stage
+    useEffect(() => {
+      if (revealStage === "champion") launchConfetti();
+    }, [revealStage]);
+
+    const rankColor = (i: number) =>
+      i === 0 ? C.gold : i === 1 ? C.blueLight : i === 2 ? C.orange : C.textMid;
+    const medals = ["🥇", "🥈", "🥉"];
+
+    const textGradient: React.CSSProperties = {
+      background: `linear-gradient(135deg, ${C.orange} 0%, ${C.gold} 45%, #fffbe8 80%, ${C.gold} 100%)`,
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+    };
+
+    const blueGradient: React.CSSProperties = {
+      background: `linear-gradient(135deg, ${C.blueLight}, #fff, ${C.blueLight})`,
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      backgroundClip: "text",
+    };
+
+    // ── sub-stage renderers ──
+    const renderStage = () => {
+      switch (revealStage) {
+        // ── TITLE ──
+        case "title":
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 14,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.55rem,.85vw,.7rem)",
+                  letterSpacing: "0.42em",
+                  color: "rgba(156,200,238,.5)",
+                }}
+              >
+                ✦ &nbsp; FINAL ROUND &nbsp; ✦
+              </div>
+              <h1
+                className="grad-gold"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".1em",
+                  lineHeight: 1,
+                }}
+              >
+                AMSci 2026
+              </h1>
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(1rem,2.2vw,1.8rem)",
+                  fontWeight: 700,
+                  letterSpacing: ".28em",
+                  color: "rgba(156,200,238,.7)",
+                }}
+              >
+                ASTRO PARTY
+              </div>
+              <div
+                style={{
+                  width: 240,
+                  height: 1.5,
+                  background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
+                  borderRadius: 1,
+                }}
+              />
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(.75rem,1.3vw,1rem)",
+                  color: "rgba(156,200,238,.45)",
+                  letterSpacing: ".1em",
+                }}
+              >
+                คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
+              </div>
+            </div>
+          );
+
+        // ── CALCULATING ──
+        case "calculating":
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+                textAlign: "center",
+              }}
+            >
+              <div
+                className="grad-gold"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".1em",
+                  lineHeight: 1,
+                }}
+              >
+                FINAL ROUND COMPLETE
+              </div>
+              <div
+                style={{
+                  width: 200,
+                  height: 1.5,
+                  background: `linear-gradient(90deg,transparent,${C.blueCore},transparent)`,
+                  borderRadius: 1,
+                }}
+              />
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.75rem,1.4vw,1.05rem)",
+                  letterSpacing: ".28em",
+                  color: "rgba(156,200,238,.65)",
+                }}
+              >
+                CALCULATING FINAL RANKINGS
+              </div>
+              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      background: C.blueCore,
+                      animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+                    }}
+                  />
+                ))}
+              </div>
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(.65rem,1.1vw,.88rem)",
+                  color: "rgba(156,200,238,.3)",
+                  letterSpacing: ".08em",
+                  marginTop: 6,
+                }}
+              >
+                กำลังประมวลผลคะแนนรอบสุดท้าย…
+              </div>
+            </div>
+          );
+
+        // ── 5TH–8TH ──
+        case "5th8th": {
+          const bottom4 = sortedPositions.slice(4, 8);
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+                width: "100%",
+                maxWidth: 500,
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.55rem,.85vw,.72rem)",
+                  letterSpacing: ".38em",
+                  color: "rgba(156,200,238,.5)",
+                }}
+              >
+                อันดับที่ 5 ถึง 8
+              </div>
+              <div
+                className="grad-blue"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".14em",
+                }}
+              >
+                5TH – 8TH PLACE
+              </div>
+              <div
+                style={{
+                  background: "rgba(4,12,28,.82)",
+                  border: `1px solid rgba(83,143,238,.2)`,
+                  borderRadius: 12,
+                  padding: "20px 24px",
+                  width: "100%",
+                  backdropFilter: "blur(16px)",
+                }}
+              >
+                <div
+                  style={{
+                    ...orbitron,
+                    fontSize: 7,
+                    letterSpacing: ".22em",
+                    color: "rgba(156,200,238,.45)",
+                    marginBottom: 12,
+                    paddingBottom: 8,
+                    borderBottom: `1px solid rgba(83,143,238,.15)`,
+                  }}
+                >
+                  🏅 FINAL RANKING — POSITIONS 5–8
+                </div>
+                {bottom4.map((pos, i) => {
+                  const team = data.teams.find((t) => t.id === pos.teamId);
+                  if (!team) return null;
+                  return (
+                    <div
+                      key={team.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        background: "rgba(13,27,50,.6)",
+                        border: `1px solid rgba(255,255,255,.04)`,
+                        marginBottom: 7,
+                        position: "relative",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: 2,
+                          background: team.color,
+                          opacity: 0.6,
+                          borderRadius: "1px 0 0 1px",
+                        }}
+                      />
+                      <span
+                        style={{
+                          ...orbitron,
+                          fontSize: 10,
+                          fontWeight: 900,
+                          width: 22,
+                          textAlign: "center",
+                          color: "rgba(156,200,238,.5)",
+                        }}
+                      >
+                        {i + 5}
+                      </span>
+                      <div
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: "50%",
+                          background: team.color,
+                          boxShadow: `0 0 8px ${team.color}88`,
+                          marginLeft: 6,
+                        }}
+                      />
+                      <span
+                        style={{
+                          ...notoTH,
+                          flex: 1,
+                          paddingLeft: 10,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: team.color,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {team.name}
+                      </span>
+                      <span
+                        style={{
+                          ...orbitron,
+                          fontSize: 13,
+                          fontWeight: 900,
+                          color: "rgba(156,200,238,.6)",
+                        }}
+                      >
+                        {pos.score}
+                        <span
+                          style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}
+                        >
+                          PTS
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
+        // ── 4TH PLACE ──
+        case "4th": {
+          const t4 = sortedPositions[3]
+            ? data.teams.find((t) => t.id === sortedPositions[3].teamId)
+            : null;
+          const s4 = sortedPositions[3]?.score ?? 0;
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.55rem,.85vw,.72rem)",
+                  letterSpacing: ".42em",
+                  color: "rgba(156,200,238,.45)",
+                }}
+              >
+                — FINAL ROUND —
+              </div>
+              <div
+                className="grad-gold"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".1em",
+                  lineHeight: 1,
+                }}
+              >
+                4TH PLACE
+              </div>
+              <div
+                style={{
+                  width: 180,
+                  height: 1.5,
+                  background: `linear-gradient(90deg,transparent,${C.orange},transparent)`,
+                  borderRadius: 1,
+                }}
+              />
+              {t4 && (
+                <>
+                  <div
+                    style={{
+                      ...notoTH,
+                      fontSize: "clamp(1.3rem,3vw,2.4rem)",
+                      fontWeight: 800,
+                      color: t4.color,
+                      textShadow: `0 0 24px ${t4.color}88`,
+                    }}
+                  >
+                    {t4.name}
+                  </div>
+                  <div
+                    style={{
+                      ...orbitron,
+                      fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                      fontWeight: 700,
+                      color: "rgba(156,200,238,.5)",
+                    }}
+                  >
+                    {s4}{" "}
+                    <span style={{ fontSize: ".65em", opacity: 0.6 }}>
+                      POINTS
+                    </span>
+                  </div>
+                </>
+              )}
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(.65rem,1.1vw,.85rem)",
+                  color: "rgba(156,200,238,.3)",
+                  letterSpacing: ".08em",
+                  marginTop: 8,
+                }}
+              >
+                ขอแสดงความยินดีกับการเข้า Top 4
+              </div>
+            </div>
+          );
+        }
+
+        // ── TOP 3 PREVIEW ──
+        case "top3": {
+          const top3 = sortedPositions.slice(0, 3);
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 14,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.55rem,.85vw,.7rem)",
+                  letterSpacing: ".42em",
+                  color: "rgba(156,200,238,.45)",
+                }}
+              >
+                เหลือเพียง 3 ทีมสุดท้าย
+              </div>
+              <div
+                className="grad-gold"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".1em",
+                  lineHeight: 1,
+                }}
+              >
+                TOP 3
+              </div>
+              <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
+                {top3.map((pos, i) => {
+                  const team = data.teams.find((t) => t.id === pos.teamId);
+                  if (!team) return null;
+                  return (
+                    <div
+                      key={team.id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "10px 14px",
+                        borderRadius: 8,
+                        background: "rgba(4,12,28,.7)",
+                        border: `1px solid ${team.color}33`,
+                      }}
+                    >
+                      <div style={{ fontSize: i === 0 ? 22 : 17 }}>
+                        {medals[i]}
+                      </div>
+                      <div
+                        style={{
+                          ...notoTH,
+                          fontSize: i === 0 ? 13 : 11,
+                          fontWeight: 700,
+                          color: team.color,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {team.name}
+                      </div>
+                      <div
+                        style={{
+                          ...orbitron,
+                          fontSize: i === 0 ? 11 : 9,
+                          color: "rgba(156,200,238,.5)",
+                        }}
+                      >
+                        {pos.score}P
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
+        // ── 3RD PLACE ──
+        case "3rd": {
+          const t3 = sortedPositions[2]
+            ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
+            : null;
+          const s3 = sortedPositions[2]?.score ?? 0;
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.55rem,.85vw,.7rem)",
+                  letterSpacing: ".42em",
+                  color: "rgba(156,200,238,.4)",
+                }}
+              >
+                — TOP 3 REVEAL —
+              </div>
+              <div
+                className="grad-gold"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".1em",
+                  lineHeight: 1,
+                }}
+              >
+                3RD PLACE
+              </div>
+              <div
+                style={{
+                  width: 160,
+                  height: 1.5,
+                  background: `linear-gradient(90deg,transparent,${C.gold},transparent)`,
+                  borderRadius: 1,
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 28,
+                  animation: "float 2.5s ease-in-out infinite",
+                }}
+              >
+                🥉
+              </div>
+              {t3 && (
+                <>
+                  <div
+                    style={{
+                      ...notoTH,
+                      fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                      fontWeight: 800,
+                      color: t3.color,
+                      textShadow: `0 0 28px ${t3.color}99`,
+                    }}
+                  >
+                    {t3.name}
+                  </div>
+                  <div
+                    style={{
+                      ...orbitron,
+                      fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                      color: "rgba(156,200,238,.5)",
+                    }}
+                  >
+                    {s3}{" "}
+                    <span style={{ fontSize: ".65em", opacity: 0.6 }}>
+                      POINTS
+                    </span>
+                  </div>
+                </>
+              )}
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(.65rem,1.1vw,.85rem)",
+                  color: "rgba(156,200,238,.28)",
+                  letterSpacing: ".08em",
+                  marginTop: 8,
+                }}
+              >
+                ขอแสดงความยินดีกับอันดับที่ 3
+              </div>
+            </div>
+          );
+        }
+
+        // ── RUNNER UP ──
+        case "runnerup": {
+          const ru = sortedPositions[1]
+            ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
+            : null;
+          const sru = sortedPositions[1]?.score ?? 0;
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.55rem,.85vw,.7rem)",
+                  letterSpacing: ".42em",
+                  color: "rgba(156,200,238,.4)",
+                }}
+              >
+                — RUNNER UP —
+              </div>
+              <div
+                className="grad-blue"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".14em",
+                }}
+              >
+                RUNNER UP
+              </div>
+              <div
+                style={{
+                  width: 160,
+                  height: 1.5,
+                  background: `linear-gradient(90deg,transparent,${C.blueLight},transparent)`,
+                  borderRadius: 1,
+                }}
+              />
+              <div
+                style={{
+                  fontSize: 28,
+                  animation: "float 2.5s ease-in-out infinite",
+                }}
+              >
+                🥈
+              </div>
+              {ru && (
+                <>
+                  <div
+                    style={{
+                      ...notoTH,
+                      fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                      fontWeight: 800,
+                      color: ru.color,
+                      textShadow: `0 0 28px ${ru.color}99`,
+                    }}
+                  >
+                    {ru.name}
+                  </div>
+                  <div
+                    style={{
+                      ...orbitron,
+                      fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                      color: "rgba(156,200,238,.5)",
+                    }}
+                  >
+                    {sru}{" "}
+                    <span style={{ fontSize: ".65em", opacity: 0.6 }}>
+                      POINTS
+                    </span>
+                  </div>
+                </>
+              )}
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(.65rem,1.1vw,.85rem)",
+                  color: "rgba(156,200,238,.28)",
+                  letterSpacing: ".08em",
+                  marginTop: 8,
+                }}
+              >
+                ขอแสดงความยินดีกับอันดับที่ 2
+              </div>
+            </div>
+          );
+        }
+
+        // ── CHAMPION ──
+        case "champion": {
+          const ch = sortedPositions[0]
+            ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
+            : null;
+          const sch = sortedPositions[0]?.score ?? 0;
+          return (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 10,
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.5rem,.8vw,.68rem)",
+                  letterSpacing: ".48em",
+                  color: "rgba(156,200,238,.5)",
+                }}
+              >
+                ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
+              </div>
+              <div
+                className="grad-gold"
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+                  fontWeight: 900,
+                  letterSpacing: ".1em",
+                  lineHeight: 1,
+                }}
+              >
+                CHAMPION
+              </div>
+              <div
+                style={{
+                  width: 280,
+                  height: 2,
+                  background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
+                  borderRadius: 1,
+                }}
+              />
+              <div
+                style={{
+                  fontSize: "clamp(2.8rem,6vw,5rem)",
+                  animation: "float 2.2s ease-in-out infinite",
+                  filter: `drop-shadow(0 0 22px rgba(252,212,125,.8))`,
+                }}
+              >
+                🏆
+              </div>
+              {ch && (
+                <div
+                  style={{
+                    ...notoTH,
+                    fontSize: "clamp(1.6rem,3.8vw,3rem)",
+                    fontWeight: 900,
+                    color: ch.color,
+                    textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+                  }}
+                >
+                  {ch.name}
+                </div>
+              )}
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(1rem,2.2vw,1.7rem)",
+                  fontWeight: 900,
+                  color: C.gold,
+                }}
+              >
+                {sch}{" "}
+                <span
+                  style={{
+                    fontSize: ".4em",
+                    color: "rgba(156,200,238,.4)",
+                    marginLeft: 5,
+                  }}
+                >
+                  POINTS
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+                {sortedPositions.slice(1, 3).map((pos, i) => {
+                  const team = data.teams.find((t) => t.id === pos.teamId);
+                  if (!team) return null;
+                  return (
+                    <div
+                      key={team.id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 3,
+                        padding: "7px 14px",
+                        borderRadius: 8,
+                        background: "rgba(4,12,28,.7)",
+                        border: `1px solid ${team.color}33`,
+                      }}
+                    >
+                      <span style={{ fontSize: 15 }}>{["🥈", "🥉"][i]}</span>
+                      <span
+                        style={{
+                          ...notoTH,
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: team.color,
+                        }}
+                      >
+                        {team.name}
+                      </span>
+                      <span
+                        style={{
+                          ...orbitron,
+                          fontSize: 9,
+                          color: "rgba(156,200,238,.45)",
+                        }}
+                      >
+                        {pos.score}P
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(.6rem,1vw,.82rem)",
+                  color: "rgba(156,200,238,.3)",
+                  letterSpacing: ".1em",
+                  marginTop: 4,
+                }}
+              >
+                คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
+              </div>
+            </div>
+          );
+        }
+      }
+    };
+
+    const STAGE_LABELS = [
+      "Title",
+      "Calculating",
+      "5th–8th",
+      "4th",
+      "Top 3",
+      "3rd",
+      "Runner Up",
+      "Champion",
+    ];
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          height: "100%",
+          padding: "0 24px 56px",
+          position: "relative",
+        }}
+      >
+        {/* confetti root — reuse existing one */}
+        <div
+          id="confetti-root"
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+            zIndex: 0,
+          }}
+        />
+
+        {/* Darkened backdrop for reveal stages */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            background: ["4th", "3rd", "runnerup"].includes(revealStage)
+              ? "rgba(2,8,16,.65)"
+              : "transparent",
+            transition: "background 1.2s ease",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Gold core pulse overlay for champion */}
+        {revealStage === "champion" && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(252,212,125,.06) 0%, transparent 70%)",
+            }}
+          />
+        )}
+
+        {/* Main stage content */}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 2,
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            opacity: visible ? 1 : 0,
+            transition: "opacity 0.35s ease",
+          }}
+        >
+          {renderStage()}
+        </div>
+
+        {/* Sub-stage nav */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 56,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            flexWrap: "wrap",
+            padding: "0 24px",
+          }}
+        >
+          {/* Prev / Next */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              background: "rgba(10,20,38,.90)",
+              border: `1px solid ${border}`,
+              borderRadius: 28,
+              padding: "7px 14px",
+              backdropFilter: "blur(14px)",
+            }}
+          >
+            <button
+              onClick={() => goReveal(-1)}
+              disabled={stageIndex === 0}
+              style={{
+                ...orbitron,
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: ".14em",
+                padding: "4px 10px",
+                borderRadius: 14,
+                cursor: stageIndex === 0 ? "not-allowed" : "pointer",
+                background: "none",
+                border: "none",
+                color:
+                  stageIndex === 0
+                    ? "rgba(156,200,238,.25)"
+                    : "rgba(156,200,238,.8)",
+                transition: "color .2s",
+              }}
+            >
+              ← PREV
+            </button>
+            <div style={{ width: 1, height: 14, background: border }} />
+            <span
+              style={{
+                ...orbitron,
+                fontSize: 8,
+                color: C.textLo,
+                padding: "0 6px",
+                letterSpacing: ".15em",
+              }}
+            >
+              {stageIndex + 1} / {REVEAL_STAGES.length}
+            </span>
+            <div style={{ width: 1, height: 14, background: border }} />
+            <button
+              onClick={() => goReveal(1)}
+              disabled={stageIndex === REVEAL_STAGES.length - 1}
+              style={{
+                ...orbitron,
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: ".14em",
+                padding: "4px 10px",
+                borderRadius: 14,
+                cursor:
+                  stageIndex === REVEAL_STAGES.length - 1
+                    ? "not-allowed"
+                    : "pointer",
+                background: "none",
+                border: "none",
+                color:
+                  stageIndex === REVEAL_STAGES.length - 1
+                    ? "rgba(156,200,238,.25)"
+                    : "rgba(156,200,238,.8)",
+                transition: "color .2s",
+              }}
+            >
+              NEXT →
+            </button>
+          </div>
+
+          {/* Stage dot indicators */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              background: "rgba(10,20,38,.90)",
+              border: `1px solid ${border}`,
+              borderRadius: 28,
+              padding: "7px 14px",
+              backdropFilter: "blur(14px)",
+            }}
+          >
+            {REVEAL_STAGES.map((s, i) => (
+              <button
+                key={s}
+                onClick={() => {
+                  setVisible(false);
+                  setTimeout(() => {
+                    setRevealStage(s);
+                    setVisible(true);
+                  }, 350);
+                }}
+                title={STAGE_LABELS[i]}
+                style={{
+                  width: revealStage === s ? 20 : 7,
+                  height: 7,
+                  borderRadius: revealStage === s ? 3 : "50%",
+                  background:
+                    revealStage === s ? C.gold : "rgba(156,200,238,.2)",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all .25s",
+                  boxShadow:
+                    revealStage === s ? `0 0 8px rgba(252,212,125,.6)` : "none",
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Add dotPulse keyframe if not already in GLOBAL_CSS */}
+      </div>
+    );
+  }
+  // =========================================================================
+  // FOOTER TICKER
+  // =========================================================================
+  // FIND + REPLACE FooterTicker component ทั้งหมด:
+  const FooterTicker = () => (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 28,
+        zIndex: 45,
+        background: "rgba(7,17,30,.92)",
+        borderTop: `1px solid rgba(83,143,238,.12)`,
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        backdropFilter: "blur(10px)",
+        padding: "0 24px",
+      }}
+    >
+      <span
+        style={{
+          ...notoTH,
+          fontSize: 11,
+          color: "rgba(156,200,238,.55)",
+          letterSpacing: "0.05em",
+          textAlign: "center",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        ✦&nbsp;
+        <span style={{ color: C.gold, fontWeight: 600 }}>
+          วันที่ 9 สิงหาคม 2569
+        </span>
+        &nbsp;·&nbsp;ช่วงเช้า&nbsp;
+        <span style={{ color: C.orange, fontWeight: 600 }}>Elimination</span>
+        &nbsp;·&nbsp;ช่วงบ่าย&nbsp;
+        <span style={{ color: C.orange, fontWeight: 600 }}>Semi-final</span>
+        &nbsp;และ&nbsp;
+        <span style={{ color: C.orange, fontWeight: 600 }}>Final</span>
+        &nbsp;·&nbsp;รับชมการถ่ายทอดสดได้ทาง&nbsp;
+        <span style={{ color: C.blueLight, fontWeight: 600 }}>
+          facebook.com/@anandayquiz
+        </span>
+        &nbsp;✦
+      </span>
+    </div>
+  );
   // =========================================================================
   // NAV BAR
   // =========================================================================
@@ -2239,51 +3388,52 @@ export default function ViewerDashboard() {
       <div
         style={{
           position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
+          bottom: 32,
+          right: 16,
           zIndex: 50,
           display: "flex",
+          flexDirection: "row", // แนวนอนเหมือนเดิม
           alignItems: "center",
-          justifyContent: "center",
-          padding: "10px 20px 14px",
+          justifyContent: "flex-end", // ชิดขวา
+          flexWrap: "wrap", // wrap ได้ถ้าหน้าจอแคบ
           gap: 8,
-          background: "linear-gradient(0deg, rgba(7,17,30,.96), transparent)",
-          flexWrap: "wrap",
+          pointerEvents: "none",
+          maxWidth: "calc(100vw - 32px)",
         }}
       >
         {/* ── STATUS TOGGLE ── */}
-        <button
-          style={{ ...pillStyle, cursor: "pointer" }}
-          onClick={() => setShowStatus((v) => !v)}
-        >
-          <div
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: "50%",
-              background: dataReady ? "#4ade80" : "#f472b6",
-              boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
-              animation: "glowPulse 1.5s infinite",
-              flexShrink: 0,
-            }}
-          />
-          <span
-            style={{
-              ...orbitron,
-              fontSize: 10,
-              color: C.textMid,
-              letterSpacing: "0.15em",
-            }}
+        <div style={{ pointerEvents: "all" }}>
+          <button
+            style={{ ...pillStyle, cursor: "pointer" }}
+            onClick={() => setShowStatus((v) => !v)}
           >
-            {showStatus ? "✕" : "···"}
-          </span>
-        </button>
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: dataReady ? "#4ade80" : "#f472b6",
+                boxShadow: `0 0 7px ${dataReady ? "#4ade80" : "#f472b6"}`,
+                animation: "glowPulse 1.5s infinite",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                ...orbitron,
+                fontSize: 10,
+                color: C.textMid,
+                letterSpacing: "0.15em",
+              }}
+            >
+              {showStatus ? "✕" : "···"}
+            </span>
+          </button>
+        </div>
 
         {showStatus && (
           <>
-            {/* Status */}
-            <div style={pillStyle}>
+            <div style={{ ...pillStyle, pointerEvents: "all" }}>
               <div
                 style={{
                   width: 7,
@@ -2305,9 +3455,7 @@ export default function ViewerDashboard() {
                 {dataReady ? "DATA LINKED" : "CONNECTING…"}
               </span>
             </div>
-
-            {/* Round */}
-            <div style={pillStyle}>
+            <div style={{ ...pillStyle, pointerEvents: "all" }}>
               <span
                 style={{
                   ...orbitron,
@@ -2319,9 +3467,13 @@ export default function ViewerDashboard() {
                 ROUND {data.state.round}
               </span>
             </div>
-
-            {/* Sync */}
-            <div style={{ ...pillStyle, padding: "5px 10px" }}>
+            <div
+              style={{
+                ...pillStyle,
+                padding: "5px 10px",
+                pointerEvents: "all",
+              }}
+            >
               <RefreshBtn />
             </div>
           </>
@@ -2331,18 +3483,20 @@ export default function ViewerDashboard() {
         <div style={{ width: 1, height: 20, background: border }} />
 
         {/* ── NAV TOGGLE ── */}
-        <button
-          style={{ ...pillStyle, cursor: "pointer" }}
-          onClick={() => setShowNav((v) => !v)}
-        >
-          <span style={{ ...notoTH, fontSize: 14, color: C.textMid }}>
-            {showNav ? "✕" : "☰"}
-          </span>
-        </button>
+        <div style={{ pointerEvents: "all" }}>
+          <button
+            style={{ ...pillStyle, cursor: "pointer" }}
+            onClick={() => setShowNav((v) => !v)}
+          >
+            <span style={{ ...notoTH, fontSize: 14, color: C.textMid }}>
+              {showNav ? "✕" : "☰"}
+            </span>
+          </button>
+        </div>
 
         {showNav && (
           <>
-            <div style={pillStyle}>
+            <div style={{ ...pillStyle, pointerEvents: "all" }}>
               <button style={btnStyle} onClick={prevSlide}>
                 ← Prev
               </button>
@@ -2364,7 +3518,7 @@ export default function ViewerDashboard() {
             </div>
 
             {/* Dot indicators */}
-            <div style={{ ...pillStyle, gap: 7 }}>
+            <div style={{ ...pillStyle, gap: 7, pointerEvents: "all" }}>
               {Array.from({ length: totalSlides }, (_, i) => (
                 <button
                   key={i}
@@ -2389,9 +3543,16 @@ export default function ViewerDashboard() {
               ))}
             </div>
 
-            {/* Slide jump buttons */}
-            <div style={{ ...pillStyle, padding: "5px 10px", gap: 2 }}>
-              {(["😽", "💻", "📋", "🚀", "📊", "🏆"] as const).map(
+            {/* Slide jump emoji */}
+            <div
+              style={{
+                ...pillStyle,
+                padding: "5px 10px",
+                gap: 2,
+                pointerEvents: "all",
+              }}
+            >
+              {(["😽", "💻", "📋", "🚀", "📊", "🏆", "🎯"] as const).map(
                 (icon, i) => (
                   <button
                     key={i}
@@ -2417,7 +3578,6 @@ export default function ViewerDashboard() {
       </div>
     );
   };
-
   // =========================================================================
   // RENDER
   // =========================================================================
@@ -2428,6 +3588,7 @@ export default function ViewerDashboard() {
     4: <Slide4 />,
     5: <Slide5 />,
     6: <Slide6 />,
+    7: <Slide7 />,
   };
 
   return (
@@ -2466,7 +3627,7 @@ export default function ViewerDashboard() {
             </motion.div>
           </AnimatePresence>
         </div>
-
+        <FooterTicker />
         <NavBar />
       </div>
     </>
