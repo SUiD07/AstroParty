@@ -391,12 +391,14 @@ function JeopardyCell({
         minHeight: 62,
         padding: "8px 6px",
         borderRadius: 8,
-        border: answered
-          ? `1px solid rgba(37,64,116,0.22)`
-          : `1px solid rgba(83,143,238,0.25)`,
-        background: answered
-          ? "rgba(7,17,30,0.88)"
-          : `linear-gradient(135deg, rgba(13,27,50,0.95), rgba(37,64,116,0.28))`,
+        // border: answered
+        //   ? `1px solid rgba(37,64,116,0.22)`
+        //   : `1px solid rgba(83,143,238,0.25)`,
+        border: `1px solid rgba(83,143,238,0.25)`,
+        // background: answered
+        //   ? "rgba(7,17,30,0.88)"
+        //   : `linear-gradient(135deg, rgba(13,27,50,0.95), rgba(37,64,116,0.28))`,
+        background: `linear-gradient(135deg, rgba(13,27,50,0.95), rgba(37,64,116,0.28))`,
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
@@ -404,27 +406,31 @@ function JeopardyCell({
         justifyContent: "center",
         gap: 4,
         transition: "all 0.2s",
-        opacity: answered ? 0.62 : 1,
+        // opacity: answered ? 0.62 : 1,
+        opacity: 1,
       }}
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLDivElement;
-        el.style.boxShadow = answered
-          ? "none"
-          : `0 0 18px rgba(237,130,64,0.28)`;
+        // el.style.boxShadow = answered
+        //   ? "none"
+        //   : `0 0 18px rgba(237,130,64,0.28)`;
+        el.style.boxShadow = `0 0 18px rgba(237,130,64,0.28)`;
 
-        if (!answered) {
-          el.style.borderColor = `rgba(237,130,64,0.45)`;
-        }
+        // if (!answered) {
+        //   el.style.borderColor = `rgba(237,130,64,0.45)`;
+        // }
+        el.style.borderColor = `rgba(237,130,64,0.45)`;
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.boxShadow = "none";
-        el.style.borderColor = answered
-          ? "rgba(37,64,116,0.22)"
-          : "rgba(83,143,238,0.25)";
+        // el.style.borderColor = answered
+        //   ? "rgba(37,64,116,0.22)"
+        //   : "rgba(83,143,238,0.25)";
+        el.style.borderColor = "rgba(83,143,238,0.25)";
       }}
     >
-      {answered ? (
+      {/* {answered ? (
         <>
           <div
             style={{
@@ -478,6 +484,7 @@ function JeopardyCell({
           )}
 
           {/* answered dot */}
+      {/*
           <div
             style={{
               position: "absolute",
@@ -491,19 +498,19 @@ function JeopardyCell({
             ✓
           </div>
         </>
-      ) : (
-        <span
-          style={{
-            ...orbitron,
-            fontSize: 20,
-            fontWeight: 900,
-            color: C.orange,
-            letterSpacing: "0.04em",
-          }}
-        >
-          ข้อ {question.number}
-        </span>
-      )}
+      ) : ( */}
+      <span
+        style={{
+          ...orbitron,
+          fontSize: 20,
+          fontWeight: 900,
+          color: C.orange,
+          letterSpacing: "0.04em",
+        }}
+      >
+        ข้อ {question.number}
+      </span>
+      {/* )} */}
     </div>
   );
 }
@@ -555,9 +562,13 @@ function QuestionModal({
           background: "rgba(10,20,38,0.97)",
           border: `1px solid ${borderWarm}`,
           borderRadius: 14,
-          width: 440,
-          maxWidth: "90vw",
-          maxHeight: "85vh",
+          // width: 440,
+          // maxWidth: "90vw",
+          // maxHeight: "85vh",
+          width: "90%",
+          height: "90%",
+          maxWidth: "90%",
+          maxHeight: "90%",
           display: "flex",
           flexDirection: "column",
           boxShadow: `0 0 40px rgba(237,130,64,0.12), 0 24px 60px rgba(0,0,0,0.55)`,
@@ -633,6 +644,22 @@ function QuestionModal({
             flex: 1,
           }}
         >
+          {/* Canva iframe */}
+          {canvaLinks[question.id] && (
+            <div style={{ marginTop: 16 }}>
+              <iframe
+                src={canvaLinks[question.id]}
+                allowFullScreen
+                allow="fullscreen"
+                style={{
+                  width: "100%",
+                  height: "min(60vh, calc((100vw - 80px) * 9 / 16))",
+                  border: "none",
+                  borderRadius: 8,
+                }}
+              />
+            </div>
+          )}
           {/* Events */}
           {events.length === 0 ? (
             <div
@@ -728,23 +755,6 @@ function QuestionModal({
                   </motion.div>
                 );
               })}
-            </div>
-          )}
-
-          {/* Canva iframe */}
-          {canvaLinks[question.id] && (
-            <div style={{ marginTop: 16 }}>
-              <iframe
-                src={canvaLinks[question.id]}
-                allowFullScreen
-                allow="fullscreen"
-                style={{
-                  width: "100%",
-                  height: 320,
-                  border: "none",
-                  borderRadius: 8,
-                }}
-              />
             </div>
           )}
         </div>
@@ -1079,7 +1089,7 @@ export default function ViewerDashboard() {
       />
 
       {/* Logo */}
-      <img
+      {/* <img
         src="/logo.png"
         alt="AMSci Logo"
         style={{
@@ -1089,7 +1099,42 @@ export default function ViewerDashboard() {
           filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
           animation: "float 6s ease-in-out infinite",
         }}
-      />
+      /> */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex flex-col items-center flex-shrink-0">
+          <img
+            src="/logoIT.svg"
+            alt="AMSci Logo"
+            style={{
+              width: "clamp(5rem,11vw,42rem)",
+              height: "auto",
+              filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
+              animation: "float 6s ease-in-out infinite",
+            }}
+          />
+          <img
+            src="/logoIT2.svg"
+            alt="AMSci Logo"
+            style={{
+              width: "clamp(15rem,18vw,42rem)",
+              height: "auto",
+              filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
+              animation: "float 6s ease-in-out infinite",
+            }}
+          />
+        </div>
+        <img
+          src="/logoSyringe.png"
+          alt="AMSci Logo"
+          className="flex-shrink-0"
+          style={{
+            width: "clamp(20rem,18vw,42rem)",
+            height: "auto",
+            filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
+            animation: "float 6s ease-in-out infinite",
+          }}
+        />
+      </div>
 
       {/* Title */}
       <h1
@@ -1109,7 +1154,9 @@ export default function ViewerDashboard() {
         }}
       >
         {/* ASTROPARTY */}
-        Final Round
+        {/* Final Round */}
+        <div>เปิดโลกสพจ.</div>
+        <div>IT x Syringe</div>
       </h1>
 
       {/* Divider */}
@@ -1149,7 +1196,8 @@ export default function ViewerDashboard() {
           margin: 0,
         }}
       >
-        คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
+        {/* คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569 */}
+        คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 1 กรกฎาคม 2569
       </p>
     </div>
   );
@@ -1158,177 +1206,205 @@ export default function ViewerDashboard() {
   // SLIDE 2 — OVERVIEW
   // =========================================================================
   const Slide2 = () => (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        height: "100%",
-        padding: 28,
-      }}
-    >
-      <div
+    <div className="flex items-center justify-center gap-4 mb-4 w-full max-w-7xl mx-auto px-4">
+      <iframe
+        src="https://www.canva.com/design/DAHMNIMyTQQ/F4yvsIIFM4HCuc-m3aYBAQ/view?embed#1"
+        allowFullScreen
+        allow="fullscreen"
         style={{
-          ...glassCard(true),
-          padding: "40px 44px",
-          maxWidth: 820,
+          flex: 1,
           width: "100%",
+          height: 320,
+          border: "none",
+          borderRadius: 8,
         }}
-      >
-        {/* Title row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 6,
-          }}
-        >
-          <h2
-            style={{
-              ...orbitron,
-              fontSize: "clamp(1.8rem,3.5vw,2.8rem)",
-              fontWeight: 900,
-              color: C.blueLight,
-              margin: 0,
-            }}
-          >
-            Round {data.state.round}
-          </h2>
-          {/* <div
-            style={{
-              padding: "6px 16px",
-              borderRadius: 6,
-              background: "rgba(237,130,64,0.10)",
-              border: `1px solid ${borderWarm}`,
-            }}
-          >
-            <span
-              style={{
-                ...orbitron,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.15em",
-                color: data.state.status === "finished" ? "#4ade80" : C.orange,
-              }}
-            >
-              {data.state.status.toUpperCase()}
-            </span>
-          </div> */}
-        </div>
-        <p
-          style={{
-            ...notoTH,
-            fontSize: 17,
-            color: C.blueLight,
-            opacity: 0.55,
-            marginBottom: 32,
-          }}
-        >
-          AMSci 2026 Final Round — คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย
-        </p>
-
-        {/* Stat cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3,1fr)",
-            gap: 12,
-            marginBottom: 28,
-          }}
-        >
-          {[
-            ["Teams", data.teams.length],
-            ["Answered", `${answeredCount} / ${totalQCount}`],
-            [
-              "Leader",
-              sortedPositions[0]
-                ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)
-                    ?.name ?? "—")
-                : "—",
-            ],
-          ].map(([label, val]) => (
-            <div
-              key={String(label)}
-              style={{
-                ...glassCard(),
-                padding: "14px 16px",
-                textAlign: "center",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
-                }}
-              />
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: 12,
-                  opacity: 0.55,
-                  marginBottom: 5,
-                }}
-              >
-                {label}
-              </div>
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: 20,
-                  fontWeight: 900,
-                  color: C.textHi,
-                }}
-              >
-                {val}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Categories */}
-        {categories.length > 0 && (
-          <>
-            <h3
-              style={{
-                ...notoTH,
-                color: C.blueLight,
-                fontWeight: 700,
-                fontSize: 13,
-                margin: "0 0 10px",
-              }}
-            >
-              หมวดคำถาม:
-            </h3>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {categories.map((c) => (
-                <div
-                  key={c.id}
-                  style={{
-                    ...glassCard(),
-                    padding: "6px 14px",
-                    ...notoTH,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: C.blueLight,
-                  }}
-                >
-                  {c.name}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      />
+      <iframe
+        src="https://www.canva.com/design/DAHMs-UZiWM/sTLroOHsyCLHdoZ_jiRrdA/view?embed#1"
+        allowFullScreen
+        allow="fullscreen"
+        style={{
+          flex: 1,
+          width: "100%",
+          height: 320,
+          border: "none",
+          borderRadius: 8,
+        }}
+      />
     </div>
   );
+  // const Slide2 = () => (
+  //   <div
+  //     style={{
+  //       display: "flex",
+  //       alignItems: "center",
+  //       justifyContent: "center",
+  //       width: "100%",
+  //       height: "100%",
+  //       padding: 28,
+  //     }}
+  //   >
+  //     <div
+  //       style={{
+  //         ...glassCard(true),
+  //         padding: "40px 44px",
+  //         maxWidth: 820,
+  //         width: "100%",
+  //       }}
+  //     >
+  //       {/* Title row */}
+  //       <div
+  //         style={{
+  //           display: "flex",
+  //           alignItems: "center",
+  //           justifyContent: "space-between",
+  //           marginBottom: 6,
+  //         }}
+  //       >
+  //         <h2
+  //           style={{
+  //             ...orbitron,
+  //             fontSize: "clamp(1.8rem,3.5vw,2.8rem)",
+  //             fontWeight: 900,
+  //             color: C.blueLight,
+  //             margin: 0,
+  //           }}
+  //         >
+  //           Round {data.state.round}
+  //         </h2>
+  //         {/* <div
+  //           style={{
+  //             padding: "6px 16px",
+  //             borderRadius: 6,
+  //             background: "rgba(237,130,64,0.10)",
+  //             border: `1px solid ${borderWarm}`,
+  //           }}
+  //         >
+  //           <span
+  //             style={{
+  //               ...orbitron,
+  //               fontSize: 11,
+  //               fontWeight: 700,
+  //               letterSpacing: "0.15em",
+  //               color: data.state.status === "finished" ? "#4ade80" : C.orange,
+  //             }}
+  //           >
+  //             {data.state.status.toUpperCase()}
+  //           </span>
+  //         </div> */}
+  //       </div>
+  //       <p
+  //         style={{
+  //           ...notoTH,
+  //           fontSize: 17,
+  //           color: C.blueLight,
+  //           opacity: 0.55,
+  //           marginBottom: 32,
+  //         }}
+  //       >
+  //         AMSci 2026 Final Round — คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย
+  //       </p>
+
+  //       {/* Stat cards */}
+  //       <div
+  //         style={{
+  //           display: "grid",
+  //           gridTemplateColumns: "repeat(3,1fr)",
+  //           gap: 12,
+  //           marginBottom: 28,
+  //         }}
+  //       >
+  //         {[
+  //           ["Teams", data.teams.length],
+  //           ["Answered", `${answeredCount} / ${totalQCount}`],
+  //           [
+  //             "Leader",
+  //             sortedPositions[0]
+  //               ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)
+  //                   ?.name ?? "—")
+  //               : "—",
+  //           ],
+  //         ].map(([label, val]) => (
+  //           <div
+  //             key={String(label)}
+  //             style={{
+  //               ...glassCard(),
+  //               padding: "14px 16px",
+  //               textAlign: "center",
+  //               position: "relative",
+  //               overflow: "hidden",
+  //             }}
+  //           >
+  //             <div
+  //               style={{
+  //                 position: "absolute",
+  //                 top: 0,
+  //                 left: 0,
+  //                 right: 0,
+  //                 height: 2,
+  //                 background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+  //               }}
+  //             />
+  //             <div
+  //               style={{
+  //                 ...notoTH,
+  //                 fontSize: 12,
+  //                 opacity: 0.55,
+  //                 marginBottom: 5,
+  //               }}
+  //             >
+  //               {label}
+  //             </div>
+  //             <div
+  //               style={{
+  //                 ...orbitron,
+  //                 fontSize: 20,
+  //                 fontWeight: 900,
+  //                 color: C.textHi,
+  //               }}
+  //             >
+  //               {val}
+  //             </div>
+  //           </div>
+  //         ))}
+  //       </div>
+
+  //       {/* Categories */}
+  //       {categories.length > 0 && (
+  //         <>
+  //           <h3
+  //             style={{
+  //               ...notoTH,
+  //               color: C.blueLight,
+  //               fontWeight: 700,
+  //               fontSize: 13,
+  //               margin: "0 0 10px",
+  //             }}
+  //           >
+  //             หมวดคำถาม:
+  //           </h3>
+  //           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+  //             {categories.map((c) => (
+  //               <div
+  //                 key={c.id}
+  //                 style={{
+  //                   ...glassCard(),
+  //                   padding: "6px 14px",
+  //                   ...notoTH,
+  //                   fontSize: 13,
+  //                   fontWeight: 600,
+  //                   color: C.blueLight,
+  //                 }}
+  //               >
+  //                 {c.name}
+  //               </div>
+  //             ))}
+  //           </div>
+  //         </>
+  //       )}
+  //     </div>
+  //   </div>
+  // );
 
   // =========================================================================
   // SLIDE 3 — QUESTION BOARD
@@ -2098,8 +2174,60 @@ export default function ViewerDashboard() {
             overflow: "hidden",
           }}
         />
-
         <div
+          style={{
+            fontSize: 58,
+            animation: "float 2.5s ease-in-out infinite",
+            marginBottom: 14,
+            flexShrink: 0,
+          }}
+        >
+          🚀
+        </div>
+
+        <h2
+          style={{
+            ...orbitron,
+            fontSize: "clamp(1.8rem,4.5vw,3.2rem)",
+            fontWeight: 900,
+            background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            marginBottom: 8,
+            flexShrink: 0,
+          }}
+        >
+          จบแล้วจ้า
+        </h2>
+        <div className="flex items-center justify-center gap-4 mb-4 w-full max-w-7xl mx-auto px-4">
+          <iframe
+            src="https://www.canva.com/design/DAHMNIMyTQQ/F4yvsIIFM4HCuc-m3aYBAQ/view?embed#28"
+            allowFullScreen
+            allow="fullscreen"
+            style={{
+              flex: 1,
+              width: "100%",
+              height: 320,
+              border: "none",
+              borderRadius: 8,
+            }}
+          />
+          <iframe
+            src="https://www.canva.com/design/DAHMs-UZiWM/sTLroOHsyCLHdoZ_jiRrdA/view?embed#14"
+            allowFullScreen
+            allow="fullscreen"
+            style={{
+              flex: 1,
+              width: "100%",
+              height: 320,
+              border: "none",
+              borderRadius: 8,
+            }}
+          />
+        </div>
+
+        {/* <div
           style={{
             fontSize: 58,
             animation: "float 2.5s ease-in-out infinite",
@@ -2208,7 +2336,8 @@ export default function ViewerDashboard() {
               </div>
             );
           })}
-        </div>
+        </div> */}
+        {/* ตรงนี้ */}
 
         {/* <button
           style={{
@@ -3336,7 +3465,7 @@ export default function ViewerDashboard() {
           textOverflow: "ellipsis",
         }}
       >
-        ✦&nbsp;
+        {/* ✦&nbsp;
         <span style={{ color: C.gold, fontWeight: 600 }}>
           วันที่ 9 สิงหาคม 2569
         </span>
@@ -3350,6 +3479,15 @@ export default function ViewerDashboard() {
         <span style={{ color: C.blueLight, fontWeight: 600 }}>
           facebook.com/@anandayquiz
         </span>
+        &nbsp;✦ */}
+        ✦&nbsp;
+        <span style={{ color: C.gold, fontWeight: 600 }}>
+          พื้นที่ฝากไอจีฝ่าย
+        </span>
+        &nbsp;·&nbsp;Syringe : &nbsp;
+        <span style={{ color: C.orange, fontWeight: 600 }}>syringe.mdcu</span>
+        &nbsp;·&nbsp;IT : &nbsp;
+        <span style={{ color: C.orange, fontWeight: 600 }}>it.smcu</span>
         &nbsp;✦
       </span>
     </div>
