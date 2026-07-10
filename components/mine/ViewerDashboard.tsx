@@ -530,8 +530,8 @@ function JeopardyCell({
 function QuestionModal({
   category,
   question,
-  events,
-  teams,
+  // events,
+  // teams,
   canvaLinks,
   onClose,
 }: {
@@ -2055,10 +2055,12 @@ export default function ViewerDashboard() {
   // SLIDE 5 — LIVE LEADERBOARD
   // =========================================================================
   const Slide5 = () => {
-    const recentByTeam: Record<number, number> = {};
-    scoreEvents.forEach((ev) => {
-      recentByTeam[ev.team_id] = ev.delta;
-    });
+    const recentByTeam: Record<string, number> = {};
+
+scoreEvents.forEach((ev) => {
+  recentByTeam[ev.team_id] = ev.delta;
+});
+
 
     const maxScore = sortedPositions[0]?.score || 1;
     const n = Math.max(1, sortedPositions.length);
@@ -2108,7 +2110,9 @@ export default function ViewerDashboard() {
             const isFirst = i === 0;
             const pct = (pos.score / maxScore) * 100;
             const recent = recentByTeam[team.id];
-
+            console.log("Rendering team", team.name, "with recent delta:", recent);
+            console.log("team.id:", team.id);
+    
             return (
               <div
                 key={team.id}
