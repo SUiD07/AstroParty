@@ -3,7 +3,7 @@
 /**
  * AstroParty Viewer Dashboard — Slide-Based
  * Theme: Space & Cosmos
- * Palette: #254074 #538FEE #9CC8EE #FCD47D #ED8240 #AA4229
+ * Palette: #1A1A1A #ED8240 #FFFFFF #ED8240 #ED8240 #AA4229
  * Fonts: Noto Sans Thai + Orbitron (display)
  */
 
@@ -42,25 +42,25 @@ interface Category {
 // Design Tokens
 // ---------------------------------------------------------------------------
 const C = {
-  navyDeep: "#0D1B2E",
-  navyMid: "#254074",
-  blueCore: "#538FEE",
-  blueLight: "#9CC8EE",
-  gold: "#FCD47D",
+  navyDeep: "#0a0a0a",
+  navyMid: "#1A1A1A",
+  blueCore: "#ED8240",
+  blueLight: "#B0B0B0",
+  gold: "#ED8240",
   orange: "#ED8240",
   redAcc: "#AA4229",
   slate: "#76849D",
-  bg: "#07111E",
+  bg: "#080808",
   white: "#FFFFFF",
   textHi: "#FFFFFF",
-  textMid: "#9CC8EE",
+  textMid: "#B0B0B0",
   textLo: "#76849D",
 } as const;
 
 // Surface helpers
-const surface = "rgba(37,64,116,0.22)";
-const surfaceHi = "rgba(37,64,116,0.40)";
-const border = "rgba(156,200,238,0.14)";
+const surface = "rgba(26,26,26,0.22)";
+const surfaceHi = "rgba(26,26,26,0.40)";
+const border = "rgba(255,255,255,0.14)";
 const borderWarm = "rgba(237,130,64,0.32)";
 
 // Reusable style objects
@@ -80,6 +80,14 @@ const notoTH: React.CSSProperties = {
   fontFamily: "'Noto Sans Thai', sans-serif",
 };
 
+const fontDisplay: React.CSSProperties = {
+  fontFamily: "'Bodoni Moda', serif",
+  fontWeight: 700,
+};
+// const fontSans: React.CSSProperties = {
+//   fontFamily: "'Roboto', sans-serif",
+// };
+
 const medals = ["🥇", "🥈", "🥉"];
 
 // ---------------------------------------------------------------------------
@@ -89,7 +97,7 @@ const medals = ["🥇", "🥈", "🥉"];
 // @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
 
 const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 @keyframes twinkle  { 0%,100%{opacity:.15} 50%{opacity:.9} }
@@ -97,8 +105,8 @@ const GLOBAL_CSS = `
 @keyframes ndrift   { from{transform:translate(0,0) scale(1);} to{transform:translate(35px,22px) scale(1.08);} }
 @keyframes shipGlow { from{filter:brightness(1);} to{filter:brightness(1.4) drop-shadow(0 0 10px currentColor);} }
 @keyframes glowPulse {
-  0%,100%{ filter: drop-shadow(0 0 12px rgba(237,130,64,.55)) drop-shadow(0 0 28px rgba(252,212,125,.25)); }
-  50%    { filter: drop-shadow(0 0 28px rgba(237,130,64,.9))  drop-shadow(0 0 60px rgba(252,212,125,.50)); }
+  0%,100%{ filter: drop-shadow(0 0 12px rgba(237,130,64,.55)) drop-shadow(0 0 28px rgba(237,130,64,.25)); }
+  50%    { filter: drop-shadow(0 0 28px rgba(237,130,64,.9))  drop-shadow(0 0 60px rgba(237,130,64,.50)); }
 }
 @keyframes confettiFall {
   0%  { transform: translateY(-30px) rotate(0deg);   opacity: 1; }
@@ -117,13 +125,13 @@ const GLOBAL_CSS = `
   50%     { transform:scale(1.4); opacity:1; }
 }
   .grad-gold {
-  background: linear-gradient(135deg, #ED8240 0%, #FCD47D 45%, #fffbe8 80%, #FCD47D 100%);
+  background: linear-gradient(135deg, #ED8240 0%, #ED8240 45%, #fffbe8 80%, #ED8240 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .grad-blue {
-  background: linear-gradient(135deg, #9CC8EE, #fff, #9CC8EE);
+  background: linear-gradient(135deg, #FFFFFF, #fff, #FFFFFF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -150,7 +158,7 @@ const GLOBAL_CSS = `
 /* custom scrollbar */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(83,143,238,.25); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(237,130,64,.25); border-radius: 2px; }
 `;
 
 // ---------------------------------------------------------------------------
@@ -297,9 +305,9 @@ function SectionHead({
             letterSpacing: "0.12em",
             padding: "2px 8px",
             borderRadius: 10,
-            border: `1px solid ${warm ? borderWarm : "rgba(83,143,238,.28)"}`,
+            border: `1px solid ${warm ? borderWarm : "rgba(237,130,64,.28)"}`,
             color: warm ? C.orange : C.blueCore,
-            background: warm ? "rgba(237,130,64,.08)" : "rgba(83,143,238,.08)",
+            background: warm ? "rgba(237,130,64,.08)" : "rgba(237,130,64,.08)",
           }}
         >
           {badge}
@@ -329,7 +337,7 @@ function SlideHeader({
       <div style={{ position: "relative" }}>
         <h2
           style={{
-            ...orbitron,
+            ...fontDisplay,
             fontSize: "clamp(1.1rem,2.2vw,1.7rem)",
             fontWeight: 900,
             // color: C.blueLight,
@@ -393,13 +401,13 @@ function JeopardyCell({
         padding: "8px 6px",
         borderRadius: 8,
         // border: answered
-        //   ? `1px solid rgba(37,64,116,0.22)`
-        //   : `1px solid rgba(83,143,238,0.25)`,
-        border: `1px solid rgba(83,143,238,0.25)`,
+        //   ? `1px solid rgba(26,26,26,0.22)`
+        //   : `1px solid rgba(237,130,64,0.25)`,
+        border: `1px solid rgba(237,130,64,0.25)`,
         // background: answered
         //   ? "rgba(7,17,30,0.88)"
-        //   : `linear-gradient(135deg, rgba(13,27,50,0.95), rgba(37,64,116,0.28))`,
-        background: `linear-gradient(135deg, rgba(13,27,50,0.95), rgba(37,64,116,0.28))`,
+        //   : `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
+        background: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
@@ -426,9 +434,9 @@ function JeopardyCell({
         const el = e.currentTarget as HTMLDivElement;
         el.style.boxShadow = "none";
         // el.style.borderColor = answered
-        //   ? "rgba(37,64,116,0.22)"
-        //   : "rgba(83,143,238,0.25)";
-        el.style.borderColor = "rgba(83,143,238,0.25)";
+        //   ? "rgba(26,26,26,0.22)"
+        //   : "rgba(237,130,64,0.25)";
+        el.style.borderColor = "rgba(237,130,64,0.25)";
       }}
     >
       {answered ? (
@@ -668,7 +676,7 @@ function QuestionModal({
                 padding: "36px 0",
                 textAlign: "center",
                 borderRadius: 8,
-                border: "1px dashed rgba(83,143,238,0.2)",
+                border: "1px dashed rgba(237,130,64,0.2)",
               }}
             >
               <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
@@ -820,7 +828,7 @@ function Slide3({
                 gap: 7,
                 padding: "5px 13px",
                 borderRadius: 18,
-                background: "rgba(37,64,116,.28)",
+                background: "rgba(26,26,26,.28)",
                 border: `1px solid ${border}`,
               }}
             >
@@ -846,7 +854,7 @@ function Slide3({
         <div
           style={{
             height: 3,
-            background: "rgba(83,143,238,.10)",
+            background: "rgba(237,130,64,.10)",
             borderRadius: 2,
             marginBottom: 14,
             flexShrink: 0,
@@ -897,7 +905,7 @@ function Slide3({
                   padding: "8px 6px",
                   textAlign: "center",
                   background: surfaceHi,
-                  border: `1px solid rgba(83,143,238,0.22)`,
+                  border: `1px solid rgba(237,130,64,0.22)`,
                   borderRadius: 6,
                 }}
               >
@@ -945,7 +953,7 @@ function Slide3({
         >
           {[
             [`rgba(237,130,64,0.55)`, "ยังไม่ตอบ"],
-            [`rgba(37,64,116,0.60)`, "ตอบแล้ว — กดเพื่อดูรายละเอียด"],
+            [`rgba(26,26,26,0.60)`, "ตอบแล้ว — กดเพื่อดูรายละเอียด"],
           ].map(([color, label]) => (
             <div
               key={label}
@@ -979,7 +987,7 @@ function Slide3({
             question={selectedCell.question}
             events={getEvents(selectedCell.question.id)}
             teams={data.teams}
-            canvaLinks={canvaLinks}
+            canvaLinks={canvaLinks} // ← เพิ่ม
             onClose={() => setSelectedCell(null)}
           />
         )}
@@ -1131,8 +1139,8 @@ export default function ViewerDashboard() {
         fontWeight: 600,
         letterSpacing: "0.08em",
         color: C.blueLight,
-        background: "rgba(83,143,238,0.10)",
-        border: "1px solid rgba(83,143,238,0.25)",
+        background: "rgba(237,130,64,0.10)",
+        border: "1px solid rgba(237,130,64,0.25)",
         transition: "all .2s",
         opacity: isRefreshing ? 0.6 : 1,
       }}
@@ -1151,11 +1159,9 @@ export default function ViewerDashboard() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
         width: "100%",
         height: "100%",
-        position: "relative",
-        padding: 32,
+        overflow: "hidden",
       }}
     >
       {/* Corner accent lines — top-left */}
@@ -1293,378 +1299,396 @@ export default function ViewerDashboard() {
             transform: "translate(-50%,-50%) rotateX(70deg)",
           }}
         />
-      </div>
-
-      {/* Ambient glow behind logo */}
+       </div>
+      {/* Logo row */}
       <div
         style={{
-          position: "absolute",
-          width: 260,
-          height: 260,
-          borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(83,143,238,0.07) 0%, transparent 70%)",
-          pointerEvents: "none",
-          marginBottom: 0,
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -62%)",
+          display: "flex",
+          alignItems: "center",
+          gap: 40,
+          paddingTop: 56,
+          paddingBottom: 40,
+          flexShrink: 0,
         }}
-      />
-
-      {/* Logo */}
-      {/* <img
-        src="/logo.png"
-        alt="AMSci Logo"
-        style={{
-          width: "clamp(42rem,18vw,42rem)",
-          height: "auto",
-          // marginBottom: 20,
-          filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
-          animation: "float 6s ease-in-out infinite",
-        }}
-      /> */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex flex-col items-center flex-shrink-0">
+      >
+        {/* Org logos group */}
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <img
             src="/smcu_old.webp"
-            alt="AMSci Logo"
-            className="flex-shrink-0"
-            style={{
-              width: "clamp(13rem,11vw,42rem)",
-              height: "auto",
-              filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
-              animation: "float 6s ease-in-out infinite",
-            }}
+            alt="สโมสรนิสิตคณะแพทยศาสตร์"
+            style={{ width: "clamp(4.5rem,6vw,6rem)", height: "auto" }}
           />
-          {/* <img
-            src="/logoIT2.svg"
-            alt="AMSci Logo"
-            style={{
-              width: "clamp(15rem,18vw,42rem)",
-              height: "auto",
-              filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
-              animation: "float 6s ease-in-out infinite",
-            }}
-          /> */}
+          <img
+            src="/MD_Chula.png"
+            alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
+            style={{ width: "clamp(4.5rem,6vw,6rem)", height: "auto" }}
+          />
         </div>
-        <img
-          src="/logo.png"
-          alt="AMSci Logo"
-          className="flex-shrink-0"
+
+        {/* Divider */}
+        <div
           style={{
-            width: "clamp(20rem,18vw,42rem)",
-            height: "auto",
-            filter: "drop-shadow(0 0 22px rgba(83,143,238,0.5))",
-            animation: "float 6s ease-in-out infinite",
+            width: 1,
+            height: 72,
+            background: "rgba(255,255,255,0.08)",
           }}
         />
+
+        {/* Event logo */}
         <img
-          src="/MD_Chula.png"
-          alt="AMSci Logo"
-          className="flex-shrink-0"
-          style={{
-            width: "clamp(13rem,11vw,42rem)",
-            height: "auto",
-            filter: "drop-shadow(0 0 22px rgba(255, 255, 255, 0.5))",
-            animation: "float 6s ease-in-out infinite",
-          }}
+          src="/logo.png"
+          alt="AMSci 2026"
+          style={{ width: "clamp(7rem,9vw,10rem)", height: "auto" }}
         />
       </div>
 
-      {/* Title */}
-      <h1
-        style={{
-          ...orbitron,
-          fontSize: "clamp(2rem,4.5vw,5em)",
-          fontWeight: 900,
-          textAlign: "center",
-          letterSpacing: "0.08em",
-          // background: "#fff",
-          color: "#fff",
-          // background: `linear-gradient(135deg, ${C.orange} 0%, ${C.gold} 45%, ${C.blueLight} 100%)`,
-          // WebkitBackgroundClip: "text",
-          // WebkitTextFillColor: "transparent",
-          // backgroundClip: "text",
-          textShadow:
-            "0 0 6px rgba(255,255,255,0.4), 0 0 12px rgba(255,255,255,0.2)",
-          animation: "glowPulse 4s ease-in-out infinite alternate",
-          margin: 0,
-          lineHeight: 1,
-        }}
-      >
-        {/* ASTROPARTY */}
-        Final Round
-        {/* <div>เปิดโลกสพจ.</div>
-        <div>IT x Syringe</div> */}
-      </h1>
-
-      {/* Divider */}
+      {/* Thin orange rule */}
       <div
         style={{
-          width: 260,
-          height: 2.5,
-          borderRadius: 2,
-          margin: "20px auto",
-          background: `linear-gradient(90deg, transparent, ${C.orange}, ${C.gold}, ${C.blueLight}, transparent)`,
-          opacity: 0.9,
+          width: 40,
+          height: 2,
+          background: C.orange,
+          borderRadius: 1,
+          marginBottom: 40,
+          flexShrink: 0,
         }}
       />
 
-      {/* AMSci subtitle */}
-      <p
+      {/* Main content */}
+      <div
         style={{
-          ...orbitron,
-          fontSize: "clamp(0.85rem,1.7vw,1.1rem)",
-          fontWeight: 700,
-          letterSpacing: "0.01em",
-          color: C.slate,
-          textTransform: "uppercase",
-          margin: "0 0 8px",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 64px 32px",
+          textAlign: "center",
+          minHeight: 0,
         }}
       >
-        ถ่ายทอดสดการแข่งขันตอบปัญหาวิชาการและวิทยาศาสตร์การแพทย์ ระดับมัธยมศึกษาตอนปลาย
-      </p>
-      <p
-        style={{
-          ...orbitron,
-          fontSize: "clamp(0.85rem,1.7vw,1.1rem)",
-          fontWeight: 700,
-          letterSpacing: "0.01em",
-          color: C.slate,
-          textTransform: "uppercase",
-          margin: "0 0 8px",
-        }}
-      >
-ชิงโล่พระราชทานสมเด็จพระกนิษฐาธิราชเจ้า กรมสมเด็จพระเทพรัตนราชสุดาฯ สยามบรมราชกุมารี เนื่องในสัปดาห์วันอานันทมหิดล ปี 2568      </p>
-      {/* <p
-        style={{
-          ...notoTH,
-          fontSize: "clamp(0.85rem,1.5vw,1rem)",
-          fontWeight: 300,
-          letterSpacing: "0.05em",
-          color: C.blueLight,
-          opacity: 0.7,
-          margin: 0,
-        }}
-      > */}
-        {/* คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569 */}
-      {/* </p> */}
+        {/* Eyebrow */}
+        <p
+          style={{
+            ...notoTH,
+            color: C.orange,
+            fontSize: "clamp(0.8rem,1.4vw,1.1rem)",
+            letterSpacing: "0.25em",
+            // textTransform: "uppercase",
+            marginBottom: 24,
+          }}
+        >
+          AMSci 2026
+        </p>
+
+        {/* Hero title */}
+        <h1
+          style={{
+            ...fontDisplay,
+            fontSize: "clamp(3.2rem,9vw,7rem)",
+            color: "#fff",
+            letterSpacing: "-0.02em",
+            lineHeight: 1,
+            margin: "0 0 40px",
+          }}
+        >
+          Final Round
+        </h1>
+
+        {/* Subtitle block */}
+        <div
+          style={{
+            maxWidth: 780,
+            display: "flex",
+            flexDirection: "column",
+            gap: 20,
+          }}
+        >
+          <p
+            style={{
+              ...notoTH,
+              fontSize: "clamp(1rem,2vw,1.45rem)",
+              color: "rgba(255,255,255,0.65)",
+              lineHeight: 1.9,
+              margin: 0,
+            }}
+          >
+            ถ่ายทอดสดการแข่งขันตอบปัญหาวิชาการและวิทยาศาสตร์การแพทย์
+            <br />
+            ระดับมัธยมศึกษาตอนปลาย
+          </p>
+
+          <div
+            style={{
+              width: 1,
+              height: 32,
+              background: "rgba(255,255,255,0.06)",
+              margin: "0 auto",
+            }}
+          />
+
+          <p
+            style={{
+              ...notoTH,
+              fontSize: "clamp(0.75rem,1.3vw,1rem)",
+              color: "rgba(255,255,255,0.3)",
+              lineHeight: 1.9,
+              margin: 0,
+            }}
+          >
+            ชิงโล่พระราชทานสมเด็จพระกนิษฐาธิราชเจ้า กรมสมเด็จพระเทพรัตนราชสุดาฯ
+            สยามบรมราชกุมารี
+            <br />
+            เนื่องในสัปดาห์วันอานันทมหิดล ปี 2568
+          </p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ paddingBottom: 40, flexShrink: 0 }}>
+        <p
+          style={{
+            ...fontDisplay,
+            color: "rgba(255,255,255,0.15)",
+            fontSize: 11,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+          }}
+        >
+          Faculty of Medicine · Chulalongkorn University
+        </p>
+      </div>
     </div>
   );
 
   // =========================================================================
   // SLIDE 2 — OVERVIEW
   // =========================================================================
-  // const Slide2 = () => (
-  //   <div className="flex items-center justify-center gap-4 mb-4 w-full max-w-7xl mx-auto px-4">
-  //     <iframe
-  //       src="https://www.canva.com/design/DAHMNIMyTQQ/F4yvsIIFM4HCuc-m3aYBAQ/view?embed#1"
-  //       allowFullScreen
-  //       allow="fullscreen"
-  //       style={{
-  //         flex: 1,
-  //         width: "100%",
-  //         height: 320,
-  //         border: "none",
-  //         borderRadius: 8,
-  //       }}
-  //     />
-  //     <iframe
-  //       src="https://www.canva.com/design/DAHMs-UZiWM/sTLroOHsyCLHdoZ_jiRrdA/view?embed#1"
-  //       allowFullScreen
-  //       allow="fullscreen"
-  //       style={{
-  //         flex: 1,
-  //         width: "100%",
-  //         height: 320,
-  //         border: "none",
-  //         borderRadius: 8,
-  //       }}
-  //     />
-  //   </div>
-  // );
-  const Slide2 = () => (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        height: "100%",
-        padding: 28,
-      }}
-    >
+  const Slide2 = () => {
+    const leaderTeam = sortedPositions[0]
+      ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
+      : undefined;
+    const leaderScore = sortedPositions[0]?.score ?? leaderTeam?.score;
+
+    return (
       <div
+        className="้h-full flex flex-col select-none font-sans overflow-hidden"
         style={{
-          ...glassCard(true),
-          padding: "40px 44px",
-          maxWidth: 820,
-          width: "100%",
+          // background: "#080808",
+          paddingBottom: 40,
         }}
       >
-        {/* Title row */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 6,
-          }}
-        >
-          <h2
+        {/* Header */}
+        <div className="px-16 pt-14 pb-6">
+          {data.state.isLive && (
+            <div className="flex items-center gap-2 mb-4">
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-pulse"
+                style={{ backgroundColor: "#ED8240" }}
+              />
+              <span
+                className="text-[10px] tracking-widest uppercase"
+                style={{ color: "#ED8240" }}
+              >
+                Live
+              </span>
+            </div>
+          )}
+
+          <h1
+            className="font-bold text-white leading-none"
             style={{
-              ...orbitron,
-              fontSize: "clamp(1.8rem,3.5vw,2.8rem)",
-              fontWeight: 900,
-              // color: C.blueLight,
-              color: "#fff",
-              margin: 0,
+              fontSize: "clamp(5rem, 12vw, 10rem)",
+              letterSpacing: "-0.02em",
+              ...fontDisplay,
             }}
           >
             Round {data.state.round}
-          </h2>
-          {/* <div
+          </h1>
+
+          <div className="mt-5 space-y-1.5">
+            <p className="text-white/65 text-xl tracking-tight">
+              AMSci 2026 Final Round
+            </p>
+            <p
+              className="text-white/30"
+              style={{ fontSize: "1rem", ...notoTH }}
+            >
+              คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย
+            </p>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div
+          className="mx-16 mb-10"
+          style={{ height: 1, background: "rgba(255,255,255,0.05)" }}
+        />
+
+        {/* Stats row */}
+        <div className="px-16 pb-12 flex gap-5 max-w-3xl">
+          {/* Teams */}
+          <div
+            className="flex-1 rounded-2xl p-6"
             style={{
-              padding: "6px 16px",
-              borderRadius: 6,
-              background: "rgba(237,130,64,0.10)",
-              border: `1px solid ${borderWarm}`,
+              background: "#111",
+              border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <span
+            <p
               style={{
-                ...orbitron,
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.15em",
-                color: data.state.status === "finished" ? "#4ade80" : C.orange,
+                color: "rgba(255,255,255,0.25)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                marginBottom: 12,
               }}
             >
-              {data.state.status.toUpperCase()}
-            </span>
-          </div> */}
-        </div>
-        <p
-          style={{
-            ...notoTH,
-            fontSize: 17,
-            // color: C.blueLight,
-            color: "#fff",
-            opacity: 0.55,
-            marginBottom: 32,
-          }}
-        >
-          <>AMSci 2026 Final Round</>
-          <br />
-          <> คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย</>
-        </p>
+              Teams
+            </p>
+            <p
+              className="text-white font-light tabular-nums"
+              style={{ fontSize: "clamp(2.5rem, 5vw, 4rem)", lineHeight: 1 }}
+            >
+              {data.teams.length}
+            </p>
+          </div>
 
-        {/* Stat cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(3,1fr)",
-            gap: 12,
-            marginBottom: 28,
-          }}
-        >
-          {[
-            ["Teams", data.teams.length],
-            ["Answered", `${answeredCount} / ${totalQCount}`],
-            [
-              "Leader",
-              sortedPositions[0]
-                ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)
-                    ?.name ?? "—")
-                : "—",
-            ],
-          ].map(([label, val]) => (
-            <div
-              key={String(label)}
+          {/* Answered */}
+          <div
+            className="flex-1 rounded-2xl p-6"
+            style={{
+              background: "#111",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <p
               style={{
-                ...glassCard(),
-                padding: "14px 16px",
-                textAlign: "center",
-                position: "relative",
-                overflow: "hidden",
+                color: "rgba(255,255,255,0.25)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                marginBottom: 12,
               }}
             >
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: 2,
-                  background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
-                }}
-              />
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: 12,
-                  opacity: 0.55,
-                  marginBottom: 5,
-                }}
+              Answered
+            </p>
+            <p
+              className="font-light tabular-nums"
+              style={{
+                fontSize: "clamp(2.5rem, 5vw, 4rem)",
+                lineHeight: 1,
+                color: answeredCount > 0 ? "#ED8240" : "white",
+              }}
+            >
+              {answeredCount}
+              <span
+                className="text-white/20 ml-1"
+                style={{ fontSize: "1.5rem" }}
               >
-                {label}
-              </div>
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: 20,
-                  fontWeight: 900,
-                  color: C.textHi,
-                }}
+                / {totalQCount}
+              </span>
+            </p>
+          </div>
+
+          {/* Leader */}
+          <div
+            className="flex-1 rounded-2xl p-6"
+            style={{
+              background: "#111",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <p
+              style={{
+                color: "rgba(255,255,255,0.25)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                marginBottom: 12,
+              }}
+            >
+              Leader
+            </p>
+            <p
+              className="text-white font-light"
+              style={{
+                fontSize: "clamp(1.6rem, 3vw, 2.5rem)",
+                lineHeight: 1.2,
+              }}
+            >
+              {leaderTeam?.name ?? "—"}
+            </p>
+            {leaderTeam && leaderScore !== undefined && (
+              <p
+                style={{ color: "#ED8240", fontSize: "0.85rem", marginTop: 6 }}
               >
-                {val}
-              </div>
-            </div>
-          ))}
+                {leaderScore} pts
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Categories */}
         {categories.length > 0 && (
-          <>
-            <h3
+          <div
+            className="px-16 pb-8 flex-1 flex flex-col"
+            style={{ minHeight: 0 }} // สำคัญ! กัน flex item ดันล้น parent
+          >
+            <p
               style={{
+                color: "rgba(255,255,255,0.2)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                marginBottom: 20,
                 ...notoTH,
-                color: C.blueLight,
-                fontWeight: 700,
-                fontSize: 13,
-                margin: "0 0 10px",
               }}
             >
-              หมวดคำถาม:
-            </h3>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {categories.map((c) => (
-                <div
-                  key={c.id}
-                  style={{
-                    ...glassCard(),
-                    padding: "6px 14px",
-                    ...notoTH,
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: C.blueLight,
-                  }}
-                >
-                  {c.name}
+              หมวดคำถาม
+            </p>
+
+            <div
+              className="flex-1 flex flex-col"
+              style={{ justifyContent: "space-evenly" }} // กระจายเต็มพื้นที่ที่เหลือ
+            >
+              {categories.map((c, i) => (
+                <div key={c.id} className="flex items-center gap-5">
+                  <span
+                    className="tabular-nums"
+                    style={{
+                      color: "rgba(255,255,255,0.12)",
+                      // ฟอนต์เล็กลงถ้าหมวดเยอะ, ใหญ่ขึ้นถ้าหมวดน้อย
+                      fontSize: `clamp(0.6rem, ${18 / categories.length}vh, 0.9rem)`,
+                      width: 18,
+                      textAlign: "right",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span
+                    style={{
+                      color: "rgba(255,255,255,0.55)",
+                      fontSize: `clamp(0.9rem, ${28 / categories.length}vh, 1.6rem)`,
+                      fontWeight: 300,
+                    }}
+                  >
+                    {c.name}
+                  </span>
                 </div>
               ))}
             </div>
-          </>
+          </div>
         )}
       </div>
-    </div>
-  );
+    );
+  };
 
   // =========================================================================
   // SLIDE 3 — QUESTION BOARD
   // =========================================================================
-//  ย้ายไปด้านบน
+  //  ย้ายไปด้านบน
 
   // =========================================================================
   // SLIDE 4 — SPACE RACE
@@ -1722,7 +1746,7 @@ export default function ViewerDashboard() {
               left: 48,
               right: 80,
               height: 24,
-              borderTop: `1px solid rgba(156,200,238,0.12)`,
+              borderTop: `1px solid rgba(255,255,255,0.12)`,
               display: "flex",
               justifyContent: "space-between",
               alignItems: "flex-start",
@@ -1742,14 +1766,14 @@ export default function ViewerDashboard() {
                   style={{
                     width: 1,
                     height: 7,
-                    background: "rgba(83,143,238,.2)",
+                    background: "rgba(237,130,64,.2)",
                   }}
                 />
                 <span
                   style={{
                     ...orbitron,
                     fontSize: 8,
-                    color: "rgba(156,200,238,0.3)",
+                    color: "rgba(255,255,255,0.3)",
                     marginTop: 2,
                   }}
                 >
@@ -1866,7 +1890,7 @@ export default function ViewerDashboard() {
                             fontWeight: 900,
                             padding: "1px 6px",
                             borderRadius: 3,
-                            background: "rgba(13,27,50,0.65)",
+                            background: "rgba(10,10,10,0.65)",
                             border: "1px solid rgba(255,255,255,0.05)",
                             color: C.textHi,
                           }}
@@ -1890,7 +1914,7 @@ export default function ViewerDashboard() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "rgba(156,200,238,0.18)",
+                  color: "rgba(255,255,255,0.18)",
                   fontSize: 11,
                   letterSpacing: "0.2em",
                 }}
@@ -1936,10 +1960,10 @@ export default function ViewerDashboard() {
                     padding: "9px 11px",
                     borderRadius: 7,
                     background: isTop3
-                      ? "rgba(37,64,116,.22)"
+                      ? "rgba(26,26,26,.22)"
                       : "rgba(0,0,0,.18)",
                     border: isTop3
-                      ? `1px solid rgba(83,143,238,.18)`
+                      ? `1px solid rgba(237,130,64,.18)`
                       : "1px solid rgba(255,255,255,.03)",
                     position: "relative",
                     overflow: "hidden",
@@ -2053,12 +2077,26 @@ export default function ViewerDashboard() {
   // =========================================================================
   // SLIDE 5 — LIVE LEADERBOARD
   // =========================================================================
-  const Slide5 = () => (
+  const Slide5 = () => {
+  const recentByTeam: Record<number, number> = {};
+  scoreEvents.forEach((ev) => {
+    recentByTeam[ev.team_id] = ev.delta;
+  });
+
+  const maxScore = sortedPositions[0]?.score || 1;
+  const n = Math.max(1, sortedPositions.length);
+
+  // ยิ่งทีมเยอะ ยิ่งย่อ
+  const rowPad = Math.min(18, 140 / n);          // padding บน-ล่างต่อแถว
+  const nameSize = Math.min(1.6, 12 / n + 0.9);   // rem
+  const scoreSize = Math.min(2.4, 18 / n + 1.2);  // rem
+  const rankSize = Math.min(13, 90 / n + 8);      // px
+
+  return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         width: "100%",
         height: "100%",
         padding: "0 24px 56px",
@@ -2072,15 +2110,12 @@ export default function ViewerDashboard() {
 
       <div
         style={{
-          width: "100%",
-          maxWidth: 740,
           flex: 1,
-          overflowY: "auto",
-          paddingTop: 16,
-          paddingRight: 4,
           display: "flex",
           flexDirection: "column",
-          gap: 10,
+          justifyContent: "space-evenly", // กระจายแถวเต็มพื้นที่ที่เหลือ
+          minHeight: 0,                    // สำคัญ! กัน flex ดันล้น
+          padding: "0 40px",
         }}
       >
         {sortedPositions.length === 0 && (
@@ -2092,46 +2127,49 @@ export default function ViewerDashboard() {
         {sortedPositions.map((pos, i) => {
           const team = data.teams.find((t) => t.id === pos.teamId);
           if (!team) return null;
-          const rankColor =
-            i === 0
-              ? C.gold
-              : i === 1
-                ? C.blueLight
-                : i === 2
-                  ? C.orange
-                  : C.textMid;
+
+          const isFirst = i === 0;
+          const pct = (pos.score / maxScore) * 100;
+          const recent = recentByTeam[team.id];
 
           return (
             <div
               key={team.id}
               style={{
-                ...glassCard(i < 3),
-                // borderLeft: `4px solid ${team.color}`,
                 display: "flex",
                 alignItems: "center",
-                overflow: "hidden",
-                animation: `fadeUp .5s ease ${i * 0.07}s both`,
+                gap: 28,
+                padding: `${rowPad}px 0`,
+                borderTop: "1px solid rgba(255,255,255,0.04)",
+                ...(i === sortedPositions.length - 1
+                  ? { borderBottom: "1px solid rgba(255,255,255,0.04)" }
+                  : {}),
               }}
             >
-              {/* Medal */}
-              <div
+              {/* Rank */}
+              <span
                 style={{
-                  fontSize: i < 3 ? 28 : 20,
-                  padding: "14px 16px",
+                  ...orbitron,
+                  fontSize: rankSize,
+                  fontWeight: 700,
+                  width: 20,
+                  textAlign: "right",
                   flexShrink: 0,
+                  color: isFirst ? C.orange : "rgba(255,255,255,0.2)",
                 }}
               >
-                {medals[i]}
-              </div>
+                {i + 1}
+              </span>
 
-              {/* Info */}
-              <div style={{ flex: 1, padding: "14px 0", minWidth: 0 }}>
+              {/* Team name */}
+              <div style={{ width: 200, flexShrink: 0, minWidth: 0 }}>
                 <div
                   style={{
                     ...notoTH,
-                    fontSize: i < 3 ? 19 : 16,
-                    fontWeight: 700,
-                    marginBottom: 5,
+                    fontWeight: 300,
+                    lineHeight: 1.2,
+                    fontSize: `${nameSize}rem`,
+                    color: isFirst ? "#fff" : "rgba(255,255,255,0.5)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
@@ -2139,69 +2177,69 @@ export default function ViewerDashboard() {
                 >
                   {team.name}
                 </div>
-                {/* Progress bar */}
-                {/* <div
-                  style={{
-                    height: 3,
-                    background: "rgba(255,255,255,.06)",
-                    borderRadius: 2,
-                    width: "90%",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      borderRadius: 2,
-                      width: `${Math.min(100, (pos.score / Math.max(1, sortedPositions[0]?.score ?? 1)) * 100)}%`,
-                      background:
-                        i === 0
-                          ? `linear-gradient(90deg, ${C.orange}, ${C.gold})`
-                          : i === 1
-                            ? `linear-gradient(90deg, ${C.blueCore}, ${C.blueLight})`
-                            : `linear-gradient(90deg, ${team.color}, ${team.color}99)`,
-                      transition: "width .8s ease",
-                    }}
-                  />
-                </div> */}
               </div>
 
-              {/* Score */}
+              {/* Progress bar */}
               <div
                 style={{
-                  padding: "14px 22px",
-                  textAlign: "right",
-                  flexShrink: 0,
+                  flex: 1,
+                  position: "relative",
+                  height: 1,
+                  background: "rgba(255,255,255,0.04)",
                 }}
               >
                 <div
                   style={{
-                    ...orbitron,
-                    fontSize: i < 3 ? 28 : 22,
-                    fontWeight: 900,
-                    color: rankColor,
-                    lineHeight: 1,
+                    position: "absolute",
+                    inset: "0 auto 0 0",
+                    height: 1,
+                    width: `${pct}%`,
+                    background: isFirst ? C.orange : "rgba(255,255,255,0.15)",
+                    transition: "width .7s ease",
                   }}
-                >
-                  {pos.score}
-                </div>
-                <div
-                  style={{
-                    ...orbitron,
-                    fontSize: 8,
-                    color: C.textLo,
-                    letterSpacing: "0.18em",
-                    marginTop: 3,
-                  }}
-                >
-                  POINTS
-                </div>
+                />
               </div>
+
+              {/* Score */}
+              <span
+                style={{
+                  ...orbitron,
+                  fontWeight: 300,
+                  flexShrink: 0,
+                  width: 90,
+                  textAlign: "right",
+                  fontSize: `${scoreSize}rem`,
+                  color: isFirst ? C.orange : "rgba(255,255,255,0.45)",
+                }}
+              >
+                {pos.score}
+              </span>
+
+              {/* Recent delta */}
+              <span
+                style={{
+                  ...orbitron,
+                  fontSize: 12,
+                  width: 44,
+                  textAlign: "right",
+                  flexShrink: 0,
+                  color:
+                    recent == null
+                      ? "transparent"
+                      : recent > 0
+                        ? "rgba(237,130,64,0.5)"
+                        : "rgba(220,80,80,0.5)",
+                }}
+              >
+                {recent != null ? (recent > 0 ? `+${recent}` : `${recent}`) : "·"}
+              </span>
             </div>
           );
         })}
       </div>
     </div>
   );
+};
 
   // =========================================================================
   // SLIDE 6 — FINAL RESULTS
@@ -2251,7 +2289,8 @@ export default function ViewerDashboard() {
 
         <h2
           style={{
-            ...orbitron,
+            ...fontDisplay,
+
             fontSize: "clamp(1.8rem,4.5vw,3.2rem)",
             fontWeight: 900,
             background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
@@ -2304,7 +2343,6 @@ export default function ViewerDashboard() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  // borderLeft: `3px solid ${team.color}`,
                   animation: `fadeUp .5s ease ${i * 0.07}s both`,
                 }}
               >
@@ -2348,7 +2386,6 @@ export default function ViewerDashboard() {
             );
           })}
         </div>
-        {/* ตรงนี้ */}
 
         <button
           style={{
@@ -2364,13 +2401,13 @@ export default function ViewerDashboard() {
             fontSize: 13,
             fontWeight: 600,
             color: C.blueLight,
-            background: "rgba(83,143,238,0.12)",
-            border: `1px solid rgba(83,143,238,0.28)`,
+            background: "rgba(237,130,64,0.12)",
+            border: `1px solid rgba(237,130,64,0.28)`,
             transition: "all .2s",
           }}
           onClick={() => goToSlide(1)}
         >
-          ↩ Back to Start
+          Back to Start
         </button>
       </div>
     );
@@ -2410,24 +2447,18 @@ export default function ViewerDashboard() {
       if (revealStage === "champion") launchConfetti();
     }, [revealStage]);
 
-    const rankColor = (i: number) =>
-      i === 0 ? C.gold : i === 1 ? C.blueLight : i === 2 ? C.orange : C.textMid;
     const medals = ["🥇", "🥈", "🥉"];
 
-    const textGradient: React.CSSProperties = {
-      background: `linear-gradient(135deg, ${C.orange} 0%, ${C.gold} 45%, #fffbe8 80%, ${C.gold} 100%)`,
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-    };
-
-    const blueGradient: React.CSSProperties = {
-      background: `linear-gradient(135deg, ${C.blueLight}, #fff, ${C.blueLight})`,
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-    };
-
+    const STAGE_LABELS = [
+      "Title",
+      "Calculating",
+      "5th–8th",
+      "4th",
+      "Top 3",
+      "3rd",
+      "Runner Up",
+      "Champion",
+    ];
     // ── sub-stage renderers ──
     const renderStage = () => {
       switch (revealStage) {
@@ -2448,7 +2479,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.55rem,.85vw,.7rem)",
                   letterSpacing: "0.42em",
-                  color: "rgba(156,200,238,.5)",
+                  color: "rgba(255,255,255,.5)",
                 }}
               >
                 ✦ &nbsp; FINAL ROUND &nbsp; ✦
@@ -2471,7 +2502,7 @@ export default function ViewerDashboard() {
                   fontSize: "clamp(1rem,2.2vw,1.8rem)",
                   fontWeight: 700,
                   letterSpacing: ".28em",
-                  color: "rgba(156,200,238,.7)",
+                  color: "rgba(255,255,255,.7)",
                 }}
               >
                 ASTRO PARTY
@@ -2488,7 +2519,7 @@ export default function ViewerDashboard() {
                 style={{
                   ...notoTH,
                   fontSize: "clamp(.75rem,1.3vw,1rem)",
-                  color: "rgba(156,200,238,.45)",
+                  color: "rgba(255,255,255,.45)",
                   letterSpacing: ".1em",
                 }}
               >
@@ -2534,7 +2565,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.75rem,1.4vw,1.05rem)",
                   letterSpacing: ".28em",
-                  color: "rgba(156,200,238,.65)",
+                  color: "rgba(255,255,255,.65)",
                 }}
               >
                 CALCULATING FINAL RANKINGS
@@ -2557,7 +2588,7 @@ export default function ViewerDashboard() {
                 style={{
                   ...notoTH,
                   fontSize: "clamp(.65rem,1.1vw,.88rem)",
-                  color: "rgba(156,200,238,.3)",
+                  color: "rgba(255,255,255,.3)",
                   letterSpacing: ".08em",
                   marginTop: 6,
                 }}
@@ -2586,7 +2617,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.55rem,.85vw,.72rem)",
                   letterSpacing: ".38em",
-                  color: "rgba(156,200,238,.5)",
+                  color: "rgba(255,255,255,.5)",
                 }}
               >
                 อันดับที่ 5 ถึง 8
@@ -2605,7 +2636,7 @@ export default function ViewerDashboard() {
               <div
                 style={{
                   background: "rgba(4,12,28,.82)",
-                  border: `1px solid rgba(83,143,238,.2)`,
+                  border: `1px solid rgba(237,130,64,.2)`,
                   borderRadius: 12,
                   padding: "20px 24px",
                   width: "100%",
@@ -2617,10 +2648,10 @@ export default function ViewerDashboard() {
                     ...orbitron,
                     fontSize: 7,
                     letterSpacing: ".22em",
-                    color: "rgba(156,200,238,.45)",
+                    color: "rgba(255,255,255,.45)",
                     marginBottom: 12,
                     paddingBottom: 8,
-                    borderBottom: `1px solid rgba(83,143,238,.15)`,
+                    borderBottom: `1px solid rgba(237,130,64,.15)`,
                   }}
                 >
                   🏅 FINAL RANKING — POSITIONS 5–8
@@ -2637,7 +2668,7 @@ export default function ViewerDashboard() {
                         justifyContent: "space-between",
                         padding: "10px 12px",
                         borderRadius: 8,
-                        background: "rgba(13,27,50,.6)",
+                        background: "rgba(10,10,10,.6)",
                         border: `1px solid rgba(255,255,255,.04)`,
                         marginBottom: 7,
                         position: "relative",
@@ -2663,7 +2694,7 @@ export default function ViewerDashboard() {
                           fontWeight: 900,
                           width: 22,
                           textAlign: "center",
-                          color: "rgba(156,200,238,.5)",
+                          color: "rgba(255,255,255,.5)",
                         }}
                       >
                         {i + 5}
@@ -2698,7 +2729,7 @@ export default function ViewerDashboard() {
                           ...orbitron,
                           fontSize: 13,
                           fontWeight: 900,
-                          color: "rgba(156,200,238,.6)",
+                          color: "rgba(255,255,255,.6)",
                         }}
                       >
                         {pos.score}
@@ -2737,7 +2768,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.55rem,.85vw,.72rem)",
                   letterSpacing: ".42em",
-                  color: "rgba(156,200,238,.45)",
+                  color: "rgba(255,255,255,.45)",
                 }}
               >
                 — FINAL ROUND —
@@ -2780,7 +2811,7 @@ export default function ViewerDashboard() {
                       ...orbitron,
                       fontSize: "clamp(.8rem,1.5vw,1.1rem)",
                       fontWeight: 700,
-                      color: "rgba(156,200,238,.5)",
+                      color: "rgba(255,255,255,.5)",
                     }}
                   >
                     {s4}{" "}
@@ -2794,7 +2825,7 @@ export default function ViewerDashboard() {
                 style={{
                   ...notoTH,
                   fontSize: "clamp(.65rem,1.1vw,.85rem)",
-                  color: "rgba(156,200,238,.3)",
+                  color: "rgba(255,255,255,.3)",
                   letterSpacing: ".08em",
                   marginTop: 8,
                 }}
@@ -2823,7 +2854,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.55rem,.85vw,.7rem)",
                   letterSpacing: ".42em",
-                  color: "rgba(156,200,238,.45)",
+                  color: "rgba(255,255,255,.45)",
                 }}
               >
                 เหลือเพียง 3 ทีมสุดท้าย
@@ -2876,7 +2907,7 @@ export default function ViewerDashboard() {
                         style={{
                           ...orbitron,
                           fontSize: i === 0 ? 11 : 9,
-                          color: "rgba(156,200,238,.5)",
+                          color: "rgba(255,255,255,.5)",
                         }}
                       >
                         {pos.score}P
@@ -2910,7 +2941,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.55rem,.85vw,.7rem)",
                   letterSpacing: ".42em",
-                  color: "rgba(156,200,238,.4)",
+                  color: "rgba(255,255,255,.4)",
                 }}
               >
                 — TOP 3 REVEAL —
@@ -2960,7 +2991,7 @@ export default function ViewerDashboard() {
                     style={{
                       ...orbitron,
                       fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                      color: "rgba(156,200,238,.5)",
+                      color: "rgba(255,255,255,.5)",
                     }}
                   >
                     {s3}{" "}
@@ -2974,7 +3005,7 @@ export default function ViewerDashboard() {
                 style={{
                   ...notoTH,
                   fontSize: "clamp(.65rem,1.1vw,.85rem)",
-                  color: "rgba(156,200,238,.28)",
+                  color: "rgba(255,255,255,.28)",
                   letterSpacing: ".08em",
                   marginTop: 8,
                 }}
@@ -3006,7 +3037,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.55rem,.85vw,.7rem)",
                   letterSpacing: ".42em",
-                  color: "rgba(156,200,238,.4)",
+                  color: "rgba(255,255,255,.4)",
                 }}
               >
                 — RUNNER UP —
@@ -3055,7 +3086,7 @@ export default function ViewerDashboard() {
                     style={{
                       ...orbitron,
                       fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                      color: "rgba(156,200,238,.5)",
+                      color: "rgba(255,255,255,.5)",
                     }}
                   >
                     {sru}{" "}
@@ -3069,7 +3100,7 @@ export default function ViewerDashboard() {
                 style={{
                   ...notoTH,
                   fontSize: "clamp(.65rem,1.1vw,.85rem)",
-                  color: "rgba(156,200,238,.28)",
+                  color: "rgba(255,255,255,.28)",
                   letterSpacing: ".08em",
                   marginTop: 8,
                 }}
@@ -3101,7 +3132,7 @@ export default function ViewerDashboard() {
                   ...orbitron,
                   fontSize: "clamp(.5rem,.8vw,.68rem)",
                   letterSpacing: ".48em",
-                  color: "rgba(156,200,238,.5)",
+                  color: "rgba(255,255,255,.5)",
                 }}
               >
                 ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
@@ -3130,7 +3161,7 @@ export default function ViewerDashboard() {
                 style={{
                   fontSize: "clamp(2.8rem,6vw,5rem)",
                   animation: "float 2.2s ease-in-out infinite",
-                  filter: `drop-shadow(0 0 22px rgba(252,212,125,.8))`,
+                  filter: `drop-shadow(0 0 22px rgba(237,130,64,.8))`,
                 }}
               >
                 🏆
@@ -3160,7 +3191,7 @@ export default function ViewerDashboard() {
                 <span
                   style={{
                     fontSize: ".4em",
-                    color: "rgba(156,200,238,.4)",
+                    color: "rgba(255,255,255,.4)",
                     marginLeft: 5,
                   }}
                 >
@@ -3200,7 +3231,7 @@ export default function ViewerDashboard() {
                         style={{
                           ...orbitron,
                           fontSize: 9,
-                          color: "rgba(156,200,238,.45)",
+                          color: "rgba(255,255,255,.45)",
                         }}
                       >
                         {pos.score}P
@@ -3213,7 +3244,7 @@ export default function ViewerDashboard() {
                 style={{
                   ...notoTH,
                   fontSize: "clamp(.6rem,1vw,.82rem)",
-                  color: "rgba(156,200,238,.3)",
+                  color: "rgba(255,255,255,.3)",
                   letterSpacing: ".1em",
                   marginTop: 4,
                 }}
@@ -3225,17 +3256,6 @@ export default function ViewerDashboard() {
         }
       }
     };
-
-    const STAGE_LABELS = [
-      "Title",
-      "Calculating",
-      "5th–8th",
-      "4th",
-      "Top 3",
-      "3rd",
-      "Runner Up",
-      "Champion",
-    ];
 
     return (
       <div
@@ -3283,7 +3303,7 @@ export default function ViewerDashboard() {
               zIndex: 0,
               pointerEvents: "none",
               background:
-                "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(252,212,125,.06) 0%, transparent 70%)",
+                "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(237,130,64,.06) 0%, transparent 70%)",
             }}
           />
         )}
@@ -3348,8 +3368,8 @@ export default function ViewerDashboard() {
                 border: "none",
                 color:
                   stageIndex === 0
-                    ? "rgba(156,200,238,.25)"
-                    : "rgba(156,200,238,.8)",
+                    ? "rgba(255,255,255,.25)"
+                    : "rgba(255,255,255,.8)",
                 transition: "color .2s",
               }}
             >
@@ -3386,8 +3406,8 @@ export default function ViewerDashboard() {
                 border: "none",
                 color:
                   stageIndex === REVEAL_STAGES.length - 1
-                    ? "rgba(156,200,238,.25)"
-                    : "rgba(156,200,238,.8)",
+                    ? "rgba(255,255,255,.25)"
+                    : "rgba(255,255,255,.8)",
                 transition: "color .2s",
               }}
             >
@@ -3424,19 +3444,17 @@ export default function ViewerDashboard() {
                   height: 7,
                   borderRadius: revealStage === s ? 3 : "50%",
                   background:
-                    revealStage === s ? C.gold : "rgba(156,200,238,.2)",
+                    revealStage === s ? C.gold : "rgba(255,255,255,.2)",
                   border: "none",
                   cursor: "pointer",
                   transition: "all .25s",
                   boxShadow:
-                    revealStage === s ? `0 0 8px rgba(252,212,125,.6)` : "none",
+                    revealStage === s ? `0 0 8px rgba(237,130,64,.6)` : "none",
                 }}
               />
             ))}
           </div>
         </div>
-
-        {/* Add dotPulse keyframe if not already in GLOBAL_CSS */}
       </div>
     );
   }
@@ -3453,8 +3471,8 @@ export default function ViewerDashboard() {
         right: 0,
         height: 28,
         zIndex: 45,
-        background: "rgba(7,17,30,.92)",
-        borderTop: `1px solid rgba(83,143,238,.12)`,
+        // background: "rgba(7,17,30,.92)",
+        borderTop: `1px solid rgba(237,130,64,.12)`,
         overflow: "hidden",
         display: "flex",
         alignItems: "center",
@@ -3468,7 +3486,7 @@ export default function ViewerDashboard() {
         style={{
           ...notoTH,
           fontSize: 11,
-          color: "rgba(156,200,238,.55)",
+          color: "rgba(255,255,255,.55)",
           letterSpacing: "0.05em",
           textAlign: "center",
           whiteSpace: "nowrap",
@@ -3491,15 +3509,6 @@ export default function ViewerDashboard() {
           facebook.com/@anandayquiz
         </span>
         &nbsp;✦
-        {/* ✦&nbsp; */}
-        {/* <span style={{ color: C.gold, fontWeight: 600 }}>
-          พื้นที่ฝากไอจีฝ่าย
-        </span> */}
-        {/* &nbsp;·&nbsp;Syringe : &nbsp;
-        <span style={{ color: C.orange, fontWeight: 600 }}>syringe.mdcu</span>
-        &nbsp;·&nbsp;IT : &nbsp;
-        <span style={{ color: C.orange, fontWeight: 600 }}>it.smcu</span>
-        &nbsp;✦ */}
       </span>
     </div>
   );
@@ -3514,7 +3523,7 @@ export default function ViewerDashboard() {
       display: "flex",
       alignItems: "center",
       gap: 6,
-      background: "rgba(10,20,38,0.90)",
+      // background: "rgba(10,20,38,0.90)",
       border: `1px solid ${border}`,
       borderRadius: 28,
       padding: "7px 14px",
@@ -3525,7 +3534,7 @@ export default function ViewerDashboard() {
       fontSize: 12,
       fontWeight: 600,
       letterSpacing: "0.06em",
-      color: "rgba(156,200,238,.7)",
+      color: "rgba(255,255,255,.7)",
       background: "none",
       border: "none",
       cursor: "pointer",
@@ -3679,7 +3688,7 @@ export default function ViewerDashboard() {
                     background:
                       currentSlide === i + 1
                         ? C.orange
-                        : "rgba(156,200,238,.25)",
+                        : "rgba(255,255,255,.25)",
                     border: "none",
                     cursor: "pointer",
                     transition: "all .25s",
@@ -3701,26 +3710,22 @@ export default function ViewerDashboard() {
                 pointerEvents: "all",
               }}
             >
-              {(["1", "2", "3", "4", "5", "6", "7"] as const).map(
-                (icon, i) => (
-                  <button
-                    key={i}
-                    style={{
-                      ...btnStyle,
-                      fontSize: 16,
-                      opacity: currentSlide === i + 1 ? 1 : 0.45,
-                      padding: "3px 8px",
-                      background:
-                        currentSlide === i + 1
-                          ? "rgba(237,130,64,.12)"
-                          : "none",
-                    }}
-                    onClick={() => goToSlide(i + 1)}
-                  >
-                    {icon}
-                  </button>
-                ),
-              )}
+              {(["1", "2", "3", "4", "5", "6", "7"] as const).map((icon, i) => (
+                <button
+                  key={i}
+                  style={{
+                    ...btnStyle,
+                    fontSize: 16,
+                    opacity: currentSlide === i + 1 ? 1 : 0.45,
+                    padding: "3px 8px",
+                    background:
+                      currentSlide === i + 1 ? "rgba(237,130,64,.12)" : "none",
+                  }}
+                  onClick={() => goToSlide(i + 1)}
+                >
+                  {icon}
+                </button>
+              ))}
             </div>
           </>
         )}
@@ -3733,7 +3738,7 @@ export default function ViewerDashboard() {
   const slides: Record<number, React.ReactNode> = {
     1: <Slide1 />,
     2: <Slide2 />,
-3: (
+    3: (
       <Slide3
         data={data}
         categories={categories}
@@ -3744,7 +3749,8 @@ export default function ViewerDashboard() {
         selectedCell={selectedCell}
         setSelectedCell={setSelectedCell}
       />
-    ),    4: <Slide4 />,
+    ),
+    4: <Slide4 />,
     5: <Slide5 />,
     6: <Slide6 />,
     7: <Slide7 />,
@@ -3759,10 +3765,8 @@ export default function ViewerDashboard() {
           position: "fixed",
           inset: 0,
           background: `
-            radial-gradient(ellipse 88% 55% at 14% 5%,  rgba(37,64,116,0.58) 0%, transparent 62%),
-            radial-gradient(ellipse 52% 44% at 84% 84%, rgba(83,143,238,0.16) 0%, transparent 55%),
-            radial-gradient(ellipse 36% 28% at 52% 44%, rgba(237,130,64,0.07) 0%, transparent 52%),
-            #07111E
+            radial-gradient(ellipse 60% 45% at 50% 0%, rgba(237,130,64,0.05) 0%, transparent 60%),
+            #080808
           `,
           fontFamily: "'Noto Sans Thai', sans-serif",
           color: C.textHi,
