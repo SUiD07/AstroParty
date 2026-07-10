@@ -1299,7 +1299,7 @@ export default function ViewerDashboard() {
             transform: "translate(-50%,-50%) rotateX(70deg)",
           }}
         />
-       </div>
+      </div>
       {/* Logo row */}
       <div
         style={{
@@ -1464,37 +1464,22 @@ export default function ViewerDashboard() {
   // =========================================================================
   // SLIDE 2 — OVERVIEW
   // =========================================================================
+  // =========================================================================
+  // SLIDE 2 — OVERVIEW
+  // =========================================================================
   const Slide2 = () => {
-    const leaderTeam = sortedPositions[0]
-      ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
-      : undefined;
-    const leaderScore = sortedPositions[0]?.score ?? leaderTeam?.score;
+    const leaderName = sortedPositions[0]
+      ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)?.name ??
+        "—")
+      : "—";
 
     return (
       <div
-        className="้h-full flex flex-col select-none font-sans overflow-hidden"
-        style={{
-          // background: "#080808",
-          paddingBottom: 40,
-        }}
+        className="h-full flex flex-col select-none font-sans overflow-hidden"
+        style={{ paddingBottom: 40 }}
       >
         {/* Header */}
         <div className="px-16 pt-14 pb-6">
-          {data.state.isLive && (
-            <div className="flex items-center gap-2 mb-4">
-              <span
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ backgroundColor: "#ED8240" }}
-              />
-              <span
-                className="text-[10px] tracking-widest uppercase"
-                style={{ color: "#ED8240" }}
-              >
-                Live
-              </span>
-            </div>
-          )}
-
           <h1
             className="font-bold text-white leading-none"
             style={{
@@ -1617,15 +1602,8 @@ export default function ViewerDashboard() {
                 lineHeight: 1.2,
               }}
             >
-              {leaderTeam?.name ?? "—"}
+              {leaderName}
             </p>
-            {leaderTeam && leaderScore !== undefined && (
-              <p
-                style={{ color: "#ED8240", fontSize: "0.85rem", marginTop: 6 }}
-              >
-                {leaderScore} pts
-              </p>
-            )}
           </div>
         </div>
 
@@ -1633,7 +1611,7 @@ export default function ViewerDashboard() {
         {categories.length > 0 && (
           <div
             className="px-16 pb-8 flex-1 flex flex-col"
-            style={{ minHeight: 0 }} // สำคัญ! กัน flex item ดันล้น parent
+            style={{ minHeight: 0 }}
           >
             <p
               style={{
@@ -1650,7 +1628,7 @@ export default function ViewerDashboard() {
 
             <div
               className="flex-1 flex flex-col"
-              style={{ justifyContent: "space-evenly" }} // กระจายเต็มพื้นที่ที่เหลือ
+              style={{ justifyContent: "space-evenly" }}
             >
               {categories.map((c, i) => (
                 <div key={c.id} className="flex items-center gap-5">
@@ -1658,7 +1636,6 @@ export default function ViewerDashboard() {
                     className="tabular-nums"
                     style={{
                       color: "rgba(255,255,255,0.12)",
-                      // ฟอนต์เล็กลงถ้าหมวดเยอะ, ใหญ่ขึ้นถ้าหมวดน้อย
                       fontSize: `clamp(0.6rem, ${18 / categories.length}vh, 0.9rem)`,
                       width: 18,
                       textAlign: "right",
@@ -2078,168 +2055,172 @@ export default function ViewerDashboard() {
   // SLIDE 5 — LIVE LEADERBOARD
   // =========================================================================
   const Slide5 = () => {
-  const recentByTeam: Record<number, number> = {};
-  scoreEvents.forEach((ev) => {
-    recentByTeam[ev.team_id] = ev.delta;
-  });
+    const recentByTeam: Record<number, number> = {};
+    scoreEvents.forEach((ev) => {
+      recentByTeam[ev.team_id] = ev.delta;
+    });
 
-  const maxScore = sortedPositions[0]?.score || 1;
-  const n = Math.max(1, sortedPositions.length);
+    const maxScore = sortedPositions[0]?.score || 1;
+    const n = Math.max(1, sortedPositions.length);
 
-  // ยิ่งทีมเยอะ ยิ่งย่อ
-  const rowPad = Math.min(18, 140 / n);          // padding บน-ล่างต่อแถว
-  const nameSize = Math.min(1.6, 12 / n + 0.9);   // rem
-  const scoreSize = Math.min(2.4, 18 / n + 1.2);  // rem
-  const rankSize = Math.min(13, 90 / n + 8);      // px
+    // ยิ่งทีมเยอะ ยิ่งย่อ
+    const rowPad = Math.min(18, 140 / n); // padding บน-ล่างต่อแถว
+    const nameSize = Math.min(1.6, 12 / n + 0.9); // rem
+    const scoreSize = Math.min(2.4, 18 / n + 1.2); // rem
+    const rankSize = Math.min(13, 90 / n + 8); // px
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        height: "100%",
-        padding: "0 24px 56px",
-        overflow: "hidden",
-      }}
-    >
-      <SlideHeader
-        title="Live Leaderboard"
-        // right={<RefreshBtn />}
-      />
-
+    return (
       <div
         style={{
-          flex: 1,
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-evenly", // กระจายแถวเต็มพื้นที่ที่เหลือ
-          minHeight: 0,                    // สำคัญ! กัน flex ดันล้น
-          padding: "0 40px",
+          width: "100%",
+          height: "100%",
+          padding: "0 24px 56px",
+          overflow: "hidden",
         }}
       >
-        {sortedPositions.length === 0 && (
-          <p style={{ ...notoTH, opacity: 0.4, textAlign: "center" }}>
-            No teams yet
-          </p>
-        )}
+        <SlideHeader
+          title="Live Leaderboard"
+          // right={<RefreshBtn />}
+        />
 
-        {sortedPositions.map((pos, i) => {
-          const team = data.teams.find((t) => t.id === pos.teamId);
-          if (!team) return null;
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-evenly", // กระจายแถวเต็มพื้นที่ที่เหลือ
+            minHeight: 0, // สำคัญ! กัน flex ดันล้น
+            padding: "0 40px",
+          }}
+        >
+          {sortedPositions.length === 0 && (
+            <p style={{ ...notoTH, opacity: 0.4, textAlign: "center" }}>
+              No teams yet
+            </p>
+          )}
 
-          const isFirst = i === 0;
-          const pct = (pos.score / maxScore) * 100;
-          const recent = recentByTeam[team.id];
+          {sortedPositions.map((pos, i) => {
+            const team = data.teams.find((t) => t.id === pos.teamId);
+            if (!team) return null;
 
-          return (
-            <div
-              key={team.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 28,
-                padding: `${rowPad}px 0`,
-                borderTop: "1px solid rgba(255,255,255,0.04)",
-                ...(i === sortedPositions.length - 1
-                  ? { borderBottom: "1px solid rgba(255,255,255,0.04)" }
-                  : {}),
-              }}
-            >
-              {/* Rank */}
-              <span
+            const isFirst = i === 0;
+            const pct = (pos.score / maxScore) * 100;
+            const recent = recentByTeam[team.id];
+
+            return (
+              <div
+                key={team.id}
                 style={{
-                  ...orbitron,
-                  fontSize: rankSize,
-                  fontWeight: 700,
-                  width: 20,
-                  textAlign: "right",
-                  flexShrink: 0,
-                  color: isFirst ? C.orange : "rgba(255,255,255,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 28,
+                  padding: `${rowPad}px 0`,
+                  borderTop: "1px solid rgba(255,255,255,0.04)",
+                  ...(i === sortedPositions.length - 1
+                    ? { borderBottom: "1px solid rgba(255,255,255,0.04)" }
+                    : {}),
                 }}
               >
-                {i + 1}
-              </span>
-
-              {/* Team name */}
-              <div style={{ width: 200, flexShrink: 0, minWidth: 0 }}>
-                <div
+                {/* Rank */}
+                <span
                   style={{
-                    ...notoTH,
-                    fontWeight: 300,
-                    lineHeight: 1.2,
-                    fontSize: `${nameSize}rem`,
-                    color: isFirst ? "#fff" : "rgba(255,255,255,0.5)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    ...orbitron,
+                    fontSize: rankSize,
+                    fontWeight: 700,
+                    width: 20,
+                    textAlign: "right",
+                    flexShrink: 0,
+                    color: isFirst ? C.orange : "rgba(255,255,255,0.2)",
                   }}
                 >
-                  {team.name}
-                </div>
-              </div>
+                  {i + 1}
+                </span>
 
-              {/* Progress bar */}
-              <div
-                style={{
-                  flex: 1,
-                  position: "relative",
-                  height: 1,
-                  background: "rgba(255,255,255,0.04)",
-                }}
-              >
+                {/* Team name */}
+                <div style={{ width: 200, flexShrink: 0, minWidth: 0 }}>
+                  <div
+                    style={{
+                      ...notoTH,
+                      fontWeight: 300,
+                      lineHeight: 1.2,
+                      fontSize: `${nameSize}rem`,
+                      color: isFirst ? "#fff" : "rgba(255,255,255,0.5)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {team.name}
+                  </div>
+                </div>
+
+                {/* Progress bar */}
                 <div
                   style={{
-                    position: "absolute",
-                    inset: "0 auto 0 0",
+                    flex: 1,
+                    position: "relative",
                     height: 1,
-                    width: `${pct}%`,
-                    background: isFirst ? C.orange : "rgba(255,255,255,0.15)",
-                    transition: "width .7s ease",
+                    background: "rgba(255,255,255,0.04)",
                   }}
-                />
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: "0 auto 0 0",
+                      height: 1,
+                      width: `${pct}%`,
+                      background: isFirst ? C.orange : "rgba(255,255,255,0.15)",
+                      transition: "width .7s ease",
+                    }}
+                  />
+                </div>
+
+                {/* Score */}
+                <span
+                  style={{
+                    ...orbitron,
+                    fontWeight: 300,
+                    flexShrink: 0,
+                    width: 90,
+                    textAlign: "right",
+                    fontSize: `${scoreSize}rem`,
+                    color: isFirst ? C.orange : "rgba(255,255,255,0.45)",
+                  }}
+                >
+                  {pos.score}
+                </span>
+
+                {/* Recent delta */}
+                <span
+                  style={{
+                    ...orbitron,
+                    fontSize: 12,
+                    width: 44,
+                    textAlign: "right",
+                    flexShrink: 0,
+                    color:
+                      recent == null
+                        ? "transparent"
+                        : recent > 0
+                          ? "rgba(237,130,64,0.5)"
+                          : "rgba(220,80,80,0.5)",
+                  }}
+                >
+                  {recent != null
+                    ? recent > 0
+                      ? `+${recent}`
+                      : `${recent}`
+                    : "·"}
+                </span>
               </div>
-
-              {/* Score */}
-              <span
-                style={{
-                  ...orbitron,
-                  fontWeight: 300,
-                  flexShrink: 0,
-                  width: 90,
-                  textAlign: "right",
-                  fontSize: `${scoreSize}rem`,
-                  color: isFirst ? C.orange : "rgba(255,255,255,0.45)",
-                }}
-              >
-                {pos.score}
-              </span>
-
-              {/* Recent delta */}
-              <span
-                style={{
-                  ...orbitron,
-                  fontSize: 12,
-                  width: 44,
-                  textAlign: "right",
-                  flexShrink: 0,
-                  color:
-                    recent == null
-                      ? "transparent"
-                      : recent > 0
-                        ? "rgba(237,130,64,0.5)"
-                        : "rgba(220,80,80,0.5)",
-                }}
-              >
-                {recent != null ? (recent > 0 ? `+${recent}` : `${recent}`) : "·"}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // =========================================================================
   // SLIDE 6 — FINAL RESULTS
