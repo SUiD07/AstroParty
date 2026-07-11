@@ -9,7 +9,9 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Zap, X } from "lucide-react";
+import { RefreshCw, 
+  // Zap, 
+  X } from "lucide-react";
 import { RaceData } from "@/app/types";
 import {
   loadData,
@@ -338,7 +340,7 @@ function SlideHeader({
         <h2
           style={{
             ...fontDisplay,
-            fontSize: "clamp(1.1rem,2.2vw,1.7rem)",
+            fontSize: "clamp(3rem,2.2vw,1.7rem)",
             fontWeight: 900,
             // color: C.blueLight,
             color: "#fff",
@@ -862,11 +864,12 @@ function Slide3({
               <p
                 style={{
                   ...notoTH,
-                  color: "rgba(255,255,255,0.2)",
-                  fontSize: 11,
+                  // color: "rgba(255,255,255,0.2)",
+                  fontSize: 15,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   marginBottom: 6,
+                  color:"#fff"
                 }}
               >
                 Question {answeredCount}/{totalQCount}
@@ -1066,7 +1069,7 @@ function Slide3({
 // Main
 // ---------------------------------------------------------------------------
 export default function ViewerDashboard() {
-  const totalSlides = 7;
+  const totalSlides = 10;
   const [currentSlide, setCurrentSlide] = useState(1);
 
   const [data, setData] = useState<RaceData>({
@@ -2360,126 +2363,241 @@ export default function ViewerDashboard() {
     );
   };
 
-  // =========================================================================
-  // SLIDE 6 — FINAL RESULTS
-  // =========================================================================
-  function Slide6() {
-    useEffect(() => {
-      launchConfetti();
-    }, []);
+// =========================================================================
+// SLIDE 6 — CALCULATING
+// =========================================================================
+const Slide6 = () => (
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      width: "100%",
+      height: "100%",
+      padding: "0 24px 56px",
+    }}
+  >
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 16,
+        textAlign: "center",
+      }}
+    >
+      <div
+        // className="grad-gold"
+        style={{
+          ...fontDisplay,
+          fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+          fontWeight: 900,
+          letterSpacing: ".1em",
+          lineHeight: 1,
+          color: "#fff",
+        }}
+      >
+        FINAL ROUND COMPLETE
+      </div>
+      <div
+        style={{
+          width: 200,
+          height: 1.5,
+          background: `linear-gradient(90deg,transparent,${C.blueCore},transparent)`,
+          borderRadius: 1,
+        }}
+      />
+      <div
+        style={{
+          ...orbitron,
+          fontSize: "clamp(.75rem,1.4vw,1.05rem)",
+          letterSpacing: ".28em",
+          color: "rgba(255,255,255,.65)",
+        }}
+      >
+        CALCULATING FINAL RANKINGS
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: C.blueCore,
+              animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          ...notoTH,
+          fontSize: "clamp(.65rem,1.1vw,.88rem)",
+          color: "rgba(255,255,255,.3)",
+          letterSpacing: ".08em",
+          marginTop: 6,
+        }}
+      >
+        กำลังประมวลผลคะแนนรอบสุดท้าย…
+      </div>
+    </div>
+  </div>
+);
 
-    const winner = sortedPositions[0]
-      ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
-      : null;
+// =========================================================================
+// SLIDE 7 — รางวัลชมเชย (ทุกทีมที่ไม่ติด 3 อันดับแรก)
+// =========================================================================
+const Slide7 = () => {
+  const consolationTeams = sortedPositions.slice(3);
 
-    return (
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: "0 24px 56px",
+      }}
+    >
       <div
         style={{
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          gap: 16,
           width: "100%",
-          height: "100%",
-          padding: "28px 24px 56px",
-          position: "relative",
-          overflow: "hidden",
+          maxWidth: 560,
         }}
       >
         <div
-          id="confetti-root"
           style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            overflow: "hidden",
-          }}
-        />
-
-        <div
-          style={{
-            fontSize: 58,
-            animation: "float 2.5s ease-in-out infinite",
-            marginBottom: 14,
-            flexShrink: 0,
+            ...orbitron,
+            fontSize: "clamp(.55rem,.85vw,.72rem)",
+            letterSpacing: ".38em",
+            color: "rgba(255,255,255,.5)",
           }}
         >
-          🚀
+          ✦ &nbsp; CONSOLATION AWARDS &nbsp; ✦
+        </div>
+        <div
+          className="grad-blue"
+          style={{
+            ...orbitron,
+            fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+            fontWeight: 900,
+            letterSpacing: ".1em",
+          }}
+        >
+          รางวัลชมเชย
         </div>
 
-        <h2
-          style={{
-            ...fontDisplay,
-
-            fontSize: "clamp(1.8rem,4.5vw,3.2rem)",
-            fontWeight: 900,
-            background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-            marginBottom: 8,
-            flexShrink: 0,
-          }}
-        >
-          CONGRATULATIONS!
-        </h2>
-
-        {winner && (
-          <p
-            style={{
-              ...notoTH,
-              fontSize: 24,
-              fontWeight: 800,
-              color: winner.color,
-              marginBottom: 22,
-              flexShrink: 0,
-            }}
-          >
-            {winner.name} คือผู้ชนะ!
-          </p>
-        )}
-
         <div
           style={{
+            background: "rgba(4,12,28,.82)",
+            border: `1px solid rgba(237,130,64,.2)`,
+            borderRadius: 12,
+            padding: "20px 24px",
             width: "100%",
-            maxWidth: 620,
-            flex: 1,
+            maxHeight: "56vh",
             overflowY: "auto",
-            paddingRight: 4,
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
+            backdropFilter: "blur(16px)",
           }}
         >
-          {sortedPositions.map((pos, i) => {
-            const team = data.teams.find((t) => t.id === pos.teamId);
-            if (!team) return null;
-            return (
-              <div
-                key={team.id}
-                style={{
-                  ...glassCard(i < 3),
-                  padding: "13px 20px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  animation: `fadeUp .5s ease ${i * 0.07}s both`,
-                }}
-              >
+          <div
+            style={{
+              ...orbitron,
+              fontSize: 7,
+              letterSpacing: ".22em",
+              color: "rgba(255,255,255,.45)",
+              marginBottom: 12,
+              paddingBottom: 8,
+              borderBottom: `1px solid rgba(237,130,64,.15)`,
+            }}
+          >
+            🏅 รางวัลชมเชย — {consolationTeams.length} ทีม
+          </div>
+
+          {consolationTeams.length === 0 ? (
+            <p
+              style={{
+                ...notoTH,
+                fontSize: 12,
+                color: "rgba(255,255,255,.35)",
+                textAlign: "center",
+                padding: "12px 0",
+              }}
+            >
+              ไม่มีทีมในรอบนี้
+            </p>
+          ) : (
+            consolationTeams.map((pos) => {
+              const team = data.teams.find((t) => t.id === pos.teamId);
+              if (!team) return null;
+              const rank = sortedPositions.findIndex(
+                (p) => p.teamId === pos.teamId,
+              );
+              return (
                 <div
+                  key={team.id}
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 12,
-                    minWidth: 0,
+                    justifyContent: "space-between",
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    background: "rgba(10,10,10,.6)",
+                    border: `1px solid rgba(255,255,255,.04)`,
+                    marginBottom: 7,
+                    position: "relative",
+                    overflow: "hidden",
                   }}
                 >
-                  <span style={{ fontSize: i < 3 ? 22 : 18, flexShrink: 0 }}>
-                    {medals[i]}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 2,
+                      background: team.color,
+                      opacity: 0.6,
+                      borderRadius: "1px 0 0 1px",
+                    }}
+                  />
+                  <span
+                    style={{
+                      ...orbitron,
+                      fontSize: 10,
+                      fontWeight: 900,
+                      width: 22,
+                      textAlign: "center",
+                      color: "rgba(255,255,255,.5)",
+                    }}
+                  >
+                    {rank + 1}
                   </span>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: team.color,
+                      boxShadow: `0 0 8px ${team.color}88`,
+                      marginLeft: 6,
+                    }}
+                  />
                   <span
                     style={{
                       ...notoTH,
-                      fontSize: 16,
+                      flex: 1,
+                      paddingLeft: 10,
+                      fontSize: 13,
                       fontWeight: 700,
                       color: team.color,
                       overflow: "hidden",
@@ -2489,1094 +2607,373 @@ export default function ViewerDashboard() {
                   >
                     {team.name}
                   </span>
+                  <span
+                    style={{
+                      ...orbitron,
+                      fontSize: 13,
+                      fontWeight: 900,
+                      color: "rgba(255,255,255,.6)",
+                    }}
+                  >
+                    {pos.score}
+                    <span style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}>
+                      PTS
+                    </span>
+                  </span>
                 </div>
-                <span
-                  style={{
-                    ...orbitron,
-                    fontSize: 20,
-                    fontWeight: 900,
-                    flexShrink: 0,
-                    color: i === 0 ? C.gold : C.textHi,
-                  }}
-                >
-                  {pos.score}
-                </span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
-
-        <button
-          style={{
-            marginTop: 20,
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "9px 24px",
-            borderRadius: 22,
-            cursor: "pointer",
-            ...notoTH,
-            fontSize: 13,
-            fontWeight: 600,
-            color: C.blueLight,
-            background: "rgba(237,130,64,0.12)",
-            border: `1px solid rgba(237,130,64,0.28)`,
-            transition: "all .2s",
-          }}
-          onClick={() => goToSlide(1)}
-        >
-          Back to Start
-        </button>
       </div>
-    );
-  }
-  // =========================================================================
-  // SLIDE 7 — GRAND FINALE REVEAL
-  // =========================================================================
-  function Slide7() {
-    const REVEAL_STAGES = [
-      "title",
-      "calculating",
-      "5th8th",
-      "4th",
-      "top3",
-      "3rd",
-      "runnerup",
-      "champion",
-    ] as const;
-    type RevealStage = (typeof REVEAL_STAGES)[number];
+    </div>
+  );
+};
 
-    const [revealStage, setRevealStage] = useState<RevealStage>("title");
-    const [visible, setVisible] = useState(true);
+// =========================================================================
+// SLIDE 8 — รางวัลรองชนะเลิศอันดับ 2 (อันดับ 3)
+// =========================================================================
+const Slide8 = () => {
+  const t3 = sortedPositions[2]
+    ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
+    : null;
+  const s3 = sortedPositions[2]?.score ?? 0;
 
-    const stageIndex = REVEAL_STAGES.indexOf(revealStage);
-    const goReveal = (dir: 1 | -1) => {
-      const next = stageIndex + dir;
-      if (next < 0 || next >= REVEAL_STAGES.length) return;
-      setVisible(false);
-      setTimeout(() => {
-        setRevealStage(REVEAL_STAGES[next]);
-        setVisible(true);
-      }, 350);
-    };
-
-    // launch confetti imperatively on champion stage
-    useEffect(() => {
-      if (revealStage === "champion") launchConfetti();
-    }, [revealStage]);
-
-    const medals = ["🥇", "🥈", "🥉"];
-
-    const STAGE_LABELS = [
-      "Title",
-      "Calculating",
-      "5th–8th",
-      "4th",
-      "Top 3",
-      "3rd",
-      "Runner Up",
-      "Champion",
-    ];
-    // ── sub-stage renderers ──
-    const renderStage = () => {
-      switch (revealStage) {
-        // ── TITLE ──
-        case "title":
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 14,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.55rem,.85vw,.7rem)",
-                  letterSpacing: "0.42em",
-                  color: "rgba(255,255,255,.5)",
-                }}
-              >
-                ✦ &nbsp; FINAL ROUND &nbsp; ✦
-              </div>
-              <h1
-                className="grad-gold"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".1em",
-                  lineHeight: 1,
-                }}
-              >
-                AMSci 2026
-              </h1>
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(1rem,2.2vw,1.8rem)",
-                  fontWeight: 700,
-                  letterSpacing: ".28em",
-                  color: "rgba(255,255,255,.7)",
-                }}
-              >
-                ASTRO PARTY
-              </div>
-              <div
-                style={{
-                  width: 240,
-                  height: 1.5,
-                  background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
-                  borderRadius: 1,
-                }}
-              />
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(.75rem,1.3vw,1rem)",
-                  color: "rgba(255,255,255,.45)",
-                  letterSpacing: ".1em",
-                }}
-              >
-                คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
-              </div>
-            </div>
-          );
-
-        // ── CALCULATING ──
-        case "calculating":
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 16,
-                textAlign: "center",
-              }}
-            >
-              <div
-                className="grad-gold"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".1em",
-                  lineHeight: 1,
-                }}
-              >
-                FINAL ROUND COMPLETE
-              </div>
-              <div
-                style={{
-                  width: 200,
-                  height: 1.5,
-                  background: `linear-gradient(90deg,transparent,${C.blueCore},transparent)`,
-                  borderRadius: 1,
-                }}
-              />
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.75rem,1.4vw,1.05rem)",
-                  letterSpacing: ".28em",
-                  color: "rgba(255,255,255,.65)",
-                }}
-              >
-                CALCULATING FINAL RANKINGS
-              </div>
-              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: C.blueCore,
-                      animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
-                    }}
-                  />
-                ))}
-              </div>
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(.65rem,1.1vw,.88rem)",
-                  color: "rgba(255,255,255,.3)",
-                  letterSpacing: ".08em",
-                  marginTop: 6,
-                }}
-              >
-                กำลังประมวลผลคะแนนรอบสุดท้าย…
-              </div>
-            </div>
-          );
-
-        // ── 5TH–8TH ──
-        case "5th8th": {
-          const bottom4 = sortedPositions.slice(4, 8);
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 16,
-                width: "100%",
-                maxWidth: 500,
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.55rem,.85vw,.72rem)",
-                  letterSpacing: ".38em",
-                  color: "rgba(255,255,255,.5)",
-                }}
-              >
-                อันดับที่ 5 ถึง 8
-              </div>
-              <div
-                className="grad-blue"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".14em",
-                }}
-              >
-                5TH – 8TH PLACE
-              </div>
-              <div
-                style={{
-                  background: "rgba(4,12,28,.82)",
-                  border: `1px solid rgba(237,130,64,.2)`,
-                  borderRadius: 12,
-                  padding: "20px 24px",
-                  width: "100%",
-                  backdropFilter: "blur(16px)",
-                }}
-              >
-                <div
-                  style={{
-                    ...orbitron,
-                    fontSize: 7,
-                    letterSpacing: ".22em",
-                    color: "rgba(255,255,255,.45)",
-                    marginBottom: 12,
-                    paddingBottom: 8,
-                    borderBottom: `1px solid rgba(237,130,64,.15)`,
-                  }}
-                >
-                  🏅 FINAL RANKING — POSITIONS 5–8
-                </div>
-                {bottom4.map((pos, i) => {
-                  const team = data.teams.find((t) => t.id === pos.teamId);
-                  if (!team) return null;
-                  return (
-                    <div
-                      key={team.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 12px",
-                        borderRadius: 8,
-                        background: "rgba(10,10,10,.6)",
-                        border: `1px solid rgba(255,255,255,.04)`,
-                        marginBottom: 7,
-                        position: "relative",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: 2,
-                          background: team.color,
-                          opacity: 0.6,
-                          borderRadius: "1px 0 0 1px",
-                        }}
-                      />
-                      <span
-                        style={{
-                          ...orbitron,
-                          fontSize: 10,
-                          fontWeight: 900,
-                          width: 22,
-                          textAlign: "center",
-                          color: "rgba(255,255,255,.5)",
-                        }}
-                      >
-                        {i + 5}
-                      </span>
-                      <div
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: "50%",
-                          background: team.color,
-                          boxShadow: `0 0 8px ${team.color}88`,
-                          marginLeft: 6,
-                        }}
-                      />
-                      <span
-                        style={{
-                          ...notoTH,
-                          flex: 1,
-                          paddingLeft: 10,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          color: team.color,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {team.name}
-                      </span>
-                      <span
-                        style={{
-                          ...orbitron,
-                          fontSize: 13,
-                          fontWeight: 900,
-                          color: "rgba(255,255,255,.6)",
-                        }}
-                      >
-                        {pos.score}
-                        <span
-                          style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}
-                        >
-                          PTS
-                        </span>
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-
-        // ── 4TH PLACE ──
-        case "4th": {
-          const t4 = sortedPositions[3]
-            ? data.teams.find((t) => t.id === sortedPositions[3].teamId)
-            : null;
-          const s4 = sortedPositions[3]?.score ?? 0;
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 10,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.55rem,.85vw,.72rem)",
-                  letterSpacing: ".42em",
-                  color: "rgba(255,255,255,.45)",
-                }}
-              >
-                — FINAL ROUND —
-              </div>
-              <div
-                className="grad-gold"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".1em",
-                  lineHeight: 1,
-                }}
-              >
-                4TH PLACE
-              </div>
-              <div
-                style={{
-                  width: 180,
-                  height: 1.5,
-                  background: `linear-gradient(90deg,transparent,${C.orange},transparent)`,
-                  borderRadius: 1,
-                }}
-              />
-              {t4 && (
-                <>
-                  <div
-                    style={{
-                      ...notoTH,
-                      fontSize: "clamp(1.3rem,3vw,2.4rem)",
-                      fontWeight: 800,
-                      color: t4.color,
-                      textShadow: `0 0 24px ${t4.color}88`,
-                    }}
-                  >
-                    {t4.name}
-                  </div>
-                  <div
-                    style={{
-                      ...orbitron,
-                      fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                      fontWeight: 700,
-                      color: "rgba(255,255,255,.5)",
-                    }}
-                  >
-                    {s4}{" "}
-                    <span style={{ fontSize: ".65em", opacity: 0.6 }}>
-                      POINTS
-                    </span>
-                  </div>
-                </>
-              )}
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(.65rem,1.1vw,.85rem)",
-                  color: "rgba(255,255,255,.3)",
-                  letterSpacing: ".08em",
-                  marginTop: 8,
-                }}
-              >
-                ขอแสดงความยินดีกับการเข้า Top 4
-              </div>
-            </div>
-          );
-        }
-
-        // ── TOP 3 PREVIEW ──
-        case "top3": {
-          const top3 = sortedPositions.slice(0, 3);
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 14,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.55rem,.85vw,.7rem)",
-                  letterSpacing: ".42em",
-                  color: "rgba(255,255,255,.45)",
-                }}
-              >
-                เหลือเพียง 3 ทีมสุดท้าย
-              </div>
-              <div
-                className="grad-gold"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".1em",
-                  lineHeight: 1,
-                }}
-              >
-                TOP 3
-              </div>
-              <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
-                {top3.map((pos, i) => {
-                  const team = data.teams.find((t) => t.id === pos.teamId);
-                  if (!team) return null;
-                  return (
-                    <div
-                      key={team.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 5,
-                        padding: "10px 14px",
-                        borderRadius: 8,
-                        background: "rgba(4,12,28,.7)",
-                        border: `1px solid ${team.color}33`,
-                      }}
-                    >
-                      <div style={{ fontSize: i === 0 ? 22 : 17 }}>
-                        {medals[i]}
-                      </div>
-                      <div
-                        style={{
-                          ...notoTH,
-                          fontSize: i === 0 ? 13 : 11,
-                          fontWeight: 700,
-                          color: team.color,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {team.name}
-                      </div>
-                      <div
-                        style={{
-                          ...orbitron,
-                          fontSize: i === 0 ? 11 : 9,
-                          color: "rgba(255,255,255,.5)",
-                        }}
-                      >
-                        {pos.score}P
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-
-        // ── 3RD PLACE ──
-        case "3rd": {
-          const t3 = sortedPositions[2]
-            ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
-            : null;
-          const s3 = sortedPositions[2]?.score ?? 0;
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 10,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.55rem,.85vw,.7rem)",
-                  letterSpacing: ".42em",
-                  color: "rgba(255,255,255,.4)",
-                }}
-              >
-                — TOP 3 REVEAL —
-              </div>
-              <div
-                className="grad-gold"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".1em",
-                  lineHeight: 1,
-                }}
-              >
-                3RD PLACE
-              </div>
-              <div
-                style={{
-                  width: 160,
-                  height: 1.5,
-                  background: `linear-gradient(90deg,transparent,${C.gold},transparent)`,
-                  borderRadius: 1,
-                }}
-              />
-              <div
-                style={{
-                  fontSize: 28,
-                  animation: "float 2.5s ease-in-out infinite",
-                }}
-              >
-                🥉
-              </div>
-              {t3 && (
-                <>
-                  <div
-                    style={{
-                      ...notoTH,
-                      fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                      fontWeight: 800,
-                      color: t3.color,
-                      textShadow: `0 0 28px ${t3.color}99`,
-                    }}
-                  >
-                    {t3.name}
-                  </div>
-                  <div
-                    style={{
-                      ...orbitron,
-                      fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                      color: "rgba(255,255,255,.5)",
-                    }}
-                  >
-                    {s3}{" "}
-                    <span style={{ fontSize: ".65em", opacity: 0.6 }}>
-                      POINTS
-                    </span>
-                  </div>
-                </>
-              )}
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(.65rem,1.1vw,.85rem)",
-                  color: "rgba(255,255,255,.28)",
-                  letterSpacing: ".08em",
-                  marginTop: 8,
-                }}
-              >
-                ขอแสดงความยินดีกับอันดับที่ 3
-              </div>
-            </div>
-          );
-        }
-
-        // ── RUNNER UP ──
-        case "runnerup": {
-          const ru = sortedPositions[1]
-            ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
-            : null;
-          const sru = sortedPositions[1]?.score ?? 0;
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 10,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.55rem,.85vw,.7rem)",
-                  letterSpacing: ".42em",
-                  color: "rgba(255,255,255,.4)",
-                }}
-              >
-                — RUNNER UP —
-              </div>
-              <div
-                className="grad-blue"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".14em",
-                }}
-              >
-                RUNNER UP
-              </div>
-              <div
-                style={{
-                  width: 160,
-                  height: 1.5,
-                  background: `linear-gradient(90deg,transparent,${C.blueLight},transparent)`,
-                  borderRadius: 1,
-                }}
-              />
-              <div
-                style={{
-                  fontSize: 28,
-                  animation: "float 2.5s ease-in-out infinite",
-                }}
-              >
-                🥈
-              </div>
-              {ru && (
-                <>
-                  <div
-                    style={{
-                      ...notoTH,
-                      fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                      fontWeight: 800,
-                      color: ru.color,
-                      textShadow: `0 0 28px ${ru.color}99`,
-                    }}
-                  >
-                    {ru.name}
-                  </div>
-                  <div
-                    style={{
-                      ...orbitron,
-                      fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                      color: "rgba(255,255,255,.5)",
-                    }}
-                  >
-                    {sru}{" "}
-                    <span style={{ fontSize: ".65em", opacity: 0.6 }}>
-                      POINTS
-                    </span>
-                  </div>
-                </>
-              )}
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(.65rem,1.1vw,.85rem)",
-                  color: "rgba(255,255,255,.28)",
-                  letterSpacing: ".08em",
-                  marginTop: 8,
-                }}
-              >
-                ขอแสดงความยินดีกับอันดับที่ 2
-              </div>
-            </div>
-          );
-        }
-
-        // ── CHAMPION ──
-        case "champion": {
-          const ch = sortedPositions[0]
-            ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
-            : null;
-          const sch = sortedPositions[0]?.score ?? 0;
-          return (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 10,
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(.5rem,.8vw,.68rem)",
-                  letterSpacing: ".48em",
-                  color: "rgba(255,255,255,.5)",
-                }}
-              >
-                ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
-              </div>
-              <div
-                className="grad-gold"
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-                  fontWeight: 900,
-                  letterSpacing: ".1em",
-                  lineHeight: 1,
-                }}
-              >
-                CHAMPION
-              </div>
-              <div
-                style={{
-                  width: 280,
-                  height: 2,
-                  background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
-                  borderRadius: 1,
-                }}
-              />
-              <div
-                style={{
-                  fontSize: "clamp(2.8rem,6vw,5rem)",
-                  animation: "float 2.2s ease-in-out infinite",
-                  filter: `drop-shadow(0 0 22px rgba(237,130,64,.8))`,
-                }}
-              >
-                🏆
-              </div>
-              {ch && (
-                <div
-                  style={{
-                    ...notoTH,
-                    fontSize: "clamp(1.6rem,3.8vw,3rem)",
-                    fontWeight: 900,
-                    color: ch.color,
-                    textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
-                  }}
-                >
-                  {ch.name}
-                </div>
-              )}
-              <div
-                style={{
-                  ...orbitron,
-                  fontSize: "clamp(1rem,2.2vw,1.7rem)",
-                  fontWeight: 900,
-                  color: C.gold,
-                }}
-              >
-                {sch}{" "}
-                <span
-                  style={{
-                    fontSize: ".4em",
-                    color: "rgba(255,255,255,.4)",
-                    marginLeft: 5,
-                  }}
-                >
-                  POINTS
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
-                {sortedPositions.slice(1, 3).map((pos, i) => {
-                  const team = data.teams.find((t) => t.id === pos.teamId);
-                  if (!team) return null;
-                  return (
-                    <div
-                      key={team.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 3,
-                        padding: "7px 14px",
-                        borderRadius: 8,
-                        background: "rgba(4,12,28,.7)",
-                        border: `1px solid ${team.color}33`,
-                      }}
-                    >
-                      <span style={{ fontSize: 15 }}>{["🥈", "🥉"][i]}</span>
-                      <span
-                        style={{
-                          ...notoTH,
-                          fontSize: 10,
-                          fontWeight: 700,
-                          color: team.color,
-                        }}
-                      >
-                        {team.name}
-                      </span>
-                      <span
-                        style={{
-                          ...orbitron,
-                          fontSize: 9,
-                          color: "rgba(255,255,255,.45)",
-                        }}
-                      >
-                        {pos.score}P
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(.6rem,1vw,.82rem)",
-                  color: "rgba(255,255,255,.3)",
-                  letterSpacing: ".1em",
-                  marginTop: 4,
-                }}
-              >
-                คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
-              </div>
-            </div>
-          );
-        }
-      }
-    };
-
-    return (
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: "0 24px 56px",
+      }}
+    >
       <div
         style={{
           display: "flex",
           flexDirection: "column",
-          width: "100%",
-          height: "100%",
-          padding: "0 24px 56px",
-          position: "relative",
+          alignItems: "center",
+          gap: 10,
+          textAlign: "center",
         }}
       >
-        {/* confetti root — reuse existing one */}
-        <div
-          id="confetti-root"
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            overflow: "hidden",
-            zIndex: 0,
-          }}
-        />
-
-        {/* Darkened backdrop for reveal stages */}
         <div
           style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 0,
-            background: ["4th", "3rd", "runnerup"].includes(revealStage)
-              ? "rgba(2,8,16,.65)"
-              : "transparent",
-            transition: "background 1.2s ease",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Gold core pulse overlay for champion */}
-        {revealStage === "champion" && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              zIndex: 0,
-              pointerEvents: "none",
-              background:
-                "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(237,130,64,.06) 0%, transparent 70%)",
-            }}
-          />
-        )}
-
-        {/* Main stage content */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            opacity: visible ? 1 : 0,
-            transition: "opacity 0.35s ease",
+            ...orbitron,
+            fontSize: "clamp(.55rem,.85vw,.7rem)",
+            letterSpacing: ".42em",
+            color: "rgba(255,255,255,.4)",
           }}
         >
-          {renderStage()}
+          — AWARD REVEAL —
         </div>
-
-        {/* Sub-stage nav */}
         <div
+          className="grad-gold"
           style={{
-            position: "absolute",
-            bottom: 56,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            flexWrap: "wrap",
-            padding: "0 24px",
+            ...orbitron,
+            fontSize: "clamp(2rem,5vw,3.8rem)",
+            fontWeight: 900,
+            letterSpacing: ".08em",
+            lineHeight: 1,
           }}
         >
-          {/* Prev / Next */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              background: "rgba(10,20,38,.90)",
-              border: `1px solid ${border}`,
-              borderRadius: 28,
-              padding: "7px 14px",
-              backdropFilter: "blur(14px)",
-            }}
-          >
-            <button
-              onClick={() => goReveal(-1)}
-              disabled={stageIndex === 0}
+          รางวัลรองชนะเลิศอันดับ 2
+        </div>
+        <div
+          style={{
+            width: 160,
+            height: 1.5,
+            background: `linear-gradient(90deg,transparent,${C.gold},transparent)`,
+            borderRadius: 1,
+          }}
+        />
+        <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
+          🥉
+        </div>
+        {t3 && (
+          <>
+            <div
               style={{
-                ...orbitron,
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: ".14em",
-                padding: "4px 10px",
-                borderRadius: 14,
-                cursor: stageIndex === 0 ? "not-allowed" : "pointer",
-                background: "none",
-                border: "none",
-                color:
-                  stageIndex === 0
-                    ? "rgba(255,255,255,.25)"
-                    : "rgba(255,255,255,.8)",
-                transition: "color .2s",
+                ...notoTH,
+                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                fontWeight: 800,
+                color: t3.color,
+                textShadow: `0 0 28px ${t3.color}99`,
               }}
             >
-              ← PREV
-            </button>
-            <div style={{ width: 1, height: 14, background: border }} />
-            <span
+              {t3.name}
+            </div>
+            <div
               style={{
                 ...orbitron,
-                fontSize: 8,
-                color: C.textLo,
-                padding: "0 6px",
-                letterSpacing: ".15em",
+                fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                color: "rgba(255,255,255,.5)",
               }}
             >
-              {stageIndex + 1} / {REVEAL_STAGES.length}
-            </span>
-            <div style={{ width: 1, height: 14, background: border }} />
-            <button
-              onClick={() => goReveal(1)}
-              disabled={stageIndex === REVEAL_STAGES.length - 1}
-              style={{
-                ...orbitron,
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: ".14em",
-                padding: "4px 10px",
-                borderRadius: 14,
-                cursor:
-                  stageIndex === REVEAL_STAGES.length - 1
-                    ? "not-allowed"
-                    : "pointer",
-                background: "none",
-                border: "none",
-                color:
-                  stageIndex === REVEAL_STAGES.length - 1
-                    ? "rgba(255,255,255,.25)"
-                    : "rgba(255,255,255,.8)",
-                transition: "color .2s",
-              }}
-            >
-              NEXT →
-            </button>
-          </div>
-
-          {/* Stage dot indicators */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              background: "rgba(10,20,38,.90)",
-              border: `1px solid ${border}`,
-              borderRadius: 28,
-              padding: "7px 14px",
-              backdropFilter: "blur(14px)",
-            }}
-          >
-            {REVEAL_STAGES.map((s, i) => (
-              <button
-                key={s}
-                onClick={() => {
-                  setVisible(false);
-                  setTimeout(() => {
-                    setRevealStage(s);
-                    setVisible(true);
-                  }, 350);
-                }}
-                title={STAGE_LABELS[i]}
-                style={{
-                  width: revealStage === s ? 20 : 7,
-                  height: 7,
-                  borderRadius: revealStage === s ? 3 : "50%",
-                  background:
-                    revealStage === s ? C.gold : "rgba(255,255,255,.2)",
-                  border: "none",
-                  cursor: "pointer",
-                  transition: "all .25s",
-                  boxShadow:
-                    revealStage === s ? `0 0 8px rgba(237,130,64,.6)` : "none",
-                }}
-              />
-            ))}
-          </div>
+              {s3} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+            </div>
+          </>
+        )}
+        <div
+          style={{
+            ...notoTH,
+            fontSize: "clamp(.65rem,1.1vw,.85rem)",
+            color: "rgba(255,255,255,.28)",
+            letterSpacing: ".08em",
+            marginTop: 8,
+          }}
+        >
+          ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 2
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+};
+
+// =========================================================================
+// SLIDE 9 — รางวัลรองชนะเลิศอันดับ 1 (อันดับ 2)
+// =========================================================================
+const Slide9 = () => {
+  const ru = sortedPositions[1]
+    ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
+    : null;
+  const sru = sortedPositions[1]?.score ?? 0;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: "0 24px 56px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            ...orbitron,
+            fontSize: "clamp(.55rem,.85vw,.7rem)",
+            letterSpacing: ".42em",
+            color: "rgba(255,255,255,.4)",
+          }}
+        >
+          — AWARD REVEAL —
+        </div>
+        <div
+          className="grad-blue"
+          style={{
+            ...orbitron,
+            fontSize: "clamp(2rem,5vw,3.8rem)",
+            fontWeight: 900,
+            letterSpacing: ".08em",
+            lineHeight: 1,
+          }}
+        >
+          รางวัลรองชนะเลิศอันดับ 1
+        </div>
+        <div
+          style={{
+            width: 160,
+            height: 1.5,
+            background: `linear-gradient(90deg,transparent,${C.blueLight},transparent)`,
+            borderRadius: 1,
+          }}
+        />
+        <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
+          🥈
+        </div>
+        {ru && (
+          <>
+            <div
+              style={{
+                ...notoTH,
+                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                fontWeight: 800,
+                color: ru.color,
+                textShadow: `0 0 28px ${ru.color}99`,
+              }}
+            >
+              {ru.name}
+            </div>
+            <div
+              style={{
+                ...orbitron,
+                fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                color: "rgba(255,255,255,.5)",
+              }}
+            >
+              {sru} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+            </div>
+          </>
+        )}
+        <div
+          style={{
+            ...notoTH,
+            fontSize: "clamp(.65rem,1.1vw,.85rem)",
+            color: "rgba(255,255,255,.28)",
+            letterSpacing: ".08em",
+            marginTop: 8,
+          }}
+        >
+          ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 1
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =========================================================================
+// SLIDE 10 — รางวัลชนะเลิศ
+// =========================================================================
+function Slide10() {
+  useEffect(() => {
+    launchConfetti();
+  }, []);
+
+  const ch = sortedPositions[0]
+    ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
+    : null;
+  const sch = sortedPositions[0]?.score ?? 0;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: "0 24px 56px",
+        position: "relative",
+      }}
+    >
+      <div
+        id="confetti-root"
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          overflow: "hidden",
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(237,130,64,.06) 0%, transparent 70%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 2,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            ...orbitron,
+            fontSize: "clamp(.5rem,.8vw,.68rem)",
+            letterSpacing: ".48em",
+            color: "rgba(255,255,255,.5)",
+          }}
+        >
+          ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
+        </div>
+        <div
+          className="grad-gold"
+          style={{
+            ...orbitron,
+            fontSize: "clamp(2rem,5vw,3.8rem)",
+            fontWeight: 900,
+            letterSpacing: ".08em",
+            lineHeight: 1,
+          }}
+        >
+          รางวัลชนะเลิศ
+        </div>
+        <div
+          style={{
+            width: 280,
+            height: 2,
+            background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
+            borderRadius: 1,
+          }}
+        />
+        <div
+          style={{
+            fontSize: "clamp(2.8rem,6vw,5rem)",
+            animation: "float 2.2s ease-in-out infinite",
+            filter: `drop-shadow(0 0 22px rgba(237,130,64,.8))`,
+          }}
+        >
+          🏆
+        </div>
+        {ch && (
+          <div
+            style={{
+              ...notoTH,
+              fontSize: "clamp(1.6rem,3.8vw,3rem)",
+              fontWeight: 900,
+              color: ch.color,
+              textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+            }}
+          >
+            {ch.name}
+          </div>
+        )}
+        <div
+          style={{
+            ...orbitron,
+            fontSize: "clamp(1rem,2.2vw,1.7rem)",
+            fontWeight: 900,
+            color: C.gold,
+          }}
+        >
+          {sch}{" "}
+          <span style={{ fontSize: ".4em", color: "rgba(255,255,255,.4)", marginLeft: 5 }}>
+            POINTS
+          </span>
+        </div>
+        <div
+          style={{
+            ...notoTH,
+            fontSize: "clamp(.6rem,1vw,.82rem)",
+            color: "rgba(255,255,255,.3)",
+            letterSpacing: ".1em",
+            marginTop: 4,
+          }}
+        >
+          คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
+        </div>
+      </div>
+    </div>
+  );
+}
   // =========================================================================
   // FOOTER TICKER
   // =========================================================================
@@ -3829,7 +3226,7 @@ export default function ViewerDashboard() {
                 pointerEvents: "all",
               }}
             >
-              {(["1", "2", "3", "4", "5", "6", "7"] as const).map((icon, i) => (
+              {(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] as const).map((icon, i) => (
                 <button
                   key={i}
                   style={{
@@ -3873,6 +3270,9 @@ export default function ViewerDashboard() {
     5: <Slide5 />,
     6: <Slide6 />,
     7: <Slide7 />,
+    8: <Slide8 />,
+    9: <Slide9 />,
+    10: <Slide10 />,
   };
 
   return (

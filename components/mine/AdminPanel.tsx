@@ -32,7 +32,6 @@ import Link from "next/link";
 import { AuditMatrix } from "./AuditMatrix";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 import { CanvaLinkManager } from "./CanvaLinkManager";
-import { AuthButton } from "../auth-button";
 
 const ORANGE = "#ED8240";
 const NEGATIVE = "#d4183d";
