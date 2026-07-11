@@ -239,7 +239,7 @@ function ScoreEntryAndLog({
 
   // per-team data: key = teamId, value = { bonus, n } — ทุกทีมมี entry เสมอ ไม่ต้อง select
   const [teamEntries, setTeamEntries] = useState<
-    Record<string, { bonus: boolean; n: number | null }>
+    Record<string, { bonus: boolean; n: number }>
   >({});
 
   const [submitting, setSubmitting] = useState(false);
@@ -315,7 +315,7 @@ function ScoreEntryAndLog({
     teams.length > 0 &&
     teams.every((t) => {
       const n = teamEntries[t.id]?.n;
-      return n != null && n >= 0 && n <= 100;
+      return n !== undefined && n >= 0 && n <= 100;
     });
 
   const buildNote = (bonus: boolean, n: number, full: number, final: number) =>
