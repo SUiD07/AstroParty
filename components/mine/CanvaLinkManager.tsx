@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Trash2, Save, RefreshCw, Link } from "lucide-react";
+import { Trash2, Save, RefreshCw} from "lucide-react";
 import { loadCategories, loadCanvaLinks, saveCanvaLink, deleteCanvaLink } from "@/lib/db";
 
 interface Question {
@@ -64,9 +64,9 @@ export function CanvaLinkManager() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
+        {/* <h2 className="text-sm font-bold uppercase tracking-widest text-brand-cyan flex items-center gap-2">
           <Link className="w-4 h-4" /> Canva Embed Links
-        </h2>
+        </h2> */}
         <button
           onClick={refresh}
           className="text-slate-500 hover:text-brand-cyan transition-colors"

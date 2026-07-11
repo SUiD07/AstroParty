@@ -9,12 +9,13 @@ export const SHIP_CONTROLS = {
 };
 
 export const COLORS = [
-  '#22d3ee', // Cyan
-  '#f472b6', // Pink
-  '#4ade80', // Green
-  '#fb923c', // Orange
-  '#a78bfa', // Purple
-  '#ef4444', // Red
-  '#38bdf8', // Sky
-  '#fbbf24', // Amber
+  '#254074', 
+  '#538FEE',
+  '#9CC8EE',
+  '#FCD47D',
+  '#ED8240',
+  '#AA4229',
+  '#76849D',
+  '#f472b6',
+
 ];
