@@ -2,8 +2,10 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 import { InfoIcon } from "lucide-react";
-import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
-import { Suspense } from "react";
+// import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
+// import { Suspense } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 async function UserDetails() {
   const supabase = await createClient();
@@ -26,7 +28,13 @@ export default function ProtectedPage() {
           user
         </div>
       </div>
-      <div className="flex flex-col gap-2 items-start">
+      <Button>
+        <Link href="/">Viewer Dashboard</Link>
+      </Button>
+      <Button>
+        <Link href="/admin">Admin Panel</Link>
+      </Button>
+      {/* <div className="flex flex-col gap-2 items-start">
         <h2 className="font-bold text-2xl mb-4">Your user details</h2>
         <pre className="text-xs font-mono p-3 rounded border max-h-32 overflow-auto">
           <Suspense>
@@ -37,7 +45,7 @@ export default function ProtectedPage() {
       <div>
         <h2 className="font-bold text-2xl mb-4">Next steps</h2>
         <FetchDataSteps />
-      </div>
+      </div> */}
     </div>
   );
 }
