@@ -214,6 +214,11 @@ function PillButton({
 // ===========================================================================
 // ScoreEntryAndLog
 // ===========================================================================
+const fmtScore = (n: number) => {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
+};
+
 function ScoreEntryAndLog({
   teams,
   onRefreshScores,
@@ -230,19 +235,19 @@ function ScoreEntryAndLog({
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
     null,
   );
-  const [selectedTeamId, setSelectedTeamId] = useState<string>("");
-  const [delta, setDelta] = useState<number | null>(null);
-  const [note, setNote] = useState("");
+  const [scoreFull, setScoreFull] = useState<number | null>(null);
+
+  // per-team data: key = teamId, value = { bonus, n } — ทุกทีมมี entry เสมอ ไม่ต้อง select
+  const [teamEntries, setTeamEntries] = useState<
+    Record<string, { bonus: boolean; n: number | null }>
+  >({});
+
   const [submitting, setSubmitting] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
 
   const [events, setEvents] = useState<ScoreEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
-  const PRESET_DELTAS = [
-    -600, -500, -400, -300, -200, -100, 100, 200, 300, 400, 500, 600,
-  ];
 
   const refreshEvents = useCallback(async () => {
     setEventsLoading(true);
@@ -262,32 +267,99 @@ function ScoreEntryAndLog({
     refreshEvents();
   }, [refreshEvents, refreshVersion]);
 
+  // สร้าง entry เริ่มต้น (n=0, bonus=false) ให้ทุกทีมเสมอ — ทั้งตอนโหลดทีมใหม่ และตอนเปลี่ยนหมวด/ข้อ
+  useEffect(() => {
+    setTeamEntries(
+      Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
+    );
+  }, [teams]);
+
   useEffect(() => {
     setSelectedQuestion(null);
-    setDelta(null);
+    setScoreFull(null);
+    setTeamEntries(
+      Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
+    );
   }, [selectedCategory]);
 
+  const updateTeamBonus = (teamId: string, bonus: boolean) => {
+    setTeamEntries((prev) => ({
+      ...prev,
+      [teamId]: { ...prev[teamId], bonus },
+    }));
+  };
+
+  const updateTeamN = (teamId: string, n: number) => {
+    setTeamEntries((prev) => ({
+      ...prev,
+      [teamId]: { ...prev[teamId], n },
+    }));
+  };
+
+  const computeScore = (bonus: boolean, n: number, full: number) => {
+    const multiplier = bonus ? 2 : 1;
+    const correctPortion = multiplier * (n / 100) * full;
+    // ไม่มีโบนัส → ไม่หักคะแนนจากข้อที่ตอบผิด
+    const incorrectPortion = bonus ? ((100 - n) / 100) * full : 0;
+    return {
+      correctPortion,
+      incorrectPortion,
+      finalScore: correctPortion - incorrectPortion, // ไม่ปัดเศษ
+    };
+  };
+
   const canSubmit =
-    selectedCategory && selectedQuestion && selectedTeamId && delta !== null;
+    selectedCategory &&
+    selectedQuestion &&
+    scoreFull != null &&
+    teams.length > 0 &&
+    teams.every((t) => {
+      const n = teamEntries[t.id]?.n;
+      return n != null && n >= 0 && n <= 100;
+    });
+
+  const buildNote = (bonus: boolean, n: number, full: number, final: number) =>
+    bonus
+      ? `โบนัส x2 · ตอบถูก ${n}% · เต็ม ${full} → 2×(${n}/100)×${full} − (100−${n})/100×${full} = ${final.toFixed(2)}`
+      : `ไม่มีโบนัส · ตอบถูก ${n}% · เต็ม ${full} → (${n}/100)×${full} = ${final.toFixed(2)} (ไม่หักข้อผิด)`;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setSubmitting(true);
     try {
-      await addScoreEvent(
-        selectedTeamId,
-        selectedCategory!.id,
-        selectedQuestion!.id,
-        delta!,
-        note || undefined,
+      const results = teams.map((team) => {
+        const entry = teamEntries[team.id];
+        const { finalScore } = computeScore(entry.bonus, entry.n, scoreFull!);
+        return { teamId: team.id, finalScore, entry };
+      });
+
+      await Promise.all(
+        results.map(({ teamId, finalScore, entry }) =>
+          addScoreEvent(
+            teamId,
+            selectedCategory!.id,
+            selectedQuestion!.id,
+            finalScore,
+            buildNote(entry.bonus, entry.n, scoreFull!, finalScore),
+          ),
+        ),
       );
-      const team = teams.find((t) => t.id === selectedTeamId);
+
+      const summary = results
+        .map(({ teamId, finalScore }) => {
+          const name = teams.find((t) => t.id === teamId)?.name;
+          return `${name} (${finalScore > 0 ? "+" : ""}${fmtScore(finalScore)})`;
+        })
+        .join(", ");
       setLastSaved(
-        `${team?.name} • ${selectedCategory!.name} ข้อ ${selectedQuestion!.number} • ${delta! > 0 ? "+" : ""}${delta}`,
+        `${selectedCategory!.name} ข้อ ${selectedQuestion!.number} • ${summary}`,
       );
+
       setSelectedQuestion(null);
-      setDelta(null);
-      setNote("");
+      setScoreFull(null);
+      setTeamEntries(
+        Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
+      );
       await refreshEvents();
       onRefreshScores();
     } finally {
@@ -296,7 +368,7 @@ function ScoreEntryAndLog({
   };
 
   const handleDelete = async (event: ScoreEvent) => {
-    const label = `${event.team_name} • ${event.category_name} ข้อ ${event.question_number} • ${event.delta > 0 ? "+" : ""}${event.delta}`;
+    const label = `${event.team_name} • ${event.category_name} ข้อ ${event.question_number} • ${event.delta > 0 ? "+" : ""}${fmtScore(event.delta)}`;
     if (!confirm(`ยืนยันการลบ / Undo?\n${label}`)) return;
     setDeletingId(event.id);
     try {
@@ -328,7 +400,8 @@ function ScoreEntryAndLog({
           </div>
           {lastSaved && (
             <div
-              className="text-[10px] px-2.5 py-1 rounded-md"
+              className="text-[10px] px-2.5 py-1 rounded-md max-w-md truncate"
+              title={lastSaved}
               style={{
                 color: "#1a7a4c",
                 background: "rgba(26,122,76,0.06)",
@@ -340,12 +413,12 @@ function ScoreEntryAndLog({
           )}
         </div>
 
-        <div className="border border-black/[0.07] rounded-xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {/* ① Category */}
-            <div className="space-y-2">
+        <div className="border border-black/[0.07] rounded-xl p-6 space-y-6">
+          <div className="flex gap-6 flex-wrap">
+            {/* ① หมวด */}
+            <div className="space-y-2 w-40">
               <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                ① หมวด
+                ① เลือกหมวด
               </label>
               <div className="space-y-1">
                 {categories.map((cat) => {
@@ -372,23 +445,37 @@ function ScoreEntryAndLog({
               </div>
             </div>
 
-            {/* ② Question */}
-            <div className="space-y-2">
+            <div className="w-px bg-black/[0.06]" />
+
+            {/* ② เลือกข้อ — เรียงลงบรรทัดใหม่ทีละข้อ */}
+            <div className="space-y-2 w-32">
               <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                ② ข้อ
+                ② เลือกข้อ
               </label>
-              <div className="grid grid-cols-3 gap-1">
+              <div className="flex flex-col gap-1">
                 {(selectedCategory?.questions ?? [])
                   .sort((a, b) => a.number - b.number)
-                  .map((q) => (
-                    <PillButton
-                      key={q.id}
-                      active={selectedQuestion?.id === q.id}
-                      onClick={() => setSelectedQuestion(q)}
-                    >
-                      ข้อ {q.number}
-                    </PillButton>
-                  ))}
+                  .map((q) => {
+                    const active = selectedQuestion?.id === q.id;
+                    return (
+                      <button
+                        key={q.id}
+                        onClick={() => setSelectedQuestion(q)}
+                        className="w-full text-left px-3 py-2 rounded-lg text-[11px] font-medium border transition-all"
+                        style={{
+                          background: active
+                            ? "rgba(237,130,64,0.10)"
+                            : "transparent",
+                          borderColor: active
+                            ? "rgba(237,130,64,0.3)"
+                            : "rgba(0,0,0,0.08)",
+                          color: active ? ORANGE : "rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        ข้อ {q.number}
+                      </button>
+                    );
+                  })}
               </div>
               {!selectedCategory && (
                 <p className="text-[10px] text-black/30 italic">
@@ -397,130 +484,199 @@ function ScoreEntryAndLog({
               )}
             </div>
 
-            {/* ③ Team */}
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                ③ ทีม
-              </label>
-              <div className="space-y-1">
-                {teams.map((team) => {
-                  const active = selectedTeamId === team.id;
-                  return (
-                    <button
-                      key={team.id}
-                      onClick={() => setSelectedTeamId(team.id)}
-                      className="w-full text-left px-3 py-2 text-[12px] font-medium flex items-center gap-2 rounded-lg border transition-all"
-                      style={{
-                        borderColor: active
-                          ? `${team.color}55`
-                          : "rgba(0,0,0,0.08)",
-                        background: active ? `${team.color}0D` : "transparent",
-                        color: active ? team.color : "rgba(0,0,0,0.55)",
-                      }}
-                    >
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: team.color }}
-                      />
-                      {team.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <div className="w-px bg-black/[0.06]" />
 
-            {/* ④ Delta + Submit */}
-            <div className="space-y-2 flex flex-col">
+            {/* ③ คะแนนเต็มของข้อ */}
+            <div className="space-y-2 w-36">
               <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                ④ คะแนน (+/-)
+                ③ คะแนนเต็มข้อนี้
               </label>
-              <div className="grid grid-cols-2 gap-1">
-                {PRESET_DELTAS.map((d) => (
-                  <PillButton
-                    key={d}
-                    active={delta === d}
-                    positive={d > 0}
-                    onClick={() => setDelta(d)}
-                  >
-                    {d > 0 ? `+${d}` : d}
-                  </PillButton>
-                ))}
-              </div>
-
               <input
                 type="number"
-                placeholder="กรอกเองได้..."
-                value={
-                  delta !== null && !PRESET_DELTAS.includes(delta) ? delta : ""
+                placeholder="เช่น 100"
+                value={scoreFull ?? ""}
+                onChange={(e) =>
+                  setScoreFull(
+                    e.target.value === "" ? null : Number(e.target.value),
+                  )
                 }
-                onChange={(e) => setDelta(Number(e.target.value))}
                 className="w-full rounded-lg px-3 py-2 text-xs outline-none border border-black/[0.08] focus:border-black/20 placeholder:text-black/25"
               />
-
-              <input
-                type="text"
-                placeholder="หมายเหตุ (optional)..."
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full rounded-lg px-3 py-2 text-xs outline-none border border-black/[0.08] focus:border-black/20 placeholder:text-black/25"
-              />
-
-              <div className="flex-1 p-3 rounded-lg border border-dashed border-black/[0.1] text-[11px] text-black/40 space-y-1">
-                <div>
-                  หมวด:{" "}
-                  <span className="text-black/70">
-                    {selectedCategory?.name ?? "—"}
-                  </span>
-                </div>
-                <div>
-                  ข้อ:{" "}
-                  <span className="text-black/70">
-                    {selectedQuestion ? `ข้อ ${selectedQuestion.number}` : "—"}
-                  </span>
-                </div>
-                <div>
-                  ทีม:{" "}
-                  <span className="text-black/70">
-                    {teams.find((t) => t.id === selectedTeamId)?.name ?? "—"}
-                  </span>
-                </div>
-                <div>
-                  คะแนน:{" "}
-                  <span
-                    style={{
-                      color:
-                        delta != null
-                          ? delta > 0
-                            ? "#1a7a4c"
-                            : NEGATIVE
-                          : undefined,
-                      fontWeight: delta != null ? 600 : 400,
-                    }}
-                    className={delta == null ? "text-black/70" : ""}
-                  >
-                    {delta != null ? (delta > 0 ? `+${delta}` : delta) : "—"}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={!canSubmit || submitting}
-                className="w-full py-3 rounded-lg font-medium text-sm transition-all disabled:cursor-not-allowed"
-                style={{
-                  background:
-                    canSubmit && !submitting ? "#1a7a4c" : "rgba(0,0,0,0.06)",
-                  color: canSubmit && !submitting ? "#fff" : "rgba(0,0,0,0.3)",
-                }}
-              >
-                {submitting ? "กำลังบันทึก..." : "✓ ยืนยัน / OK"}
-              </button>
             </div>
           </div>
+
+          {/* ④ ตารางทีม — ทุกทีมกรอกได้เลย ไม่ต้องติ๊กเลือก */}
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+              ④ โบนัส / ตอบถูก (N%) ต่อทีม — ถ้าทีมไม่ตอบให้กรอก 0
+            </label>
+            <div className="border border-black/[0.07] rounded-lg overflow-hidden">
+              <table className="w-full text-[12px]">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-[0.12em] text-black/30 border-b border-black/[0.06] bg-black/[0.015]">
+                    <th className="text-left py-2 pl-4 pr-2 font-medium">
+                      ทีม
+                    </th>
+                    <th className="text-center py-2 pr-2 font-medium w-20">
+                      โบนัส x2
+                    </th>
+                    <th className="text-center py-2 pr-2 font-medium w-24">
+                      N (%)
+                    </th>
+                    <th className="text-left py-2 pr-2 font-medium">
+                      สูตรคำนวณ
+                    </th>
+                    <th className="text-right py-2 pr-4 font-medium w-24">
+                      คะแนนได้
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teams.map((team) => {
+                    const entry = teamEntries[team.id] ?? {
+                      bonus: false,
+                      n: 0,
+                    };
+                    const valid =
+                      scoreFull != null && entry.n >= 0 && entry.n <= 100;
+                    const { correctPortion, incorrectPortion, finalScore } =
+                      valid
+                        ? computeScore(entry.bonus, entry.n, scoreFull!)
+                        : {
+                            correctPortion: 0,
+                            incorrectPortion: 0,
+                            finalScore: 0,
+                          };
+                    const multiplier = entry.bonus ? 2 : 1;
+
+                    return (
+                      <tr
+                        key={team.id}
+                        className="border-b border-black/[0.04] last:border-0"
+                      >
+                        <td className="py-2 pl-4 pr-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: team.color }}
+                            />
+                            <span
+                              className="font-medium"
+                              style={{ color: team.color }}
+                            >
+                              {team.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-2 pr-2 text-center">
+                          <button
+                            onClick={() =>
+                              updateTeamBonus(team.id, !entry.bonus)
+                            }
+                            className="w-4 h-4 rounded-[4px] border-2 inline-flex items-center justify-center"
+                            style={{
+                              borderColor: entry.bonus
+                                ? ORANGE
+                                : "rgba(0,0,0,0.2)",
+                              background: entry.bonus ? ORANGE : "transparent",
+                            }}
+                          >
+                            {entry.bonus && (
+                              <span className="text-white text-[9px] leading-none">
+                                ✓
+                              </span>
+                            )}
+                          </button>
+                        </td>
+                        <td className="py-2 pr-2">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            placeholder="0"
+                            value={entry.n}
+                            onChange={(e) =>
+                              updateTeamN(
+                                team.id,
+                                e.target.value === ""
+                                  ? 0
+                                  : Number(e.target.value),
+                              )
+                            }
+                            className="w-full rounded-md px-2 py-1 text-xs outline-none border border-black/[0.08] focus:border-black/20"
+                          />
+                        </td>
+                        <td className="py-2 pr-2">
+                          <div
+                            className="rounded-md px-2.5 py-1.5 text-[10.5px] leading-snug"
+                            style={{
+                              background: "rgba(147,51,234,0.04)",
+                              border: "1px solid rgba(147,51,234,0.15)",
+                              color: "rgba(88,28,135,0.75)",
+                            }}
+                          >
+                            {entry.bonus ? (
+                              <>
+                                {multiplier}×({entry.n}/100)×
+                                {scoreFull ?? "score"} − (100−{entry.n})/100×
+                                {scoreFull ?? "score"}
+                                <br />={" "}
+                                {valid ? correctPortion.toFixed(1) : "—"} −{" "}
+                                {valid ? incorrectPortion.toFixed(1) : "—"}
+                              </>
+                            ) : (
+                              <>
+                                ({entry.n}/100)×{scoreFull ?? "score"}{" "}
+                                (ไม่หักข้อผิด)
+                                <br />={" "}
+                                {valid ? correctPortion.toFixed(1) : "—"}
+                              </>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-2 pr-4 text-right">
+                          <span
+                            className="font-medium tabular-nums"
+                            style={{
+                              color: valid
+                                ? finalScore >= 0
+                                  ? "#1a7a4c"
+                                  : NEGATIVE
+                                : "rgba(0,0,0,0.2)",
+                            }}
+                          >
+                            {valid
+                              ? (finalScore > 0 ? "+" : "") +
+                                fmtScore(finalScore)
+                              : "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit || submitting}
+            className="w-full py-3 rounded-lg font-medium text-sm transition-all disabled:cursor-not-allowed"
+            style={{
+              background:
+                canSubmit && !submitting ? "#1a7a4c" : "rgba(0,0,0,0.06)",
+              color: canSubmit && !submitting ? "#fff" : "rgba(0,0,0,0.3)",
+            }}
+          >
+            {submitting
+              ? "กำลังบันทึก..."
+              : `✓ บันทึกทุกทีม (${teams.length} ทีม)`}
+          </button>
         </div>
       </section>
 
-      {/* ── Event Log ── */}
+      {/* ── Event Log — เหมือนเดิมทุกจุด ไม่แตะ ── */}
       <section id="event-log" className="scroll-mt-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -592,7 +748,10 @@ function ScoreEntryAndLog({
                     <td className="py-3 pr-3 text-black/55">
                       ข้อ {event.question_number}
                     </td>
-                    <td className="py-3 pr-3 text-black/30 italic">
+                    <td
+                      className="py-3 pr-3 text-black/30 italic max-w-[240px] truncate"
+                      title={event.note ?? ""}
+                    >
                       {event.note ?? "—"}
                     </td>
                     <td
@@ -601,7 +760,9 @@ function ScoreEntryAndLog({
                         color: event.delta > 0 ? "#1a7a4c" : NEGATIVE,
                       }}
                     >
-                      {event.delta > 0 ? `+${event.delta}` : event.delta}
+                      {event.delta > 0
+                        ? `+${fmtScore(event.delta)}`
+                        : fmtScore(event.delta)}
                     </td>
                     <td className="py-3 pr-5 text-right">
                       <button
