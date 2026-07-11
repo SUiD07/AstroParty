@@ -395,19 +395,40 @@ function JeopardyCell({
   return (
     <div
       onClick={onClick}
+      // style={{
+      //   position: "relative",
+      //   minHeight: 62,
+      //   padding: "8px 6px",
+      //   borderRadius: 8,
+      //   // border: answered
+      //   //   ? `1px solid rgba(26,26,26,0.22)`
+      //   //   : `1px solid rgba(237,130,64,0.25)`,
+      //   border: `1px solid rgba(237,130,64,0.25)`,
+      //   // background: answered
+      //   //   ? "rgba(7,17,30,0.88)"
+      //   //   : `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
+      //   background: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
+      //   cursor: "pointer",
+      //   display: "flex",
+      //   flexDirection: "column",
+      //   alignItems: "center",
+      //   justifyContent: "center",
+      //   gap: 4,
+      //   transition: "all 0.2s",
+      //   // opacity: answered ? 0.62 : 1,
+      //   opacity: 1,
+      // }}
       style={{
         position: "relative",
         minHeight: 62,
         padding: "8px 6px",
         borderRadius: 8,
-        // border: answered
-        //   ? `1px solid rgba(26,26,26,0.22)`
-        //   : `1px solid rgba(237,130,64,0.25)`,
-        border: `1px solid rgba(237,130,64,0.25)`,
-        // background: answered
-        //   ? "rgba(7,17,30,0.88)"
-        //   : `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
-        background: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
+        border: answered
+          ? `1px solid rgba(237,130,64,0.25)` // ตอบแล้ว — สีเดิม
+          : "1px solid rgba(255,255,255,0.07)", // ยังไม่ตอบ — โทนเทาตาม UI ใหม่
+        background: answered
+          ? `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))` // ตอบแล้ว — สีเดิม
+          : "#1a1a1a", // ยังไม่ตอบ — โทนเทาตาม UI ใหม่
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
@@ -415,28 +436,44 @@ function JeopardyCell({
         justifyContent: "center",
         gap: 4,
         transition: "all 0.2s",
-        // opacity: answered ? 0.62 : 1,
         opacity: 1,
       }}
+      // onMouseEnter={(e) => {
+      //   const el = e.currentTarget as HTMLDivElement;
+      //   // el.style.boxShadow = answered
+      //   //   ? "none"
+      //   //   : `0 0 18px rgba(237,130,64,0.28)`;
+      //   el.style.boxShadow = `0 0 18px rgba(237,130,64,0.28)`;
+
+      //   // if (!answered) {
+      //   //   el.style.borderColor = `rgba(237,130,64,0.45)`;
+      //   // }
+      //   el.style.borderColor = `rgba(237,130,64,0.45)`;
+      // }}
+      // onMouseLeave={(e) => {
+      //   const el = e.currentTarget as HTMLDivElement;
+      //   el.style.boxShadow = "none";
+      //   // el.style.borderColor = answered
+      //   //   ? "rgba(26,26,26,0.22)"
+      //   //   : "rgba(237,130,64,0.25)";
+      //   el.style.borderColor = "rgba(237,130,64,0.25)";
+      // }}
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLDivElement;
-        // el.style.boxShadow = answered
-        //   ? "none"
-        //   : `0 0 18px rgba(237,130,64,0.28)`;
-        el.style.boxShadow = `0 0 18px rgba(237,130,64,0.28)`;
-
-        // if (!answered) {
-        //   el.style.borderColor = `rgba(237,130,64,0.45)`;
-        // }
-        el.style.borderColor = `rgba(237,130,64,0.45)`;
+        if (answered) {
+          el.style.boxShadow = `0 0 18px rgba(237,130,64,0.28)`;
+          el.style.borderColor = `rgba(237,130,64,0.45)`;
+        } else {
+          el.style.boxShadow = "none";
+          el.style.borderColor = "rgba(255,255,255,0.14)";
+        }
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.boxShadow = "none";
-        // el.style.borderColor = answered
-        //   ? "rgba(26,26,26,0.22)"
-        //   : "rgba(237,130,64,0.25)";
-        el.style.borderColor = "rgba(237,130,64,0.25)";
+        el.style.borderColor = answered
+          ? "rgba(237,130,64,0.25)"
+          : "rgba(255,255,255,0.07)";
       }}
     >
       {answered ? (
@@ -460,7 +497,7 @@ function JeopardyCell({
                     padding: "2px 4px",
                     borderRadius: 4,
                     background: `${team.color}1A`,
-                    borderLeft: `2px solid ${team.color}`,
+                    // borderLeft: `2px solid ${team.color}`,
                     fontSize: 10,
                     fontWeight: 700,
                     color: ev.delta > 0 ? team.color : "#f87171",
@@ -821,21 +858,49 @@ function Slide3({
         title="Question Board"
         right={
           <>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "5px 13px",
-                borderRadius: 18,
-                background: "rgba(26,26,26,.28)",
-                border: `1px solid ${border}`,
-              }}
-            >
-              <Zap size={11} color={C.blueLight} />
-              <span style={{ ...orbitron, fontSize: 10, color: C.blueLight }}>
-                {answeredCount}/{totalQCount}
-              </span>
+            <div style={{ paddingBottom: 4, textAlign: "right" }}>
+              <p
+                style={{
+                  ...notoTH,
+                  color: "rgba(255,255,255,0.2)",
+                  fontSize: 11,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  marginBottom: 6,
+                }}
+              >
+                Question {answeredCount}/{totalQCount}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    backgroundColor: "#ED8240",
+                    animation: "twinkle 1.5s ease-in-out infinite",
+                  }}
+                />
+                <span
+                  style={{
+                    ...orbitron,
+                    fontSize: 9,
+                    fontWeight: 700,
+                    letterSpacing: "0.2em",
+                    textTransform: "uppercase",
+                    color: "#ED8240",
+                  }}
+                >
+                  Live
+                </span>
+              </div>
             </div>
           </>
         }
@@ -898,6 +963,7 @@ function Slide3({
               overflowY: "auto",
             }}
           >
+            {/* Category headers — ปรับฟอนต์/สี/ขนาด */}
             {categories.map((cat) => (
               <div
                 key={cat.id}
@@ -912,10 +978,11 @@ function Slide3({
                 <span
                   style={{
                     ...notoTH,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: C.blueLight,
-                    letterSpacing: "0.04em",
+                    fontSize: "clamp(0.72rem, 1.1vw, 0.95rem)",
+                    fontWeight: 600,
+                    color: "rgba(255,255,255,0.55)",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
                     lineHeight: 1.3,
                     display: "block",
                   }}
@@ -948,7 +1015,7 @@ function Slide3({
           </div>
         )}
 
-        <div
+        {/* <div
           style={{ display: "flex", gap: 20, paddingTop: 10, flexShrink: 0 }}
         >
           {[
@@ -977,7 +1044,7 @@ function Slide3({
               <span style={notoTH}>{label}</span>
             </div>
           ))}
-        </div>
+        </div> */}
       </div>
 
       <AnimatePresence>
@@ -987,7 +1054,7 @@ function Slide3({
             question={selectedCell.question}
             events={getEvents(selectedCell.question.id)}
             teams={data.teams}
-            canvaLinks={canvaLinks} // ← เพิ่ม
+            canvaLinks={canvaLinks}
             onClose={() => setSelectedCell(null)}
           />
         )}
@@ -1903,7 +1970,7 @@ export default function ViewerDashboard() {
         </div>
 
         {/* Fleet Rankings sidebar */}
-        <div
+        {/* <div
           style={{
             flex: "0 0 220px",
             ...glassCard(),
@@ -1945,9 +2012,9 @@ export default function ViewerDashboard() {
                     position: "relative",
                     overflow: "hidden",
                   }}
-                >
-                  {/* rank accent */}
-                  <div
+                > */}
+        {/* rank accent */}
+        {/* <div
                     style={{
                       position: "absolute",
                       left: 0,
@@ -2030,8 +2097,8 @@ export default function ViewerDashboard() {
                 NO DATA
               </div>
             )}
-          </div>
-        </div>
+          </div> */}
+        {/* </div> */}
       </div>
 
       {/* Finish label */}
@@ -2055,21 +2122,130 @@ export default function ViewerDashboard() {
   // SLIDE 5 — LIVE LEADERBOARD
   // =========================================================================
   const Slide5 = () => {
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+      const check = () => setIsMobile(window.innerWidth < 768);
+      check();
+      window.addEventListener("resize", check);
+      return () => window.removeEventListener("resize", check);
+    }, []);
+
     const recentByTeam: Record<string, number> = {};
-
-scoreEvents.forEach((ev) => {
-  recentByTeam[ev.team_id] = ev.delta;
-});
-
+    scoreEvents.forEach((ev) => {
+      recentByTeam[ev.team_id] = ev.delta;
+    });
 
     const maxScore = sortedPositions[0]?.score || 1;
-    const n = Math.max(1, sortedPositions.length);
 
-    // ยิ่งทีมเยอะ ยิ่งย่อ
-    const rowPad = Math.min(18, 140 / n); // padding บน-ล่างต่อแถว
-    const nameSize = Math.min(1.6, 12 / n + 0.9); // rem
-    const scoreSize = Math.min(2.4, 18 / n + 1.2); // rem
-    const rankSize = Math.min(13, 90 / n + 8); // px
+    // แบ่ง 2 คอลัมน์ถ้าทีมเยอะเกิน 6 ทีม และไม่ใช่จอมือถือ
+    const useTwoColumns = !isMobile && sortedPositions.length > 6;
+    const half = Math.ceil(sortedPositions.length / 2);
+    const columns = useTwoColumns
+      ? [sortedPositions.slice(0, half), sortedPositions.slice(half)]
+      : [sortedPositions];
+
+    // คำนวณขนาดจากจำนวนแถว "ต่อคอลัมน์" (มือถือ = คอลัมน์เดียว จึงใช้ทีมทั้งหมด)
+    const rowsPerColumn = Math.max(1, columns[0].length);
+    const rowPad = Math.min(18, 140 / rowsPerColumn);
+    const nameSize = Math.min(1.6, 12 / rowsPerColumn + 0.9);
+    const scoreSize = Math.min(2.4, 18 / rowsPerColumn + 1.2);
+    const rankSize = Math.min(13, 90 / rowsPerColumn + 8);
+
+    const renderRow = (
+      pos: (typeof sortedPositions)[number],
+      i: number,
+      isLastInColumn: boolean,
+    ) => {
+      const team = data.teams.find((t) => t.id === pos.teamId);
+      if (!team) return null;
+
+      const isFirst = i === 0;
+      const recent = recentByTeam[team.id];
+
+      return (
+        <div
+          key={team.id}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: isMobile ? 12 : 20,
+            padding: `${rowPad}px 0`,
+            borderTop: "1px solid rgba(255,255,255,0.04)",
+            ...(isLastInColumn
+              ? { borderBottom: "1px solid rgba(255,255,255,0.04)" }
+              : {}),
+          }}
+        >
+          {/* Rank */}
+          <span
+            style={{
+              ...orbitron,
+              fontSize: rankSize,
+              fontWeight: 700,
+              width: 20,
+              textAlign: "right",
+              flexShrink: 0,
+              color: isFirst ? C.orange : "rgba(255,255,255,0.2)",
+            }}
+          >
+            {i + 1}
+          </span>
+
+          {/* Team name */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                ...notoTH,
+                fontWeight: 300,
+                lineHeight: 1.2,
+                fontSize: `${nameSize}rem`,
+                color: isFirst ? "#fff" : "rgba(255,255,255,0.5)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {team.name}
+            </div>
+          </div>
+
+          {/* Score */}
+          <span
+            style={{
+              ...orbitron,
+              fontWeight: 300,
+              flexShrink: 0,
+              width: isMobile ? 60 : 80,
+              textAlign: "right",
+              fontSize: `${scoreSize}rem`,
+              color: isFirst ? C.orange : "rgba(255,255,255,0.45)",
+            }}
+          >
+            {pos.score}
+          </span>
+
+          {/* Recent delta */}
+          {/* <span
+          style={{
+            ...orbitron,
+            fontSize: 12,
+            width: 40,
+            textAlign: "right",
+            flexShrink: 0,
+            color:
+              recent == null
+                ? "transparent"
+                : recent > 0
+                  ? "rgba(237,130,64,0.5)"
+                  : "rgba(220,80,80,0.5)",
+          }}
+        >
+          {recent != null ? (recent > 0 ? `+${recent}` : `${recent}`) : "·"}
+        </span> */}
+        </div>
+      );
+    };
 
     return (
       <div
@@ -2078,149 +2254,107 @@ scoreEvents.forEach((ev) => {
           flexDirection: "column",
           width: "100%",
           height: "100%",
-          padding: "0 24px 56px",
           overflow: "hidden",
         }}
       >
-        <SlideHeader
-          title="Live Leaderboard"
-          // right={<RefreshBtn />}
-        />
+        {/* Header */}
+        <header
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-between",
+            flexShrink: 0,
+            padding: isMobile ? "24px 20px 14px" : "36px 56px 20px",
+          }}
+        >
+          <h1
+            style={{
+              ...fontDisplay,
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              lineHeight: 1,
+              color: "#fff",
+              fontSize: isMobile
+                ? "clamp(1.8rem, 8vw, 2.6rem)"
+                : "clamp(3rem, 6vw, 5.5rem)",
+              margin: 0,
+            }}
+          >
+            Live Leaderboard
+          </h1>
 
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              paddingBottom: 4,
+            }}
+          >
+            <span
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: "#ED8240",
+                animation: "twinkle 1.5s ease-in-out infinite",
+              }}
+            />
+            <span
+              style={{
+                ...orbitron,
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "#ED8240",
+              }}
+            >
+              Live
+            </span>
+          </div>
+        </header>
+
+        {/* Leaderboard columns */}
         <div
           style={{
             flex: 1,
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-evenly", // กระจายแถวเต็มพื้นที่ที่เหลือ
-            minHeight: 0, // สำคัญ! กัน flex ดันล้น
-            padding: "0 40px",
+            gap: 48,
+            minHeight: 0,
+            padding: isMobile ? "0 20px 20px" : "0 56px 32px",
           }}
         >
           {sortedPositions.length === 0 && (
-            <p style={{ ...notoTH, opacity: 0.4, textAlign: "center" }}>
+            <p
+              style={{
+                ...notoTH,
+                opacity: 0.4,
+                textAlign: "center",
+                width: "100%",
+              }}
+            >
               No teams yet
             </p>
           )}
 
-          {sortedPositions.map((pos, i) => {
-            const team = data.teams.find((t) => t.id === pos.teamId);
-            if (!team) return null;
-
-            const isFirst = i === 0;
-            const pct = (pos.score / maxScore) * 100;
-            const recent = recentByTeam[team.id];
-            console.log("Rendering team", team.name, "with recent delta:", recent);
-            console.log("team.id:", team.id);
-    
-            return (
-              <div
-                key={team.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 28,
-                  padding: `${rowPad}px 0`,
-                  borderTop: "1px solid rgba(255,255,255,0.04)",
-                  ...(i === sortedPositions.length - 1
-                    ? { borderBottom: "1px solid rgba(255,255,255,0.04)" }
-                    : {}),
-                }}
-              >
-                {/* Rank */}
-                <span
-                  style={{
-                    ...orbitron,
-                    fontSize: rankSize,
-                    fontWeight: 700,
-                    width: 20,
-                    textAlign: "right",
-                    flexShrink: 0,
-                    color: isFirst ? C.orange : "rgba(255,255,255,0.2)",
-                  }}
-                >
-                  {i + 1}
-                </span>
-
-                {/* Team name */}
-                <div style={{ width: 200, flexShrink: 0, minWidth: 0 }}>
-                  <div
-                    style={{
-                      ...notoTH,
-                      fontWeight: 300,
-                      lineHeight: 1.2,
-                      fontSize: `${nameSize}rem`,
-                      color: isFirst ? "#fff" : "rgba(255,255,255,0.5)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {team.name}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div
-                  style={{
-                    flex: 1,
-                    position: "relative",
-                    height: 1,
-                    background: "rgba(255,255,255,0.04)",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: "0 auto 0 0",
-                      height: 1,
-                      width: `${pct}%`,
-                      background: isFirst ? C.orange : "rgba(255,255,255,0.15)",
-                      transition: "width .7s ease",
-                    }}
-                  />
-                </div>
-
-                {/* Score */}
-                <span
-                  style={{
-                    ...orbitron,
-                    fontWeight: 300,
-                    flexShrink: 0,
-                    width: 90,
-                    textAlign: "right",
-                    fontSize: `${scoreSize}rem`,
-                    color: isFirst ? C.orange : "rgba(255,255,255,0.45)",
-                  }}
-                >
-                  {pos.score}
-                </span>
-
-                {/* Recent delta */}
-                <span
-                  style={{
-                    ...orbitron,
-                    fontSize: 12,
-                    width: 44,
-                    textAlign: "right",
-                    flexShrink: 0,
-                    color:
-                      recent == null
-                        ? "transparent"
-                        : recent > 0
-                          ? "rgba(237,130,64,0.5)"
-                          : "rgba(220,80,80,0.5)",
-                  }}
-                >
-                  {recent != null
-                    ? recent > 0
-                      ? `+${recent}`
-                      : `${recent}`
-                    : "·"}
-                </span>
-              </div>
-            );
-          })}
+          {columns.map((col, colIdx) => (
+            <div
+              key={colIdx}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-evenly", // กระจายแถวเต็มพื้นที่ที่เหลือ
+                minHeight: 0, // สำคัญ! กัน flex ดันล้น
+              }}
+            >
+              {col.map((pos, i) => {
+                const globalIndex = colIdx === 0 ? i : half + i;
+                return renderRow(pos, globalIndex, i === col.length - 1);
+              })}
+            </div>
+          ))}
         </div>
       </div>
     );
