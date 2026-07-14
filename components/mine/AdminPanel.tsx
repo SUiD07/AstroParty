@@ -32,6 +32,7 @@ import Link from "next/link";
 import { AuditMatrix } from "./AuditMatrix";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 import { CanvaLinkManager } from "./CanvaLinkManager";
+import ControlPage from "./ControlPage";
 
 const ORANGE = "#ED8240";
 const NEGATIVE = "#d4183d";
@@ -1031,6 +1032,18 @@ export default function AdminPanel() {
             </div>
             <div className="border border-black/[0.07] rounded-xl p-6">
               <AuditMatrix teams={data.teams} refreshVersion={refreshVersion} />
+            </div>
+          </section>
+          {/* Presentation State */}
+          <section id="presentation-state" className="scroll-mt-6">
+            <div className="mb-7">
+              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" style={{ color: ORANGE }} />
+                Presentation State
+              </h1>
+            </div>
+            <div className="border border-black/[0.07] rounded-xl p-6">
+              <ControlPage />
             </div>
           </section>
         </div>

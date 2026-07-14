@@ -22,6 +22,12 @@ import {
 import type { ScoreEvent } from "@/lib/db";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 import { loadCanvaLinks } from "@/lib/db";
+import {
+  loadPresentationState,
+  // updatePresentationState,
+  subscribeToPresentationState,
+  type PresentationState,
+} from "@/lib/db";
 // import Image from "next/image";
 
 // ---------------------------------------------------------------------------
@@ -90,7 +96,7 @@ const fontDisplay: React.CSSProperties = {
 //   fontFamily: "'Roboto', sans-serif",
 // };
 
-const medals = ["🥇", "🥈", "🥉"];
+// const medals = ["🥇", "🥈", "🥉"];
 
 // ---------------------------------------------------------------------------
 // Global CSS (injected once)
@@ -378,11 +384,13 @@ function JeopardyCell({
   question,
   events,
   teams,
+  isHighlighted,
   onClick,
 }: {
   question: Question;
   events: ScoreEvent[];
   teams: RaceData["teams"];
+  isHighlighted?: boolean;
   onClick: () => void;
 }) {
   const answered = events.length > 0;
@@ -439,6 +447,10 @@ function JeopardyCell({
         gap: 4,
         transition: "all 0.2s",
         opacity: 1,
+        boxShadow: isHighlighted
+          ? `0 0 0 2px ${C.orange}, 0 0 20px rgba(237,130,64,.5)`
+          : "none",
+        animation: isHighlighted ? "glowPulse 1.4s ease-in-out infinite" : "none",
       }}
       // onMouseEnter={(e) => {
       //   const el = e.currentTarget as HTMLDivElement;
@@ -466,13 +478,17 @@ function JeopardyCell({
           el.style.boxShadow = `0 0 18px rgba(237,130,64,0.28)`;
           el.style.borderColor = `rgba(237,130,64,0.45)`;
         } else {
-          el.style.boxShadow = "none";
+          el.style.boxShadow = isHighlighted
+            ? `0 0 0 2px ${C.orange}, 0 0 20px rgba(237,130,64,.5)`
+            : "none";
           el.style.borderColor = "rgba(255,255,255,0.14)";
         }
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget as HTMLDivElement;
-        el.style.boxShadow = "none";
+        el.style.boxShadow = isHighlighted
+          ? `0 0 0 2px ${C.orange}, 0 0 20px rgba(237,130,64,.5)`
+          : "none";
         el.style.borderColor = answered
           ? "rgba(237,130,64,0.25)"
           : "rgba(255,255,255,0.07)";
@@ -578,7 +594,7 @@ function QuestionModal({
   question: Question;
   events: ScoreEvent[];
   teams: RaceData["teams"];
-  canvaLinks: Record<number, string>; // ← เพิ่ม
+  canvaLinks: Record<number, string>;
   onClose: () => void;
 }) {
   // const label =
@@ -830,6 +846,8 @@ interface Slide3Props extends SlideCommonProps {
   setSelectedCell: (
     v: { category: Category; question: Question } | null,
   ) => void;
+  activeHighlightId: number | null;
+  onCellClick: (cat: Category, q: Question) => void;
 }
 
 function Slide3({
@@ -841,6 +859,8 @@ function Slide3({
   totalQCount,
   selectedCell,
   setSelectedCell,
+  activeHighlightId,
+  onCellClick,
 }: Slide3Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
@@ -1008,9 +1028,8 @@ function Slide3({
                     question={q}
                     events={getEvents(q.id)}
                     teams={data.teams}
-                    onClick={() =>
-                      setSelectedCell({ category: cat, question: q })
-                    }
+                    isHighlighted={q.id === activeHighlightId}
+                    onClick={() => onCellClick(cat, q)}
                   />
                 );
               }),
@@ -1089,6 +1108,44 @@ export default function ViewerDashboard() {
 
   const [canvaLinks, setCanvaLinks] = useState<Record<number, string>>({});
 
+  // ── Admin / Local highlight control ──────────────────────────────────
+  const [adminHighlightId, setAdminHighlightId] = useState<number | null>(null);
+  const [localHighlightId, setLocalHighlightId] = useState<number | null>(null);
+  // admin ชนะเสมอถ้ามีค่า
+  const activeHighlightId = adminHighlightId ?? localHighlightId;
+
+  const findCellByQuestionId = useCallback(
+    (qId: number) => {
+      for (const cat of categories) {
+        const q = cat.questions?.find((qq) => qq.id === qId);
+        if (q) return { category: cat, question: q };
+      }
+      return null;
+    },
+    [categories],
+  );
+
+  // คลิก cell — 2 จังหวะ: ครั้งแรก highlight, คลิกซ้ำ cell เดิม → เปิด modal
+  const handleCellClick = useCallback(
+    (cat: Category, q: Question) => {
+      const isAlreadyLocalHighlighted =
+        localHighlightId === q.id && adminHighlightId === null;
+
+      if (isAlreadyLocalHighlighted) {
+        setSelectedCell({ category: cat, question: q });
+      } else {
+        setAdminHighlightId(null); // เคลียร์ของแอดมิน ให้ local ควบคุมได้ชั่วคราว
+        setLocalHighlightId(q.id);
+      }
+    },
+    [localHighlightId, adminHighlightId],
+  );
+
+  const handleModalClose = useCallback(() => {
+    setSelectedCell(null);
+    setLocalHighlightId(null); // รีเซ็ต ต้องคลิก 2 ครั้งใหม่เสมอ
+  }, []);
+
   const fetchAll = useCallback(async () => {
     const [fresh, cats, evs, links] = await Promise.all([
       loadData(),
@@ -1120,12 +1177,43 @@ export default function ViewerDashboard() {
     };
   }, [fetchAll]);
 
+  // ── Presentation state (admin control) ───────────────────────────────
+  useEffect(() => {
+    loadPresentationState().then((s: PresentationState) => {
+      setCurrentSlide(s.current_slide);
+      setAdminHighlightId(s.highlighted_question_id);
+      if (s.modal_open && s.highlighted_question_id) {
+        const found = findCellByQuestionId(s.highlighted_question_id);
+        if (found) setSelectedCell(found);
+      }
+    });
+
+    const channel = subscribeToPresentationState((s: PresentationState) => {
+      // แอดมินสั่งอะไรมา ให้ override local ทันที
+      setCurrentSlide(s.current_slide);
+      setAdminHighlightId(s.highlighted_question_id);
+      setLocalHighlightId(null); // เคลียร์ local ทิ้ง ให้ของแอดมินชนะ
+
+      if (s.modal_open && s.highlighted_question_id) {
+        const found = findCellByQuestionId(s.highlighted_question_id);
+        if (found) setSelectedCell(found);
+      } else {
+        setSelectedCell(null);
+      }
+    });
+
+    return () => unsubscribe(channel);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchAll();
     setIsRefreshing(false);
   };
 
+  // การกดปุ่ม/ลูกศร/dot เปลี่ยนแค่ local state เท่านั้น
+  // (พอแอดมินส่งคำสั่งใหม่มา จะถูก override ทับตาม effect ด้านบน)
   const goToSlide = useCallback((n: number) => setCurrentSlide(n), []);
   const nextSlide = () => setCurrentSlide((s) => Math.min(s + 1, totalSlides));
   const prevSlide = () => setCurrentSlide((s) => Math.max(s - 1, 1));
@@ -1134,11 +1222,11 @@ export default function ViewerDashboard() {
     const h = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight" || e.key === " ") nextSlide();
       if (e.key === "ArrowLeft") prevSlide();
-      if (e.key === "Escape") setSelectedCell(null);
+      if (e.key === "Escape") handleModalClose();
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, []);
+  }, [handleModalClose]);
 
   // Confetti
   const launchConfetti = () => {
@@ -1531,9 +1619,6 @@ export default function ViewerDashboard() {
     </div>
   );
 
-  // =========================================================================
-  // SLIDE 2 — OVERVIEW
-  // =========================================================================
   // =========================================================================
   // SLIDE 2 — OVERVIEW
   // =========================================================================
@@ -2139,7 +2224,7 @@ export default function ViewerDashboard() {
       recentByTeam[ev.team_id] = ev.delta;
     });
 
-    const maxScore = sortedPositions[0]?.score || 1;
+    // const maxScore = sortedPositions[0]?.score || 1;
 
     // แบ่ง 2 คอลัมน์ถ้าทีมเยอะเกิน 6 ทีม และไม่ใช่จอมือถือ
     const useTwoColumns = !isMobile && sortedPositions.length > 6;
@@ -2164,7 +2249,7 @@ export default function ViewerDashboard() {
       if (!team) return null;
 
       const isFirst = i === 0;
-      const recent = recentByTeam[team.id];
+      // const recent = recentByTeam[team.id];
 
       return (
         <div
@@ -2363,97 +2448,10 @@ export default function ViewerDashboard() {
     );
   };
 
-// =========================================================================
-// SLIDE 6 — CALCULATING
-// =========================================================================
-const Slide6 = () => (
-  <div
-    style={{
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      width: "100%",
-      height: "100%",
-      padding: "0 24px 56px",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 16,
-        textAlign: "center",
-      }}
-    >
-      <div
-        // className="grad-gold"
-        style={{
-          ...fontDisplay,
-          fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-          fontWeight: 900,
-          letterSpacing: ".1em",
-          lineHeight: 1,
-          color: "#fff",
-        }}
-      >
-        FINAL ROUND COMPLETE
-      </div>
-      <div
-        style={{
-          width: 200,
-          height: 1.5,
-          background: `linear-gradient(90deg,transparent,${C.blueCore},transparent)`,
-          borderRadius: 1,
-        }}
-      />
-      <div
-        style={{
-          ...orbitron,
-          fontSize: "clamp(.75rem,1.4vw,1.05rem)",
-          letterSpacing: ".28em",
-          color: "rgba(255,255,255,.65)",
-        }}
-      >
-        CALCULATING FINAL RANKINGS
-      </div>
-      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: C.blueCore,
-              animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-      <div
-        style={{
-          ...notoTH,
-          fontSize: "clamp(.65rem,1.1vw,.88rem)",
-          color: "rgba(255,255,255,.3)",
-          letterSpacing: ".08em",
-          marginTop: 6,
-        }}
-      >
-        กำลังประมวลผลคะแนนรอบสุดท้าย…
-      </div>
-    </div>
-  </div>
-);
-
-// =========================================================================
-// SLIDE 7 — รางวัลชมเชย (ทุกทีมที่ไม่ติด 3 อันดับแรก)
-// =========================================================================
-const Slide7 = () => {
-  const consolationTeams = sortedPositions.slice(3);
-
-  return (
+  // =========================================================================
+  // SLIDE 6 — CALCULATING
+  // =========================================================================
+  const Slide6 = () => (
     <div
       style={{
         display: "flex",
@@ -2471,509 +2469,597 @@ const Slide7 = () => {
           flexDirection: "column",
           alignItems: "center",
           gap: 16,
+          textAlign: "center",
+        }}
+      >
+        <div
+        // className="grad-gold"
+          style={{
+            ...fontDisplay,
+            fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+            fontWeight: 900,
+            letterSpacing: ".1em",
+            lineHeight: 1,
+            color: "#fff",
+          }}
+        >
+          FINAL ROUND COMPLETE
+        </div>
+        <div
+          style={{
+            width: 200,
+            height: 1.5,
+            background: `linear-gradient(90deg,transparent,${C.blueCore},transparent)`,
+            borderRadius: 1,
+          }}
+        />
+        <div
+          style={{
+            ...orbitron,
+            fontSize: "clamp(.75rem,1.4vw,1.05rem)",
+            letterSpacing: ".28em",
+            color: "rgba(255,255,255,.65)",
+          }}
+        >
+          CALCULATING FINAL RANKINGS
+        </div>
+        <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                background: C.blueCore,
+                animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+        <div
+          style={{
+            ...notoTH,
+            fontSize: "clamp(.65rem,1.1vw,.88rem)",
+            color: "rgba(255,255,255,.3)",
+            letterSpacing: ".08em",
+            marginTop: 6,
+          }}
+        >
+          กำลังประมวลผลคะแนนรอบสุดท้าย…
+        </div>
+      </div>
+    </div>
+  );
+
+  // =========================================================================
+// SLIDE 7 — รางวัลชมเชย (ทุกทีมที่ไม่ติด 3 อันดับแรก)
+  // =========================================================================
+  const Slide7 = () => {
+    const consolationTeams = sortedPositions.slice(3);
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
           width: "100%",
-          maxWidth: 560,
+          height: "100%",
+          padding: "0 24px 56px",
         }}
       >
         <div
           style={{
-            ...orbitron,
-            fontSize: "clamp(.55rem,.85vw,.72rem)",
-            letterSpacing: ".38em",
-            color: "rgba(255,255,255,.5)",
-          }}
-        >
-          ✦ &nbsp; CONSOLATION AWARDS &nbsp; ✦
-        </div>
-        <div
-          className="grad-blue"
-          style={{
-            ...orbitron,
-            fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
-            fontWeight: 900,
-            letterSpacing: ".1em",
-          }}
-        >
-          รางวัลชมเชย
-        </div>
-
-        <div
-          style={{
-            background: "rgba(4,12,28,.82)",
-            border: `1px solid rgba(237,130,64,.2)`,
-            borderRadius: 12,
-            padding: "20px 24px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 16,
             width: "100%",
-            maxHeight: "56vh",
-            overflowY: "auto",
-            backdropFilter: "blur(16px)",
+            maxWidth: 560,
           }}
         >
           <div
             style={{
               ...orbitron,
-              fontSize: 7,
-              letterSpacing: ".22em",
-              color: "rgba(255,255,255,.45)",
-              marginBottom: 12,
-              paddingBottom: 8,
-              borderBottom: `1px solid rgba(237,130,64,.15)`,
+              fontSize: "clamp(.55rem,.85vw,.72rem)",
+              letterSpacing: ".38em",
+              color: "rgba(255,255,255,.5)",
             }}
           >
-            🏅 รางวัลชมเชย — {consolationTeams.length} ทีม
+            ✦ &nbsp; CONSOLATION AWARDS &nbsp; ✦
+          </div>
+          <div
+            className="grad-blue"
+            style={{
+              ...orbitron,
+              fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
+              fontWeight: 900,
+              letterSpacing: ".1em",
+            }}
+          >
+            รางวัลชมเชย
           </div>
 
-          {consolationTeams.length === 0 ? (
-            <p
+          <div
+            style={{
+              background: "rgba(4,12,28,.82)",
+              border: `1px solid rgba(237,130,64,.2)`,
+              borderRadius: 12,
+              padding: "20px 24px",
+              width: "100%",
+              maxHeight: "56vh",
+              overflowY: "auto",
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <div
               style={{
-                ...notoTH,
-                fontSize: 12,
-                color: "rgba(255,255,255,.35)",
-                textAlign: "center",
-                padding: "12px 0",
+                ...orbitron,
+                fontSize: 7,
+                letterSpacing: ".22em",
+                color: "rgba(255,255,255,.45)",
+                marginBottom: 12,
+                paddingBottom: 8,
+                borderBottom: `1px solid rgba(237,130,64,.15)`,
               }}
             >
-              ไม่มีทีมในรอบนี้
-            </p>
-          ) : (
-            consolationTeams.map((pos) => {
-              const team = data.teams.find((t) => t.id === pos.teamId);
-              if (!team) return null;
-              const rank = sortedPositions.findIndex(
-                (p) => p.teamId === pos.teamId,
-              );
-              return (
-                <div
-                  key={team.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "10px 12px",
-                    borderRadius: 8,
-                    background: "rgba(10,10,10,.6)",
-                    border: `1px solid rgba(255,255,255,.04)`,
-                    marginBottom: 7,
-                    position: "relative",
-                    overflow: "hidden",
-                  }}
-                >
+              🏅 รางวัลชมเชย — {consolationTeams.length} ทีม
+            </div>
+
+            {consolationTeams.length === 0 ? (
+              <p
+                style={{
+                  ...notoTH,
+                  fontSize: 12,
+                  color: "rgba(255,255,255,.35)",
+                  textAlign: "center",
+                  padding: "12px 0",
+                }}
+              >
+                ไม่มีทีมในรอบนี้
+              </p>
+            ) : (
+              consolationTeams.map((pos) => {
+                const team = data.teams.find((t) => t.id === pos.teamId);
+                if (!team) return null;
+                const rank = sortedPositions.findIndex(
+                  (p) => p.teamId === pos.teamId,
+                );
+                return (
                   <div
+                    key={team.id}
                     style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 2,
-                      background: team.color,
-                      opacity: 0.6,
-                      borderRadius: "1px 0 0 1px",
-                    }}
-                  />
-                  <span
-                    style={{
-                      ...orbitron,
-                      fontSize: 10,
-                      fontWeight: 900,
-                      width: 22,
-                      textAlign: "center",
-                      color: "rgba(255,255,255,.5)",
-                    }}
-                  >
-                    {rank + 1}
-                  </span>
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: team.color,
-                      boxShadow: `0 0 8px ${team.color}88`,
-                      marginLeft: 6,
-                    }}
-                  />
-                  <span
-                    style={{
-                      ...notoTH,
-                      flex: 1,
-                      paddingLeft: 10,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: team.color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      borderRadius: 8,
+                      background: "rgba(10,10,10,.6)",
+                      border: `1px solid rgba(255,255,255,.04)`,
+                      marginBottom: 7,
+                      position: "relative",
                       overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
                     }}
                   >
-                    {team.name}
-                  </span>
-                  <span
-                    style={{
-                      ...orbitron,
-                      fontSize: 13,
-                      fontWeight: 900,
-                      color: "rgba(255,255,255,.6)",
-                    }}
-                  >
-                    {pos.score}
-                    <span style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}>
-                      PTS
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 2,
+                        background: team.color,
+                        opacity: 0.6,
+                        borderRadius: "1px 0 0 1px",
+                      }}
+                    />
+                    <span
+                      style={{
+                        ...orbitron,
+                        fontSize: 10,
+                        fontWeight: 900,
+                        width: 22,
+                        textAlign: "center",
+                        color: "rgba(255,255,255,.5)",
+                      }}
+                    >
+                      {rank + 1}
                     </span>
-                  </span>
-                </div>
-              );
-            })
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: team.color,
+                        boxShadow: `0 0 8px ${team.color}88`,
+                        marginLeft: 6,
+                      }}
+                    />
+                    <span
+                      style={{
+                        ...notoTH,
+                        flex: 1,
+                        paddingLeft: 10,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        color: team.color,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {team.name}
+                    </span>
+                    <span
+                      style={{
+                        ...orbitron,
+                        fontSize: 13,
+                        fontWeight: 900,
+                        color: "rgba(255,255,255,.6)",
+                      }}
+                    >
+                      {pos.score}
+                      <span style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}>
+                        PTS
+                      </span>
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // =========================================================================
+  // SLIDE 8 — รางวัลรองชนะเลิศอันดับ 2
+  // =========================================================================
+  const Slide8 = () => {
+    const t3 = sortedPositions[2]
+      ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
+      : null;
+    const s3 = sortedPositions[2]?.score ?? 0;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          padding: "0 24px 56px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              ...orbitron,
+              fontSize: "clamp(.55rem,.85vw,.7rem)",
+              letterSpacing: ".42em",
+              color: "rgba(255,255,255,.4)",
+            }}
+          >
+            — AWARD REVEAL —
+          </div>
+          <div
+            className="grad-gold"
+            style={{
+              ...orbitron,
+              fontSize: "clamp(2rem,5vw,3.8rem)",
+              fontWeight: 900,
+              letterSpacing: ".08em",
+              lineHeight: 1,
+            }}
+          >
+            รางวัลรองชนะเลิศอันดับ 2
+          </div>
+          <div
+            style={{
+              width: 160,
+              height: 1.5,
+              background: `linear-gradient(90deg,transparent,${C.gold},transparent)`,
+              borderRadius: 1,
+            }}
+          />
+          <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
+            🥉
+          </div>
+          {t3 && (
+            <>
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                  fontWeight: 800,
+                  color: t3.color,
+                  textShadow: `0 0 28px ${t3.color}99`,
+                }}
+              >
+                {t3.name}
+              </div>
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                  color: "rgba(255,255,255,.5)",
+                }}
+              >
+                {s3} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+              </div>
+            </>
           )}
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =========================================================================
-// SLIDE 8 — รางวัลรองชนะเลิศอันดับ 2 (อันดับ 3)
-// =========================================================================
-const Slide8 = () => {
-  const t3 = sortedPositions[2]
-    ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
-    : null;
-  const s3 = sortedPositions[2]?.score ?? 0;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        height: "100%",
-        padding: "0 24px 56px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 10,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            ...orbitron,
-            fontSize: "clamp(.55rem,.85vw,.7rem)",
-            letterSpacing: ".42em",
-            color: "rgba(255,255,255,.4)",
-          }}
-        >
-          — AWARD REVEAL —
-        </div>
-        <div
-          className="grad-gold"
-          style={{
-            ...orbitron,
-            fontSize: "clamp(2rem,5vw,3.8rem)",
-            fontWeight: 900,
-            letterSpacing: ".08em",
-            lineHeight: 1,
-          }}
-        >
-          รางวัลรองชนะเลิศอันดับ 2
-        </div>
-        <div
-          style={{
-            width: 160,
-            height: 1.5,
-            background: `linear-gradient(90deg,transparent,${C.gold},transparent)`,
-            borderRadius: 1,
-          }}
-        />
-        <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
-          🥉
-        </div>
-        {t3 && (
-          <>
-            <div
-              style={{
-                ...notoTH,
-                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                fontWeight: 800,
-                color: t3.color,
-                textShadow: `0 0 28px ${t3.color}99`,
-              }}
-            >
-              {t3.name}
-            </div>
-            <div
-              style={{
-                ...orbitron,
-                fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                color: "rgba(255,255,255,.5)",
-              }}
-            >
-              {s3} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
-            </div>
-          </>
-        )}
-        <div
-          style={{
-            ...notoTH,
-            fontSize: "clamp(.65rem,1.1vw,.85rem)",
-            color: "rgba(255,255,255,.28)",
-            letterSpacing: ".08em",
-            marginTop: 8,
-          }}
-        >
-          ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 2
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =========================================================================
-// SLIDE 9 — รางวัลรองชนะเลิศอันดับ 1 (อันดับ 2)
-// =========================================================================
-const Slide9 = () => {
-  const ru = sortedPositions[1]
-    ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
-    : null;
-  const sru = sortedPositions[1]?.score ?? 0;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        height: "100%",
-        padding: "0 24px 56px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 10,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            ...orbitron,
-            fontSize: "clamp(.55rem,.85vw,.7rem)",
-            letterSpacing: ".42em",
-            color: "rgba(255,255,255,.4)",
-          }}
-        >
-          — AWARD REVEAL —
-        </div>
-        <div
-          className="grad-blue"
-          style={{
-            ...orbitron,
-            fontSize: "clamp(2rem,5vw,3.8rem)",
-            fontWeight: 900,
-            letterSpacing: ".08em",
-            lineHeight: 1,
-          }}
-        >
-          รางวัลรองชนะเลิศอันดับ 1
-        </div>
-        <div
-          style={{
-            width: 160,
-            height: 1.5,
-            background: `linear-gradient(90deg,transparent,${C.blueLight},transparent)`,
-            borderRadius: 1,
-          }}
-        />
-        <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
-          🥈
-        </div>
-        {ru && (
-          <>
-            <div
-              style={{
-                ...notoTH,
-                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                fontWeight: 800,
-                color: ru.color,
-                textShadow: `0 0 28px ${ru.color}99`,
-              }}
-            >
-              {ru.name}
-            </div>
-            <div
-              style={{
-                ...orbitron,
-                fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                color: "rgba(255,255,255,.5)",
-              }}
-            >
-              {sru} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
-            </div>
-          </>
-        )}
-        <div
-          style={{
-            ...notoTH,
-            fontSize: "clamp(.65rem,1.1vw,.85rem)",
-            color: "rgba(255,255,255,.28)",
-            letterSpacing: ".08em",
-            marginTop: 8,
-          }}
-        >
-          ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 1
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =========================================================================
-// SLIDE 10 — รางวัลชนะเลิศ
-// =========================================================================
-function Slide10() {
-  useEffect(() => {
-    launchConfetti();
-  }, []);
-
-  const ch = sortedPositions[0]
-    ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
-    : null;
-  const sch = sortedPositions[0]?.score ?? 0;
-
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        height: "100%",
-        padding: "0 24px 56px",
-        position: "relative",
-      }}
-    >
-      <div
-        id="confetti-root"
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          overflow: "hidden",
-          zIndex: 0,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(237,130,64,.06) 0%, transparent 70%)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 10,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            ...orbitron,
-            fontSize: "clamp(.5rem,.8vw,.68rem)",
-            letterSpacing: ".48em",
-            color: "rgba(255,255,255,.5)",
-          }}
-        >
-          ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
-        </div>
-        <div
-          className="grad-gold"
-          style={{
-            ...orbitron,
-            fontSize: "clamp(2rem,5vw,3.8rem)",
-            fontWeight: 900,
-            letterSpacing: ".08em",
-            lineHeight: 1,
-          }}
-        >
-          รางวัลชนะเลิศ
-        </div>
-        <div
-          style={{
-            width: 280,
-            height: 2,
-            background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
-            borderRadius: 1,
-          }}
-        />
-        <div
-          style={{
-            fontSize: "clamp(2.8rem,6vw,5rem)",
-            animation: "float 2.2s ease-in-out infinite",
-            filter: `drop-shadow(0 0 22px rgba(237,130,64,.8))`,
-          }}
-        >
-          🏆
-        </div>
-        {ch && (
           <div
             style={{
               ...notoTH,
-              fontSize: "clamp(1.6rem,3.8vw,3rem)",
-              fontWeight: 900,
-              color: ch.color,
-              textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+              fontSize: "clamp(.65rem,1.1vw,.85rem)",
+              color: "rgba(255,255,255,.28)",
+              letterSpacing: ".08em",
+              marginTop: 8,
             }}
           >
-            {ch.name}
+            ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 2
           </div>
-        )}
-        <div
-          style={{
-            ...orbitron,
-            fontSize: "clamp(1rem,2.2vw,1.7rem)",
-            fontWeight: 900,
-            color: C.gold,
-          }}
-        >
-          {sch}{" "}
-          <span style={{ fontSize: ".4em", color: "rgba(255,255,255,.4)", marginLeft: 5 }}>
-            POINTS
-          </span>
-        </div>
-        <div
-          style={{
-            ...notoTH,
-            fontSize: "clamp(.6rem,1vw,.82rem)",
-            color: "rgba(255,255,255,.3)",
-            letterSpacing: ".1em",
-            marginTop: 4,
-          }}
-        >
-          คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  };
+
+  // =========================================================================
+// SLIDE 9 — รางวัลรองชนะเลิศอันดับ 1 (อันดับ 2)
+  // =========================================================================
+  const Slide9 = () => {
+    const ru = sortedPositions[1]
+      ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
+      : null;
+    const sru = sortedPositions[1]?.score ?? 0;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          padding: "0 24px 56px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              ...orbitron,
+              fontSize: "clamp(.55rem,.85vw,.7rem)",
+              letterSpacing: ".42em",
+              color: "rgba(255,255,255,.4)",
+            }}
+          >
+            — AWARD REVEAL —
+          </div>
+          <div
+            className="grad-blue"
+            style={{
+              ...orbitron,
+              fontSize: "clamp(2rem,5vw,3.8rem)",
+              fontWeight: 900,
+              letterSpacing: ".08em",
+              lineHeight: 1,
+            }}
+          >
+            รางวัลรองชนะเลิศอันดับ 1
+          </div>
+          <div
+            style={{
+              width: 160,
+              height: 1.5,
+              background: `linear-gradient(90deg,transparent,${C.blueLight},transparent)`,
+              borderRadius: 1,
+            }}
+          />
+          <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
+            🥈
+          </div>
+          {ru && (
+            <>
+              <div
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                  fontWeight: 800,
+                  color: ru.color,
+                  textShadow: `0 0 28px ${ru.color}99`,
+                }}
+              >
+                {ru.name}
+              </div>
+              <div
+                style={{
+                  ...orbitron,
+                  fontSize: "clamp(.8rem,1.5vw,1.1rem)",
+                  color: "rgba(255,255,255,.5)",
+                }}
+              >
+                {sru} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+              </div>
+            </>
+          )}
+          <div
+            style={{
+              ...notoTH,
+              fontSize: "clamp(.65rem,1.1vw,.85rem)",
+              color: "rgba(255,255,255,.28)",
+              letterSpacing: ".08em",
+              marginTop: 8,
+            }}
+          >
+            ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 1
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // =========================================================================
+  // SLIDE 10 — รางวัลชนะเลิศ
+  // =========================================================================
+  function Slide10() {
+    useEffect(() => {
+      launchConfetti();
+    }, []);
+
+    const ch = sortedPositions[0]
+      ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
+      : null;
+    const sch = sortedPositions[0]?.score ?? 0;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          height: "100%",
+          padding: "0 24px 56px",
+          position: "relative",
+        }}
+      >
+        <div
+          id="confetti-root"
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            overflow: "hidden",
+            zIndex: 0,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(ellipse 60% 60% at 50% 50%, rgba(237,130,64,.06) 0%, transparent 70%)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            zIndex: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              ...orbitron,
+              fontSize: "clamp(.5rem,.8vw,.68rem)",
+              letterSpacing: ".48em",
+              color: "rgba(255,255,255,.5)",
+            }}
+          >
+            ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
+          </div>
+          <div
+            className="grad-gold"
+            style={{
+              ...orbitron,
+              fontSize: "clamp(2rem,5vw,3.8rem)",
+              fontWeight: 900,
+              letterSpacing: ".08em",
+              lineHeight: 1,
+            }}
+          >
+            รางวัลชนะเลิศ
+          </div>
+          <div
+            style={{
+              width: 280,
+              height: 2,
+              background: `linear-gradient(90deg,transparent,${C.orange},${C.gold},${C.orange},transparent)`,
+              borderRadius: 1,
+            }}
+          />
+          <div
+            style={{
+              fontSize: "clamp(2.8rem,6vw,5rem)",
+              animation: "float 2.2s ease-in-out infinite",
+              filter: `drop-shadow(0 0 22px rgba(237,130,64,.8))`,
+            }}
+          >
+            🏆
+          </div>
+          {ch && (
+            <div
+              style={{
+                ...notoTH,
+                fontSize: "clamp(1.6rem,3.8vw,3rem)",
+                fontWeight: 900,
+                color: ch.color,
+                textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+              }}
+            >
+              {ch.name}
+            </div>
+          )}
+          <div
+            style={{
+              ...orbitron,
+              fontSize: "clamp(1rem,2.2vw,1.7rem)",
+              fontWeight: 900,
+              color: C.gold,
+            }}
+          >
+            {sch}{" "}
+            <span style={{ fontSize: ".4em", color: "rgba(255,255,255,.4)", marginLeft: 5 }}>
+              POINTS
+            </span>
+          </div>
+          <div
+            style={{
+              ...notoTH,
+              fontSize: "clamp(.6rem,1vw,.82rem)",
+              color: "rgba(255,255,255,.3)",
+              letterSpacing: ".1em",
+              marginTop: 4,
+            }}
+          >
+            คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // =========================================================================
   // FOOTER TICKER
   // =========================================================================
@@ -3248,6 +3334,7 @@ function Slide10() {
       </div>
     );
   };
+
   // =========================================================================
   // RENDER
   // =========================================================================
@@ -3264,6 +3351,8 @@ function Slide10() {
         totalQCount={totalQCount}
         selectedCell={selectedCell}
         setSelectedCell={setSelectedCell}
+        activeHighlightId={activeHighlightId}
+        onCellClick={handleCellClick}
       />
     ),
     4: <Slide4 />,

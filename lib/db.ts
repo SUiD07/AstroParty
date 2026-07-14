@@ -205,3 +205,58 @@ export async function deleteCanvaLink(questionId: number) {
     .update({ canva_url: null })
     .eq("id", questionId);
 }
+
+/**
+ *ฟังก์ชันจัดการ presentation_state
+ * (คุมสไลด์ + highlight/เปิด modal คำถาม jeopardy จากหน้า /control)
+  */
+
+export interface PresentationState {
+  current_slide: number;
+  highlighted_question_id: number | null;
+  modal_open: boolean;
+  updated_at: string;
+}
+
+export async function loadPresentationState(): Promise<PresentationState> {
+  const { data, error } = await supabase
+    .from("presentation_state")
+    .select("*")
+    .eq("id", 1)
+    .single();
+  if (error) throw error;
+  return data as PresentationState;
+}
+
+export async function updatePresentationState(
+  patch: Partial<
+    Pick<
+      PresentationState,
+      "current_slide" | "highlighted_question_id" | "modal_open"
+    >
+  >,
+) {
+  const { error } = await supabase
+    .from("presentation_state")
+    .update({ ...patch, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) throw error;
+}
+
+export function subscribeToPresentationState(
+  cb: (state: PresentationState) => void,
+) {
+  return supabase
+    .channel("presentation_state_changes")
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "presentation_state",
+        filter: "id=eq.1",
+      },
+      (payload) => cb(payload.new as PresentationState),
+    )
+    .subscribe();
+}

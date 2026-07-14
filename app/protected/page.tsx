@@ -1,24 +1,37 @@
-import { redirect } from "next/navigation";
+"use client";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+// import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
+// import { createClient } from "@/lib/supabase/server";
 import { InfoIcon } from "lucide-react";
 // import { FetchDataSteps } from "@/components/tutorial/fetch-data-steps";
 // import { Suspense } from "react";
-import Link from "next/link";
+// import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-async function UserDetails() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.getClaims();
+// async function UserDetails() {
+//   const supabase = await createClient();
+//   const { data, error } = await supabase.auth.getClaims();
 
-  if (error || !data?.claims) {
-    redirect("/auth/login");
-  }
+//   if (error || !data?.claims) {
+//     redirect("/auth/login");
+//   }
 
-  return JSON.stringify(data.claims, null, 2);
-}
+//   return JSON.stringify(data.claims, null, 2);
+// }
 
 export default function ProtectedPage() {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [loadingPath, setLoadingPath] = useState<string | null>(null);
+  const handleNavigate = (path: string) => {
+    setLoadingPath(path);
+    startTransition(() => {
+      router.push(path);
+    });
+  };
   return (
     <div className="flex-1 w-full flex flex-col gap-12">
       <div className="w-full">
@@ -28,11 +41,20 @@ export default function ProtectedPage() {
           user
         </div>
       </div>
-      <Button>
-        <Link href="/">Viewer Dashboard</Link>
+      <Button onClick={() => handleNavigate("/")} disabled={isPending}>
+        {isPending && loadingPath === "/" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          "Viewer Dashboard"
+        )}
       </Button>
-      <Button>
-        <Link href="/admin">Admin Panel</Link>
+
+      <Button onClick={() => handleNavigate("/admin")} disabled={isPending}>
+        {isPending && loadingPath === "/admin" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          "Admin Panel"
+        )}
       </Button>
       {/* <div className="flex flex-col gap-2 items-start">
         <h2 className="font-bold text-2xl mb-4">Your user details</h2>
