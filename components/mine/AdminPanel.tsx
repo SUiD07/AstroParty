@@ -14,6 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ExternalLink,
+  Timer,
 } from "lucide-react";
 import {
   loadData,
@@ -69,6 +70,12 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Control Center",
     items: [
       { id: "fleet-management", label: "Fleet Management", icon: Rocket },
+      {
+        id: "presentation-state",
+        label: "Presentation State",
+        icon: ClipboardList,
+      },
+      { id: "timer", label: "Timer", icon: Timer },
       { id: "canva-links", label: "Canva Embed Links", icon: Link2 },
     ],
   },
@@ -174,43 +181,43 @@ function Sidebar({
 }
 
 // Small helper button used in ScoreEntryAndLog + elsewhere (mirrors ScoreBtn look from example)
-function PillButton({
-  children,
-  active,
-  onClick,
-  positive,
-}: {
-  children: React.ReactNode;
-  active?: boolean;
-  onClick: () => void;
-  positive?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="py-2 rounded-lg text-[11px] font-medium border transition-all"
-      style={{
-        background: active
-          ? positive === false
-            ? "rgba(212,24,61,0.08)"
-            : "rgba(237,130,64,0.10)"
-          : "transparent",
-        borderColor: active
-          ? positive === false
-            ? "rgba(212,24,61,0.3)"
-            : "rgba(237,130,64,0.3)"
-          : "rgba(0,0,0,0.08)",
-        color: active
-          ? positive === false
-            ? NEGATIVE
-            : ORANGE
-          : "rgba(0,0,0,0.5)",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
+// function PillButton({
+//   children,
+//   active,
+//   onClick,
+//   positive,
+// }: {
+//   children: React.ReactNode;
+//   active?: boolean;
+//   onClick: () => void;
+//   positive?: boolean;
+// }) {
+//   return (
+//     <button
+//       onClick={onClick}
+//       className="py-2 rounded-lg text-[11px] font-medium border transition-all"
+//       style={{
+//         background: active
+//           ? positive === false
+//             ? "rgba(212,24,61,0.08)"
+//             : "rgba(237,130,64,0.10)"
+//           : "transparent",
+//         borderColor: active
+//           ? positive === false
+//             ? "rgba(212,24,61,0.3)"
+//             : "rgba(237,130,64,0.3)"
+//           : "rgba(0,0,0,0.08)",
+//         color: active
+//           ? positive === false
+//             ? NEGATIVE
+//             : ORANGE
+//           : "rgba(0,0,0,0.5)",
+//       }}
+//     >
+//       {children}
+//     </button>
+//   );
+// }
 
 // ===========================================================================
 // ScoreEntryAndLog
@@ -1002,6 +1009,34 @@ export default function AdminPanel() {
             </div>
           </section>
 
+          {/* Presentation State */}
+          <section id="presentation-state" className="scroll-mt-6">
+            <div className="mb-7">
+              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" style={{ color: ORANGE }} />
+                Presentation State
+              </h1>
+            </div>
+            <div className="border border-black/[0.07] rounded-xl p-6">
+              <ControlPage />
+            </div>
+          </section>
+          {/* Timer */}
+          <section id="timer" className="scroll-mt-6">
+            <div className="mb-7">
+              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                <Timer className="w-4 h-4" style={{ color: ORANGE }} />
+                Timer
+              </h1>
+            </div>
+            <div className="border border-black/[0.07] rounded-xl p-6">
+              <Link href="https://keepthescore.com/board/jbmyjghsmkjbe">Timer</Link>
+              <iframe src="https://keepthescore.com/board/jbmyjghsmkjbe" className="w-full h-96"/>
+              <div>sirada.uth@docchula.com</div>
+              <div>1234567890</div>
+            </div>
+          </section>
+
           {/* Canva Embed Links */}
           <section id="canva-links" className="scroll-mt-6">
             <div className="mb-7">
@@ -1032,18 +1067,6 @@ export default function AdminPanel() {
             </div>
             <div className="border border-black/[0.07] rounded-xl p-6">
               <AuditMatrix teams={data.teams} refreshVersion={refreshVersion} />
-            </div>
-          </section>
-          {/* Presentation State */}
-          <section id="presentation-state" className="scroll-mt-6">
-            <div className="mb-7">
-              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" style={{ color: ORANGE }} />
-                Presentation State
-              </h1>
-            </div>
-            <div className="border border-black/[0.07] rounded-xl p-6">
-              <ControlPage />
             </div>
           </section>
         </div>

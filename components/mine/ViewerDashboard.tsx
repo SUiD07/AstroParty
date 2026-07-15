@@ -9,9 +9,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, 
-  // Zap, 
-  X } from "lucide-react";
+import {
+  RefreshCw,
+  // Zap,
+  X,
+} from "lucide-react";
 import { RaceData } from "@/app/types";
 import {
   loadData,
@@ -450,7 +452,9 @@ function JeopardyCell({
         boxShadow: isHighlighted
           ? `0 0 0 2px ${C.orange}, 0 0 20px rgba(237,130,64,.5)`
           : "none",
-        animation: isHighlighted ? "glowPulse 1.4s ease-in-out infinite" : "none",
+        animation: isHighlighted
+          ? "glowPulse 1.4s ease-in-out infinite"
+          : "none",
       }}
       // onMouseEnter={(e) => {
       //   const el = e.currentTarget as HTMLDivElement;
@@ -585,8 +589,8 @@ function JeopardyCell({
 function QuestionModal({
   category,
   question,
-  // events,
-  // teams,
+  events,
+  teams,
   canvaLinks,
   onClose,
 }: {
@@ -623,16 +627,16 @@ function QuestionModal({
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
         style={{
           position: "relative",
-          background: "rgba(10,20,38,0.97)",
+          // background: "rgba(10,20,38,0.97)",
           border: `1px solid ${borderWarm}`,
           borderRadius: 14,
           // width: 440,
           // maxWidth: "90vw",
           // maxHeight: "85vh",
-          width: "90%",
-          height: "90%",
-          maxWidth: "90%",
-          maxHeight: "90%",
+          width: "95%",
+          height: "95%",
+          maxWidth: "95%",
+          maxHeight: "95%",
           display: "flex",
           flexDirection: "column",
           boxShadow: `0 0 40px rgba(237,130,64,0.12), 0 24px 60px rgba(0,0,0,0.55)`,
@@ -669,26 +673,32 @@ function QuestionModal({
           >
             <X size={16} />
           </button>
-
-          {/* Header */}
-          <div style={{ marginBottom: 22 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 20,
+              marginBottom: 5,
+            }}
+          >
             <p
               style={{
-                ...orbitron,
+                ...fontDisplay,
                 color: C.blueLight,
-                fontSize: 9,
-                letterSpacing: "0.22em",
-                marginBottom: 8,
+                fontSize: 40,
+                margin: 0,
               }}
             >
               {category.name}
             </p>
+
             <h3
               style={{
-                ...orbitron,
-                fontSize: 40,
+                ...notoTH,
+                fontSize: 30,
                 fontWeight: 900,
                 lineHeight: 1,
+                margin: 0,
                 background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
@@ -697,6 +707,21 @@ function QuestionModal({
             >
               ข้อ {question.number}
             </h3>
+            <div
+              // className="fixed bottom-0 left-0 z-50 origin-bottom-left"
+              style={{
+                transform: "scale(0.47)",
+                // transformOrigin: "bottom left",
+              }}
+            >
+              <iframe
+                src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
+                // width="500"
+                // height="500"
+                className="pointer-events-auto h-20 w-auto"
+                // frameBorder="0"
+              ></iframe>
+            </div>
           </div>
         </div>
 
@@ -704,20 +729,20 @@ function QuestionModal({
         <div
           style={{
             overflowY: "auto",
-            padding: "0 40px 36px",
+            padding: "0 20px 50px",
             flex: 1,
           }}
         >
           {/* Canva iframe */}
           {canvaLinks[question.id] && (
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 0 }}>
               <iframe
                 src={canvaLinks[question.id]}
                 allowFullScreen
                 allow="fullscreen"
                 style={{
                   width: "100%",
-                  height: "min(60vh, calc((100vw - 80px) * 9 / 16))",
+                  height: "min(90vh, calc((100vw - 80px) * 9 / 16))",
                   border: "none",
                   borderRadius: 8,
                 }}
@@ -725,7 +750,7 @@ function QuestionModal({
             </div>
           )}
           {/* Events */}
-          {/* {events.length === 0 ? (
+          {events.length === 0 ? (
             <div
               style={{
                 padding: "36px 0",
@@ -820,7 +845,7 @@ function QuestionModal({
                 );
               })}
             </div>
-          )} */}
+          )}
         </div>
       </motion.div>
     </div>
@@ -889,7 +914,7 @@ function Slide3({
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   marginBottom: 6,
-                  color:"#fff"
+                  color: "#fff",
                 }}
               >
                 Question {answeredCount}/{totalQCount}
@@ -1259,7 +1284,7 @@ export default function ViewerDashboard() {
 
   // Derived
   const sortedPositions = [...data.positions].sort((a, b) => b.score - a.score);
-  const topEight = sortedPositions.slice(0, 8);
+  const topSix = sortedPositions.slice(0, 6);
   const maxScoreAchieved = Math.max(1, ...data.positions.map((p) => p.score));
   const visualTarget =
     data.state.status === "finished"
@@ -1897,13 +1922,13 @@ export default function ViewerDashboard() {
                 <div
                   style={{
                     width: 1,
-                    height: 7,
+                    height: 20,
                     background: "rgba(237,130,64,.2)",
                   }}
                 />
                 <span
                   style={{
-                    ...orbitron,
+                    ...fontDisplay,
                     fontSize: 8,
                     color: "rgba(255,255,255,0.3)",
                     marginTop: 2,
@@ -1940,10 +1965,10 @@ export default function ViewerDashboard() {
             }}
           >
             <AnimatePresence>
-              {topEight.map((pos, index) => {
+              {topSix.map((pos, index) => {
                 const team = data.teams.find((t) => t.id === pos.teamId);
                 if (!team) return null;
-                const yPos = (index + 0.5) * (100 / 8);
+                const yPos = (index + 0.5) * (100 / 6);
                 const leftPct = ((pos.score - minScore) / scoreRange) * 100;
                 const isNearRight = leftPct > 78;
                 return (
@@ -2001,13 +2026,13 @@ export default function ViewerDashboard() {
                       >
                         <div
                           style={{
-                            ...orbitron,
-                            fontSize: 9,
+                            ...notoTH,
+                            fontSize: 20,
                             fontWeight: 900,
                             padding: "2px 8px",
                             borderRadius: 4,
-                            background: "rgba(7,17,30,0.96)",
-                            border: `1px solid ${team.color}55`,
+                            // background: "rgba(7,17,30,0.96)",
+                            // border: `1px solid ${team.color}55`,
                             color: team.color,
                             letterSpacing: "0.10em",
                           }}
@@ -2017,18 +2042,18 @@ export default function ViewerDashboard() {
                         </div>
                         <div
                           style={{
-                            ...orbitron,
-                            fontSize: 10,
+                            ...notoTH,
+                            fontSize: 20,
                             fontWeight: 900,
                             padding: "1px 6px",
                             borderRadius: 3,
-                            background: "rgba(10,10,10,0.65)",
-                            border: "1px solid rgba(255,255,255,0.05)",
+                            // background: "rgba(10,10,10,0.65)",
+                            // border: "1px solid rgba(255,255,255,0.05)",
                             color: C.textHi,
                           }}
                         >
                           {pos.score}{" "}
-                          <span style={{ fontSize: 7, color: C.textLo }}>
+                          <span style={{ fontSize: 15, color: C.textLo }}>
                             P
                           </span>
                         </div>
@@ -2038,7 +2063,7 @@ export default function ViewerDashboard() {
                 );
               })}
             </AnimatePresence>
-            {topEight.length === 0 && (
+            {topSix.length === 0 && (
               <div
                 style={{
                   position: "absolute",
@@ -2473,7 +2498,7 @@ export default function ViewerDashboard() {
         }}
       >
         <div
-        // className="grad-gold"
+          // className="grad-gold"
           style={{
             ...fontDisplay,
             fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
@@ -2533,7 +2558,7 @@ export default function ViewerDashboard() {
   );
 
   // =========================================================================
-// SLIDE 7 — รางวัลชมเชย (ทุกทีมที่ไม่ติด 3 อันดับแรก)
+  // SLIDE 7 — รางวัลชมเชย (ทุกทีมที่ไม่ติด 3 อันดับแรก)
   // =========================================================================
   const Slide7 = () => {
     const consolationTeams = sortedPositions.slice(3);
@@ -2701,7 +2726,9 @@ export default function ViewerDashboard() {
                       }}
                     >
                       {pos.score}
-                      <span style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}>
+                      <span
+                        style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}
+                      >
                         PTS
                       </span>
                     </span>
@@ -2775,7 +2802,12 @@ export default function ViewerDashboard() {
               borderRadius: 1,
             }}
           />
-          <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
+          <div
+            style={{
+              fontSize: 28,
+              animation: "float 2.5s ease-in-out infinite",
+            }}
+          >
             🥉
           </div>
           {t3 && (
@@ -2798,7 +2830,8 @@ export default function ViewerDashboard() {
                   color: "rgba(255,255,255,.5)",
                 }}
               >
-                {s3} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+                {s3}{" "}
+                <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
               </div>
             </>
           )}
@@ -2819,7 +2852,7 @@ export default function ViewerDashboard() {
   };
 
   // =========================================================================
-// SLIDE 9 — รางวัลรองชนะเลิศอันดับ 1 (อันดับ 2)
+  // SLIDE 9 — รางวัลรองชนะเลิศอันดับ 1 (อันดับ 2)
   // =========================================================================
   const Slide9 = () => {
     const ru = sortedPositions[1]
@@ -2878,7 +2911,12 @@ export default function ViewerDashboard() {
               borderRadius: 1,
             }}
           />
-          <div style={{ fontSize: 28, animation: "float 2.5s ease-in-out infinite" }}>
+          <div
+            style={{
+              fontSize: 28,
+              animation: "float 2.5s ease-in-out infinite",
+            }}
+          >
             🥈
           </div>
           {ru && (
@@ -2901,7 +2939,8 @@ export default function ViewerDashboard() {
                   color: "rgba(255,255,255,.5)",
                 }}
               >
-                {sru} <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+                {sru}{" "}
+                <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
               </div>
             </>
           )}
@@ -3040,7 +3079,13 @@ export default function ViewerDashboard() {
             }}
           >
             {sch}{" "}
-            <span style={{ fontSize: ".4em", color: "rgba(255,255,255,.4)", marginLeft: 5 }}>
+            <span
+              style={{
+                fontSize: ".4em",
+                color: "rgba(255,255,255,.4)",
+                marginLeft: 5,
+              }}
+            >
               POINTS
             </span>
           </div>
@@ -3312,7 +3357,9 @@ export default function ViewerDashboard() {
                 pointerEvents: "all",
               }}
             >
-              {(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] as const).map((icon, i) => (
+              {(
+                ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] as const
+              ).map((icon, i) => (
                 <button
                   key={i}
                   style={{
