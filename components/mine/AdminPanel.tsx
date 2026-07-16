@@ -34,6 +34,7 @@ import { AuditMatrix } from "./AuditMatrix";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 import { CanvaLinkManager } from "./CanvaLinkManager";
 import ControlPage from "./ControlPage";
+import Image from "next/image";
 
 const ORANGE = "#ED8240";
 const NEGATIVE = "#d4183d";
@@ -275,19 +276,31 @@ function ScoreEntryAndLog({
     refreshEvents();
   }, [refreshEvents, refreshVersion]);
 
-  // สร้าง entry เริ่มต้น (n=0, bonus=false) ให้ทุกทีมเสมอ — ทั้งตอนโหลดทีมใหม่ และตอนเปลี่ยนหมวด/ข้อ
+  // FIX D: เดิมโค้ดนี้รีเซ็ต teamEntries ทั้งหมดทุกครั้งที่ `teams` เปลี่ยน reference
+  // (ซึ่งเกิดขึ้นทุกครั้งที่มี score/team event realtime เข้ามา เพราะ loadData()
+  // คืน array ใหม่เสมอแม้เนื้อหาจะเหมือนเดิม) ทำให้ค่า N% ที่แอดมินกำลังพิมพ์อยู่
+  // หายรีเซ็ตเป็น 0 กลางคันโดยไม่ตั้งใจ ถ้ามีคนอื่นให้คะแนนเข้ามาพร้อมกัน
+  //
+  // แก้โดยใช้ functional update: เก็บค่าเดิมของทีมที่มีอยู่แล้วไว้ (อ้างอิงด้วย id)
+  // เพิ่ม entry เริ่มต้นให้เฉพาะทีมใหม่ที่เพิ่งเข้ามา และตัดทีมที่ถูกลบออกไปแล้ว
   useEffect(() => {
-    setTeamEntries(
-      Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
-    );
+    setTeamEntries((prev) => {
+      const next: Record<string, { bonus: boolean; n: number }> = {};
+      teams.forEach((t) => {
+        next[t.id] = prev[t.id] ?? { bonus: false, n: 0 };
+      });
+      return next;
+    });
   }, [teams]);
 
   useEffect(() => {
     setSelectedQuestion(null);
     setScoreFull(null);
+    // เปลี่ยนหมวด/ข้อ = ตั้งใจเริ่มกรอกใหม่จริงๆ รีเซ็ตทั้งหมดตามเดิม (ไม่เกี่ยวกับ FIX D)
     setTeamEntries(
       Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
 
   const updateTeamBonus = (teamId: string, bonus: boolean) => {
@@ -684,7 +697,7 @@ function ScoreEntryAndLog({
         </div>
       </section>
 
-      {/* ── Event Log — เหมือนเดิมทุกจุด ไม่แตะ ── */}
+      {/* ── Event Log ── */}
       <section id="event-log" className="scroll-mt-6">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -845,9 +858,13 @@ export default function AdminPanel() {
     };
   }, []);
 
+  // FIX F: เพิ่ม "presentation-state" และ "timer" เข้าไปใน observer list
+  // เดิมไม่มี 2 id นี้ ทำให้เลื่อนไปหน้านั้นแล้ว sidebar ไม่ highlight เมนูให้ตรง
   useEffect(() => {
     const ids = [
       "fleet-management",
+      "presentation-state",
+      "timer",
       "canva-links",
       "score-entry",
       "event-log",
@@ -1032,8 +1049,6 @@ export default function AdminPanel() {
             <div className="border border-black/[0.07] rounded-xl p-6">
               <Link href="https://keepthescore.com/board/jbmyjghsmkjbe">Timer</Link>
               <iframe src="https://keepthescore.com/board/jbmyjghsmkjbe" className="w-full h-96"/>
-              <div>sirada.uth@docchula.com</div>
-              <div>1234567890</div>
             </div>
           </section>
 
