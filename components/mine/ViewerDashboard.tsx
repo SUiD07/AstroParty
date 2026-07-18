@@ -449,8 +449,11 @@ function JeopardyCell({
 
   return (
     <div
-      onClick={onClick}
-      // style={{
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+            // style={{
       //   position: "relative",
       //   minHeight: 62,
       //   padding: "8px 6px",
@@ -1074,6 +1077,7 @@ function Slide1() {
             style={{ width: "clamp(4.5rem,6vw,6rem)", height: "auto" }}
           />
         </div>
+
         <div
           style={{
             width: 1,
@@ -1407,11 +1411,10 @@ interface Slide3Props extends SlideCommonProps {
   answeredCount: number;
   totalQCount: number;
   selectedCell: { category: Category; question: Question } | null;
-  setSelectedCell: (
-    v: { category: Category; question: Question } | null,
-  ) => void;
+  onCloseModal: () => void;
   activeHighlightId: number | null;
   onCellClick: (cat: Category, q: Question) => void;
+  onBackgroundClick: () => void;
 }
 
 function Slide3({
@@ -1422,15 +1425,17 @@ function Slide3({
   answeredCount,
   totalQCount,
   selectedCell,
-  setSelectedCell,
+  onCloseModal,
   activeHighlightId,
   onCellClick,
+  onBackgroundClick,
 }: Slide3Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
 
   return (
     <div
+      onClick={onBackgroundClick}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -1608,7 +1613,7 @@ function Slide3({
             events={getEvents(selectedCell.question.id)}
             teams={data.teams}
             canvaLinks={canvaLinks}
-            onClose={() => setSelectedCell(null)}
+            onClose={onCloseModal}
           />
         )}
       </AnimatePresence>
@@ -1862,7 +1867,114 @@ function Slide4({ data, topSix, minScore, scoreRange }: Slide4Props) {
 }
 
 // ---------------------------------------------------------------------------
+// Decoration — เติมพื้นที่ว่างฝั่งขวาของ Live Leaderboard เวลาทีมน้อย
+// ตำแหน่ง/ขนาดคงที่ (ไม่ random ทุก render) กันภาพกระตุกตอน re-render
+// ---------------------------------------------------------------------------
+function LeaderboardDecor({ compact }: { compact?: boolean }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        minHeight: compact ? 120 : 220,
+        pointerEvents: "none",
+        overflow: "hidden",
+      }}
+    >
+      {/* ดาวเคราะห์วงแหวน */}
+      <div
+        style={{
+          position: "absolute",
+          top: "8%",
+          right: "18%",
+          width: compact ? 46 : 72,
+          height: compact ? 46 : 72,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at 32% 28%, #9CC8EE, #254074 58%, #0D1B2E)",
+          boxShadow: "0 0 34px rgba(83,143,238,0.28)",
+          animation: "float 7s ease-in-out infinite",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            width: compact ? "170%" : "160%",
+            height: compact ? "34%" : "30%",
+            border: "1.3px solid rgba(156,200,238,0.22)",
+            borderRadius: "50%",
+            transform: "translate(-50%,-50%) rotateX(70deg)",
+          }}
+        />
+      </div>
+
+      {/* ดาวเคราะห์เล็กสีม่วง */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "14%",
+          left: "20%",
+          width: compact ? 26 : 40,
+          height: compact ? 26 : 40,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at 38% 32%, #C4A8F0, #4B2A8A 60%, #1A0D2E)",
+          opacity: 0.6,
+          animation: "float 5s ease-in-out infinite 1s",
+        }}
+      />
+
+      {/* จรวด */}
+      <div
+        style={{
+          position: "absolute",
+          top: "42%",
+          left: "12%",
+          width: compact ? 22 : 34,
+          height: compact ? 15 : 22,
+          clipPath: "polygon(0% 0%, 100% 50%, 0% 100%, 22% 50%)",
+          background: C.orange,
+          opacity: 0.55,
+          filter: "drop-shadow(0 0 8px rgba(237,130,64,.5))",
+          animation: "float 4.2s ease-in-out infinite .6s",
+        }}
+      />
+
+      {/* จุดดาวกระจาย */}
+      {[
+        { top: "20%", left: "55%", size: 3 },
+        { top: "65%", left: "70%", size: 2 },
+        { top: "78%", left: "35%", size: 2.5 },
+        { top: "30%", left: "80%", size: 2 },
+        { top: "55%", left: "10%", size: 2 },
+      ].map((s, i) => (
+        <div
+          key={i}
+          style={{
+            position: "absolute",
+            top: s.top,
+            left: s.left,
+            width: s.size,
+            height: s.size,
+            borderRadius: "50%",
+            background: "#fff",
+            opacity: 0.6,
+            animation: `twinkle ${2 + i}s ease-in-out infinite ${i * 0.4}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SLIDE 5 — LIVE LEADERBOARD
+// ซ้าย fix สูงสุด 4 ทีม, ขวาคือทีมที่เหลือ (ปกติ 2 ทีมจาก 6 ทีมรวม)
+// ถ้าทีมทั้งหมด < 4 คอลัมน์ขวาว่าง เติม decoration ล้วน
+// ถ้าขวามีทีมน้อยกว่าซ้าย (แถวเหลือ) เติม decoration ในช่องว่างที่เหลือ
 // ---------------------------------------------------------------------------
 interface Slide5Props {
   data: RaceData;
@@ -1879,17 +1991,17 @@ function Slide5({ data, sortedPositions }: Slide5Props) {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const useTwoColumns = !isMobile && sortedPositions.length > 6;
-  const half = Math.ceil(sortedPositions.length / 2);
-  const columns = useTwoColumns
-    ? [sortedPositions.slice(0, half), sortedPositions.slice(half)]
-    : [sortedPositions];
+  const LEFT_MAX = 4;
+  const leftTeams = sortedPositions.slice(0, LEFT_MAX);
+  const rightTeams = sortedPositions.slice(LEFT_MAX);
+  const hasRightTeams = rightTeams.length > 0;
+  const useTwoColumns = !isMobile && sortedPositions.length > 0;
 
-  const rowsPerColumn = Math.max(1, columns[0].length);
-  const rowPad = Math.min(18, 140 / rowsPerColumn);
-  const nameSize = Math.min(1.6, 12 / rowsPerColumn + 0.9);
-  const scoreSize = Math.min(2.4, 18 / rowsPerColumn + 1.2);
-  const rankSize = Math.min(13, 90 / rowsPerColumn + 8);
+  const rowsForSizing = Math.max(1, leftTeams.length);
+  const rowPad = Math.min(18, 140 / rowsForSizing);
+  const nameSize = Math.min(1.6, 12 / rowsForSizing + 0.9);
+  const scoreSize = Math.min(2.4, 18 / rowsForSizing + 1.2);
+  const rankSize = Math.min(13, 90 / rowsForSizing + 8);
 
   const renderRow = (pos: Position, i: number, isLastInColumn: boolean) => {
     const team = data.teams.find((t) => t.id === pos.teamId);
@@ -2048,23 +2160,70 @@ function Slide5({ data, sortedPositions }: Slide5Props) {
           </p>
         )}
 
-        {columns.map((col, colIdx) => (
-          <div
-            key={colIdx}
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-evenly",
-              minHeight: 0,
-            }}
-          >
-            {col.map((pos, i) => {
-              const globalIndex = colIdx === 0 ? i : half + i;
-              return renderRow(pos, globalIndex, i === col.length - 1);
-            })}
-          </div>
-        ))}
+        {sortedPositions.length > 0 && (
+          <>
+            {/* คอลัมน์ซ้าย — สูงสุด 4 ทีม */}
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-evenly",
+                minHeight: 0,
+              }}
+            >
+              {leftTeams.map((pos, i) =>
+                renderRow(pos, i, i === leftTeams.length - 1),
+              )}
+            </div>
+
+            {/* คอลัมน์ขวา — ทีมที่เหลือ + decoration เติมพื้นที่ว่าง */}
+            {useTwoColumns && (
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
+              >
+                {!hasRightTeams ? (
+                  // ทีมทั้งหมด < 4 → ขวาว่างทั้งคอลัมน์ เป็น decoration ล้วน
+                  <LeaderboardDecor />
+                ) : (
+                  <>
+                    <div
+                      style={{
+                        flex: rightTeams.length,
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "space-evenly",
+                        minHeight: 0,
+                      }}
+                    >
+                      {rightTeams.map((pos, i) => {
+                        const globalIndex = LEFT_MAX + i;
+                        return renderRow(
+                          pos,
+                          globalIndex,
+                          i === rightTeams.length - 1,
+                        );
+                      })}
+                    </div>
+                    {/* เติม decoration ในพื้นที่ว่างที่เหลือ ถ้าทีมขวาน้อยกว่าซ้าย */}
+                    {rightTeams.length < leftTeams.length && (
+                      <div
+                        style={{ flex: leftTeams.length - rightTeams.length }}
+                      >
+                        <LeaderboardDecor compact />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -3102,6 +3261,12 @@ export default function ViewerDashboard() {
     setLocalHighlightId(null); // รีเซ็ต ต้องคลิก 2 ครั้งใหม่เสมอ
   }, []);
 
+  // คลิกพื้นที่ว่างในกระดาน (นอก cell) — เคลียร์เฉพาะ local highlight ของผู้ใช้
+  // (ไม่ยุ่งกับ adminHighlightId เพื่อไม่ให้คนอื่นที่ดูจอเดียวกันเห็นการเปลี่ยนแปลง)
+  const handleBackgroundClick = useCallback(() => {
+    setLocalHighlightId(null);
+  }, []);
+
   const fetchAll = useCallback(async () => {
     const [fresh, cats, evs, links] = await Promise.all([
       loadData(),
@@ -3235,9 +3400,10 @@ export default function ViewerDashboard() {
         answeredCount={answeredCount}
         totalQCount={totalQCount}
         selectedCell={selectedCell}
-        setSelectedCell={setSelectedCell}
+        onCloseModal={handleModalClose}
         activeHighlightId={activeHighlightId}
         onCellClick={handleCellClick}
+        onBackgroundClick={handleBackgroundClick}
       />
     ),
     4: (
