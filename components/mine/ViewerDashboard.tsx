@@ -38,6 +38,8 @@ import {
   type PresentationState,
 } from "@/lib/db";
 // import Image from "next/image";
+import Particles from "../Particles";
+import Grainient from "../Grainient";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -3439,7 +3441,59 @@ export default function ViewerDashboard() {
           overflow: "hidden",
         }}
       >
-        <CosmosBackground />
+        {/* <CosmosBackground /> */}
+        <div
+          style={{
+            width: 2000,
+            height: 1080,
+            position: "relative",
+          }}
+        >
+          <Grainient
+            color1="#000000"
+            color2="#254074"
+            color3="#ED8240"
+            timeSpeed={0.35}
+            colorBalance={0}
+            warpStrength={1}
+            warpFrequency={5}
+            warpSpeed={2}
+            warpAmplitude={50}
+            blendAngle={0}
+            blendSoftness={0.05}
+            rotationAmount={500}
+            noiseScale={2}
+            grainAmount={0.1}
+            grainScale={2}
+            grainAnimated={false}
+            contrast={1.5}
+            gamma={1}
+            saturation={1}
+            centerX={0}
+            centerY={0}
+            zoom={0.9}
+          />
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+          }}
+        >
+          <Particles
+            particleCount={200}
+            particleSpread={10}
+            speed={0.1}
+            particleColors={["#ffffff", "#ffffff", "#ffffff"]}
+            moveParticlesOnHover
+            particleHoverFactor={1}
+            alphaParticles={false}
+            particleBaseSize={100}
+            sizeRandomness={1}
+            cameraDistance={30}
+            disableRotation={false}
+          />
+        </div>
 
         {/* Slides */}
         <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
