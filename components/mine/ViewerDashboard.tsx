@@ -3405,7 +3405,7 @@ export default function ViewerDashboard() {
         >
           <Grainient
             color1="#000000"
-            color2="#254074"
+            color2="#6C240A"
             color3="#ED8240"
             timeSpeed={0.35}
             colorBalance={0}
