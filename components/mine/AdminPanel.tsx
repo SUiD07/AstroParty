@@ -29,6 +29,7 @@ import {
   loadScoreEvents,
   addScoreEvent,
   deleteScoreEvent,
+  updateScoreEvent,
   subscribeToTeams,
 } from "@/lib/db";
 import { RaceData, Team } from "@/app/types";
@@ -232,6 +233,11 @@ const fmtScore = (n: number) => {
   return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
 };
 
+interface TeamEntry {
+  bonus: boolean;
+  n: number; // ใช้ร่วมกันทั้งกติกา A และ B (สูตรคำนวณต่างกัน ไม่ใช่ช่องกรอก)
+}
+
 interface PendingSaveRow {
   teamId: string;
   teamName: string;
@@ -252,10 +258,14 @@ function ScoreEntryAndLog({
   teams,
   onRefreshScores,
   refreshVersion,
+  jumpTarget,
+  onJumpHandled,
 }: {
   teams: Team[];
   onRefreshScores: () => void;
   refreshVersion: number;
+  jumpTarget?: { categoryId: number; questionNumber: number } | null;
+  onJumpHandled?: () => void;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
@@ -266,10 +276,9 @@ function ScoreEntryAndLog({
   );
   const [scoreFull, setScoreFull] = useState<number | null>(null);
 
-  // per-team data: key = teamId, value = { bonus, n } — ทุกทีมมี entry เสมอ ไม่ต้อง select
-  const [teamEntries, setTeamEntries] = useState<
-    Record<string, { bonus: boolean; n: number }>
-  >({});
+  // per-team data: key = teamId — ทุกทีมมี entry เสมอ ไม่ต้อง select
+  // n = ช่องเดียวใช้ร่วมกันทั้งกติกา A และ B (สูตรคำนวณต่างกัน ไม่ใช่ช่องกรอก)
+  const [teamEntries, setTeamEntries] = useState<Record<string, TeamEntry>>({});
 
   const [submitting, setSubmitting] = useState(false);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
@@ -286,16 +295,37 @@ function ScoreEntryAndLog({
     number | null
   >(null);
 
+  // รับคำสั่ง "jump มาดูคะแนนข้อนี้" จากภายนอก (เช่นปุ่มในหน้า Presentation State)
+  // — apply filter ให้อัตโนมัติ แล้วเลื่อนหน้าไปยัง event log
+  useEffect(() => {
+    if (!jumpTarget) return;
+    setFilterTeamIds(new Set());
+    setFilterCategoryId(jumpTarget.categoryId);
+    setFilterQuestionNumber(jumpTarget.questionNumber);
+    document
+      .getElementById("event-log")
+      ?.scrollIntoView({ behavior: "smooth" });
+    onJumpHandled?.();
+  }, [jumpTarget, onJumpHandled]);
+
   // ── แก้ไขคะแนนที่บันทึกไปแล้ว ────────────────────────────────────────
   const [editingEvent, setEditingEvent] = useState<ScoreEvent | null>(null);
+  const [editMode, setEditMode] = useState<"formula" | "manual">("formula");
+  const [editScoringMode, setEditScoringMode] = useState<"A" | "B">("A");
   const [editBonus, setEditBonus] = useState(false);
   const [editN, setEditN] = useState(0);
   const [editFull, setEditFull] = useState<number | null>(null);
+  const [editManualValue, setEditManualValue] = useState(0);
+  const [editClampNegative, setEditClampNegative] = useState(false);
   const [editParseFailed, setEditParseFailed] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // ── กรอกคะแนนเอง (Manual Override) — ยุบไว้เป็นค่าเริ่มต้น กันมือลั่น ──
+  // มี selector หมวด/ข้อของตัวเอง แยกจากฟอร์มปกติด้านบน เพราะ manual override
+  // อาจต้องใช้กับข้อไหนก็ได้ ไม่อยากไปรบกวนการเลือกของฟอร์มปกติที่เตรียมไว้
   const [rawExpanded, setRawExpanded] = useState(false);
+  const [rawCategory, setRawCategory] = useState<Category | null>(null);
+  const [rawQuestion, setRawQuestion] = useState<Question | null>(null);
   const [rawEntries, setRawEntries] = useState<Record<string, number>>({});
 
   const refreshEvents = useCallback(async () => {
@@ -316,18 +346,23 @@ function ScoreEntryAndLog({
     refreshEvents();
   }, [refreshEvents, refreshVersion]);
 
+  const emptyEntry = (): TeamEntry => ({
+    bonus: false,
+    n: 0,
+  });
+
   // FIX D: เดิมโค้ดนี้รีเซ็ต teamEntries ทั้งหมดทุกครั้งที่ `teams` เปลี่ยน reference
   // (ซึ่งเกิดขึ้นทุกครั้งที่มี score/team event realtime เข้ามา เพราะ loadData()
-  // คืน array ใหม่เสมอแม้เนื้อหาจะเหมือนเดิม) ทำให้ค่า N% ที่แอดมินกำลังพิมพ์อยู่
+  // คืน array ใหม่เสมอแม้เนื้อหาจะเหมือนเดิม) ทำให้ค่าที่แอดมินกำลังพิมพ์อยู่
   // หายรีเซ็ตเป็น 0 กลางคันโดยไม่ตั้งใจ ถ้ามีคนอื่นให้คะแนนเข้ามาพร้อมกัน
   //
   // แก้โดยใช้ functional update: เก็บค่าเดิมของทีมที่มีอยู่แล้วไว้ (อ้างอิงด้วย id)
   // เพิ่ม entry เริ่มต้นให้เฉพาะทีมใหม่ที่เพิ่งเข้ามา และตัดทีมที่ถูกลบออกไปแล้ว
   useEffect(() => {
     setTeamEntries((prev) => {
-      const next: Record<string, { bonus: boolean; n: number }> = {};
+      const next: Record<string, TeamEntry> = {};
       teams.forEach((t) => {
-        next[t.id] = prev[t.id] ?? { bonus: false, n: 0 };
+        next[t.id] = prev[t.id] ?? emptyEntry();
       });
       return next;
     });
@@ -345,29 +380,75 @@ function ScoreEntryAndLog({
     setSelectedQuestion(null);
     setScoreFull(null);
     // เปลี่ยนหมวด/ข้อ = ตั้งใจเริ่มกรอกใหม่จริงๆ รีเซ็ตทั้งหมดตามเดิม (ไม่เกี่ยวกับ FIX D)
-    setTeamEntries(
-      Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
-    );
-    setRawEntries(Object.fromEntries(teams.map((t) => [t.id, 0])));
-    setRawExpanded(false);
+    setTeamEntries(Object.fromEntries(teams.map((t) => [t.id, emptyEntry()])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory]);
+
+  // Manual Override มี selector ของตัวเอง — reset rawEntries เมื่อเปลี่ยนหมวด/ข้อของมันเอง
+  useEffect(() => {
+    setRawQuestion(null);
+    setRawEntries(Object.fromEntries(teams.map((t) => [t.id, 0])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawCategory]);
+
+  useEffect(() => {
+    setRawEntries(Object.fromEntries(teams.map((t) => [t.id, 0])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawQuestion]);
 
   const updateTeamBonus = (teamId: string, bonus: boolean) => {
     setTeamEntries((prev) => ({
       ...prev,
-      [teamId]: { ...prev[teamId], bonus },
+      [teamId]: { ...(prev[teamId] ?? emptyEntry()), bonus },
     }));
   };
 
   const updateTeamN = (teamId: string, n: number) => {
     setTeamEntries((prev) => ({
       ...prev,
-      [teamId]: { ...prev[teamId], n },
+      [teamId]: { ...(prev[teamId] ?? emptyEntry()), n },
     }));
   };
 
-  const computeScore = (bonus: boolean, n: number, full: number) => {
+  // ── กติกาคำนวณคะแนน — สลับได้ 2 แบบ ──────────────────────────────────
+  // A: มีการหักคะแนนส่วนตอบผิดแยกต่างหากในสูตร
+  // B: กรอก N (%) ช่องเดียวเหมือนกติกา A — ระบบคิด "ผิด" = (100-N) ให้เองเสมอ
+  //    แล้วคำนวณสุทธิ = N - (100-N) = 2N-100 จากนั้นคูณตัวคูณโบนัสกับสุทธิ
+  //    ทั้งก้อนตรงๆ ไม่มีการหักซ้ำอีกชั้นแบบกติกา A
+  const [scoringMode, setScoringMode] = useState<"A" | "B">("A");
+
+  // ★ Feature flag: ยังไม่แน่ใจว่ากติกา B จะถูกใช้จริงไหม — เปิด/ปิดได้ทีเดียว
+  // คุมทั้งฟอร์มเพิ่มคะแนนปกติและ Edit Modal พร้อมกัน จำค่าไว้ใน localStorage
+  // (อยู่รอดข้าม refresh หน้า แต่ยังแก้ได้ง่ายๆ ผ่านปุ่มสวิตช์ ไม่ต้องแก้โค้ด)
+  const [enableModeB, setEnableModeB] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("astroparty_enable_mode_b");
+      if (saved != null) setEnableModeB(saved === "true");
+    } catch {
+      // ignore (เช่น localStorage ไม่พร้อมใช้งาน)
+    }
+  }, []);
+
+  const toggleEnableModeB = () => {
+    setEnableModeB((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("astroparty_enable_mode_b", String(next));
+      } catch {
+        // ignore
+      }
+      // ปิดกติกา B แล้ว ต้องบังคับกลับไป A ทันทีทั้งฟอร์มปกติและ edit modal
+      // กันเหลือ state ค้างเป็น B ทั้งที่ UI ไม่มีให้เลือกแล้ว
+      if (!next) {
+        setScoringMode("A");
+        setEditScoringMode("A");
+      }
+      return next;
+    });
+  };
+
+  const computeScoreA = (bonus: boolean, n: number, full: number) => {
     const multiplier = bonus ? 2 : 1;
     const correctPortion = multiplier * (n / 100) * full;
     // ไม่มีโบนัส → ไม่หักคะแนนจากข้อที่ตอบผิด
@@ -376,7 +457,90 @@ function ScoreEntryAndLog({
       correctPortion,
       incorrectPortion,
       finalScore: correctPortion - incorrectPortion, // ไม่ปัดเศษ
+      net: undefined as number | undefined,
     };
+  };
+
+  const computeScoreB = (bonus: boolean, n: number, full: number) => {
+    // ระบบคิด "ผิด" = (100-N) ให้เองเสมอ แล้วสุทธิ = N-(100-N) = 2N-100
+    const net = n - (100 - n);
+    const multiplier = bonus ? 2 : 1;
+    const finalScore = multiplier * (net / 100) * full;
+    return { correctPortion: finalScore, incorrectPortion: 0, finalScore, net };
+  };
+
+  // ★ standalone — รับ mode ตรงๆ เป็นพารามิเตอร์ ไม่ผูกกับ scoringMode ของฟอร์มหลัก
+  // ใช้ร่วมกันได้ทั้งฟอร์มเพิ่มคะแนนปกติ และ Edit Modal (ที่มี mode ของตัวเอง)
+  const computeScoreByMode = (
+    mode: "A" | "B",
+    bonus: boolean,
+    n: number,
+    full: number,
+  ) =>
+    mode === "A"
+      ? computeScoreA(bonus, n, full)
+      : computeScoreB(bonus, n, full);
+
+  const buildNoteA = (
+    bonus: boolean,
+    n: number,
+    full: number,
+    final: number,
+  ) =>
+    bonus
+      ? `โบนัส x2 · ตอบถูก ${n}% · เต็ม ${full} → 2×(${n}/100)×${full} − (100−${n})/100×${full} = ${final.toFixed(2)}`
+      : `ไม่มีโบนัส · ตอบถูก ${n}% · เต็ม ${full} → (${n}/100)×${full} = ${final.toFixed(2)} (ไม่หักข้อผิด)`;
+
+  const buildNoteB = (
+    bonus: boolean,
+    n: number,
+    full: number,
+    final: number,
+  ) => {
+    const wrong = 100 - n;
+    const net = n - wrong;
+    return bonus
+      ? `กติกา B (สุทธิ×โบนัส) · ถูก ${n}% − ผิด ${wrong}% = สุทธิ ${net}% · เต็ม ${full} → 2×(${net}/100)×${full} = ${final.toFixed(2)}`
+      : `กติกา B (สุทธิ) · ถูก ${n}% − ผิด ${wrong}% = สุทธิ ${net}% · เต็ม ${full} → (${net}/100)×${full} = ${final.toFixed(2)}`;
+  };
+
+  // ★ standalone — คู่กับ computeScoreByMode
+  const buildNoteByMode = (
+    mode: "A" | "B",
+    bonus: boolean,
+    n: number,
+    full: number,
+    final: number,
+  ) =>
+    mode === "A"
+      ? buildNoteA(bonus, n, full, final)
+      : buildNoteB(bonus, n, full, final);
+
+  // ★ ติด tag ⚠ ติดลบถูกปรับเป็น 0 — ใช้ร่วมกันได้ทั้งฟอร์มหลักและ Edit Modal
+  const tagClampIfNeeded = (
+    baseNote: string,
+    wasClamped: boolean,
+    rawFinalScore: number,
+  ) =>
+    wasClamped
+      ? `${baseNote} · ⚠ ติดลบ (${fmtScore(rawFinalScore)}) ถูกปรับเป็น 0 ตามกติกาที่ตั้งไว้`
+      : baseNote;
+
+  // dispatcher ของฟอร์มหลัก — ผูกกับ scoringMode ที่เลือกไว้บนฟอร์ม
+  const computeScoreForEntry = (entry: TeamEntry, full: number) =>
+    computeScoreByMode(scoringMode, entry.bonus, entry.n, full);
+
+  // ── ตัวเลือก: ไม่นับคะแนนติดลบ (clamp เป็น 0) — ใช้ได้ทั้งกติกา A และ B ──
+  // default = false (อนุญาตติดลบ เหมือนพฤติกรรมเดิม) ต้องติ๊กเองถ้าอยาก clamp
+  const [clampNegative, setClampNegative] = useState(false);
+
+  // wrapper ที่ห่อ computeScoreForEntry แล้ว clamp ให้ถ้าติ๊กไว้
+  // คืนทั้งค่า raw (ก่อน clamp) และค่าจริงที่จะถูกบันทึก เพื่อใช้ tag ใน note ได้
+  const computeScoreClamped = (entry: TeamEntry, full: number) => {
+    const raw = computeScoreForEntry(entry, full);
+    const wasClamped = clampNegative && raw.finalScore < 0;
+    const finalScore = wasClamped ? 0 : raw.finalScore;
+    return { ...raw, rawFinalScore: raw.finalScore, finalScore, wasClamped };
   };
 
   const canSubmit =
@@ -384,23 +548,41 @@ function ScoreEntryAndLog({
     selectedQuestion &&
     scoreFull != null &&
     teams.length > 0 &&
-    teams.every((t) => {
-      const n = teamEntries[t.id]?.n;
-      return n !== undefined && n >= 0 && n <= 100;
-    });
+    teams.every((t) => teamEntries[t.id] !== undefined);
 
-  const buildNote = (bonus: boolean, n: number, full: number, final: number) =>
-    bonus
-      ? `โบนัส x2 · ตอบถูก ${n}% · เต็ม ${full} → 2×(${n}/100)×${full} − (100−${n})/100×${full} = ${final.toFixed(2)}`
-      : `ไม่มีโบนัส · ตอบถูก ${n}% · เต็ม ${full} → (${n}/100)×${full} = ${final.toFixed(2)} (ไม่หักข้อผิด)`;
+  const buildNoteForEntry = (
+    entry: TeamEntry,
+    full: number,
+    final: number,
+    wasClamped?: boolean,
+    rawFinalScore?: number,
+  ) => {
+    const base = buildNoteByMode(
+      scoringMode,
+      entry.bonus,
+      entry.n,
+      full,
+      final,
+    );
+    return wasClamped ? tagClampIfNeeded(base, true, rawFinalScore!) : base;
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
 
     const results = teams.map((team) => {
       const entry = teamEntries[team.id];
-      const { finalScore } = computeScore(entry.bonus, entry.n, scoreFull!);
-      const note = buildNote(entry.bonus, entry.n, scoreFull!, finalScore);
+      const { finalScore, wasClamped, rawFinalScore } = computeScoreClamped(
+        entry,
+        scoreFull!,
+      );
+      const note = buildNoteForEntry(
+        entry,
+        scoreFull!,
+        finalScore,
+        wasClamped,
+        rawFinalScore,
+      );
       return {
         teamId: team.id,
         teamName: team.name,
@@ -450,7 +632,7 @@ function ScoreEntryAndLog({
         setSelectedQuestion(null);
         setScoreFull(null);
         setTeamEntries(
-          Object.fromEntries(teams.map((t) => [t.id, { bonus: false, n: 0 }])),
+          Object.fromEntries(teams.map((t) => [t.id, emptyEntry()])),
         );
       } else {
         setRawEntries(Object.fromEntries(teams.map((t) => [t.id, 0])));
@@ -479,32 +661,60 @@ function ScoreEntryAndLog({
   };
 
   // ── แก้ไขคะแนนที่บันทึกไปแล้ว — เปิด modal ใช้เครื่องคำนวณเดิม ──────────
+  // อ่านค่าจาก note เดิม รองรับทั้งรูปแบบกติกา A ("ตอบถูก N% ... เต็ม F")
+  // และกติกา B ("ถูก N% − ผิด ... เต็ม F") — คืน mode มาด้วยเพื่อ pre-select ให้ถูก
   const parseNoteForEdit = (note: string | null) => {
     if (!note) return null;
-    const m = note.match(/ตอบถูก\s+(-?\d+(?:\.\d+)?)%\s*·\s*เต็ม\s+(-?\d+(?:\.\d+)?)/);
+    const isModeB = note.includes("กติกา B");
+    const pattern = isModeB
+      ? /ถูก\s+(-?\d+(?:\.\d+)?)%.*?เต็ม\s+(-?\d+(?:\.\d+)?)/
+      : /ตอบถูก\s+(-?\d+(?:\.\d+)?)%\s*·\s*เต็ม\s+(-?\d+(?:\.\d+)?)/;
+    const m = note.match(pattern);
     if (!m) return null;
     return {
+      mode: (isModeB ? "B" : "A") as "A" | "B",
       n: Number(m[1]),
       full: Number(m[2]),
-      bonus: note.trim().startsWith("โบนัส"),
+      bonus: isModeB
+        ? note.includes("สุทธิ×โบนัส")
+        : note.trim().startsWith("โบนัส"),
     };
+  };
+
+  // ติด tag ว่าแก้ไขแล้วต่อท้ายหมายเหตุเสมอ เพื่อให้เห็นใน log ว่ารายการนี้เคยถูกแก้
+  const tagEdited = (note: string) => {
+    const time = new Date().toLocaleString("th-TH", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit",
+    });
+    return `${note} · ✎ แก้ไขล่าสุดเมื่อ ${time}`;
   };
 
   const openEditModal = (event: ScoreEvent) => {
     const parsed = parseNoteForEdit(event.note);
     if (parsed) {
+      setEditMode("formula");
+      // ถ้าปิดกติกา B ไว้อยู่ แม้ record เดิมจะเคยใช้ B มาก่อน ก็บังคับกลับเป็น A
+      // เพื่อไม่ให้มี state B ซ่อนอยู่ทั้งที่ UI ไม่มีให้เลือกแล้ว
+      setEditScoringMode(enableModeB ? parsed.mode : "A");
       setEditBonus(parsed.bonus);
       setEditN(parsed.n);
       setEditFull(parsed.full);
       setEditParseFailed(false);
     } else {
-      // อ่านค่าจากบันทึกเดิมไม่ได้ (เช่นเป็นรายการที่กรอกแบบ manual override)
-      // ให้เริ่มจากค่าว่าง ผู้ใช้ต้องกรอกใหม่เอง
+      // อ่านค่าจากบันทึกเดิมไม่ได้ (เช่นเป็นรายการที่กรอกแบบ manual override มาก่อน)
+      // เริ่มที่โหมดกรอกเองเลย เพราะไม่มีสูตรให้ recalculate
+      setEditMode("manual");
+      setEditScoringMode("A");
       setEditBonus(false);
       setEditN(0);
       setEditFull(Math.abs(event.delta) || null);
       setEditParseFailed(true);
     }
+    setEditManualValue(event.delta);
+    setEditClampNegative(false);
     setEditingEvent(event);
   };
 
@@ -514,21 +724,33 @@ function ScoreEntryAndLog({
   };
 
   const handleEditSave = async () => {
-    if (!editingEvent || editFull == null) return;
+    if (!editingEvent) return;
+    if (editMode === "formula" && editFull == null) return;
 
-    const cat = categories.find((c) => c.name === editingEvent.category_name);
-    const q = cat?.questions.find(
-      (qq) => qq.number === editingEvent.question_number,
+    const rawFinalScore =
+      editMode === "formula"
+        ? computeScoreByMode(editScoringMode, editBonus, editN, editFull!)
+            .finalScore
+        : editManualValue;
+
+    const wasClamped = editClampNegative && rawFinalScore < 0;
+    const finalScore = wasClamped ? 0 : rawFinalScore;
+
+    const baseNote =
+      editMode === "formula"
+        ? buildNoteByMode(
+            editScoringMode,
+            editBonus,
+            editN,
+            editFull!,
+            finalScore,
+          )
+        : "กรอกคะแนนเองโดยตรง (Manual Override — ไม่ผ่านสูตรคำนวณ)";
+
+    // FIX: ติด tag ว่าแก้ไขแล้วเสมอ + tag clamp ถ้ามี ให้เห็นใน log ว่ารายการนี้เคยถูกปรับ
+    const newNote = tagEdited(
+      tagClampIfNeeded(baseNote, wasClamped, rawFinalScore),
     );
-    if (!cat || !q) {
-      alert(
-        "ไม่พบหมวด/ข้อของรายการนี้ในระบบแล้ว (อาจถูกลบ) ไม่สามารถแก้ไขได้ — กรุณาลบรายการเดิมแล้วเพิ่มใหม่แทน",
-      );
-      return;
-    }
-
-    const { finalScore } = computeScore(editBonus, editN, editFull);
-    const newNote = buildNote(editBonus, editN, editFull, finalScore);
 
     const confirmMessage = [
       `ยืนยันการแก้ไขคะแนน?`,
@@ -538,22 +760,15 @@ function ScoreEntryAndLog({
       ``,
       `ค่าเดิม: ${editingEvent.delta > 0 ? "+" : ""}${fmtScore(editingEvent.delta)}`,
       `ค่าใหม่: ${finalScore > 0 ? "+" : ""}${fmtScore(finalScore)}`,
-      ``,
-      `(ระบบจะลบ record เดิม id=${editingEvent.id} แล้วสร้าง record ใหม่แทน)`,
     ].join("\n");
 
     if (!confirm(confirmMessage)) return;
 
     setEditSubmitting(true);
     try {
-      await deleteScoreEvent(editingEvent.id);
-      await addScoreEvent(
-        editingEvent.team_id,
-        cat.id,
-        q.id,
-        finalScore,
-        newNote,
-      );
+      // FIX: แก้ไขคือแก้ไขจริง (UPDATE record เดิม) ไม่ใช่ลบแล้วสร้างใหม่
+      // — id, created_at ของ record เดิมยังอยู่เหมือนเดิม
+      await updateScoreEvent(editingEvent.id, finalScore, newNote);
       await refreshEvents();
       onRefreshScores();
       closeEditModal();
@@ -567,7 +782,7 @@ function ScoreEntryAndLog({
     setRawEntries((prev) => ({ ...prev, [teamId]: value }));
   };
 
-  const canSubmitRaw = !!selectedCategory && !!selectedQuestion && teams.length > 0;
+  const canSubmitRaw = !!rawCategory && !!rawQuestion && teams.length > 0;
 
   const handleRawSubmit = () => {
     if (!canSubmitRaw) return;
@@ -584,10 +799,10 @@ function ScoreEntryAndLog({
 
     setPendingSave({
       kind: "raw",
-      categoryId: selectedCategory!.id,
-      categoryName: selectedCategory!.name,
-      questionId: selectedQuestion!.id,
-      questionNumber: selectedQuestion!.number,
+      categoryId: rawCategory!.id,
+      categoryName: rawCategory!.name,
+      questionId: rawQuestion!.id,
+      questionNumber: rawQuestion!.number,
       rows,
     });
   };
@@ -602,12 +817,16 @@ function ScoreEntryAndLog({
     });
   };
 
-  const filterCategory = categories.find((c) => c.id === filterCategoryId) ?? null;
+  const filterCategory =
+    categories.find((c) => c.id === filterCategoryId) ?? null;
 
   const filteredEvents = events.filter((e) => {
     if (filterTeamIds.size > 0 && !filterTeamIds.has(e.team_id)) return false;
     if (filterCategory && e.category_name !== filterCategory.name) return false;
-    if (filterQuestionNumber != null && e.question_number !== filterQuestionNumber)
+    if (
+      filterQuestionNumber != null &&
+      e.question_number !== filterQuestionNumber
+    )
       return false;
     return true;
   });
@@ -619,7 +838,9 @@ function ScoreEntryAndLog({
   };
 
   const hasActiveFilters =
-    filterTeamIds.size > 0 || filterCategoryId != null || filterQuestionNumber != null;
+    filterTeamIds.size > 0 ||
+    filterCategoryId != null ||
+    filterQuestionNumber != null;
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString("th-TH", {
@@ -747,10 +968,43 @@ function ScoreEntryAndLog({
             </div>
           </div>
 
+          {/* ── สลับกติกาคำนวณคะแนน + สวิตช์เปิด/ปิดกติกา B ── */}
+          {enableModeB && scoringMode === "B" && (
+            <p className="text-[11px] text-black/40 bg-black/[0.02] rounded-md px-3 py-2">
+              กติกา B: กรอก N (%) ช่องเดียวเหมือนกติกา A เช่น N=40 ระบบจะคิด
+              &quot;ผิด&quot; = 100−40 = 60% ให้เอง แล้วคำนวณสุทธิ = 40−60 =
+              −20% จากนั้นคูณด้วยตัวคูณโบนัสกับผลสุทธิทั้งก้อนตรงๆ
+              (ไม่มีการหักซ้ำอีกชั้น) — กรอกติดลบหรือเกิน 100 ได้
+            </p>
+          )}
+
+          {/* ── ตัวเลือก: ไม่นับคะแนนติดลบ (clamp เป็น 0) — ใช้ได้ทั้งกติกา A/B ── */}
+          <button
+            onClick={() => setClampNegative((v) => !v)}
+            className="flex items-center gap-2 text-xs w-fit"
+          >
+            <span
+              className="w-4 h-4 rounded-[4px] border-2 inline-flex items-center justify-center shrink-0"
+              style={{
+                borderColor: clampNegative ? "#f59e0b" : "rgba(0,0,0,0.2)",
+                background: clampNegative ? "#f59e0b" : "transparent",
+              }}
+            >
+              {clampNegative && (
+                <span className="text-white text-[9px] leading-none">✓</span>
+              )}
+            </span>
+            <span className="text-black/60">
+              ข้อนี้ไม่นับคะแนนติดลบ — ถ้าคำนวณแล้วติดลบให้เป็น 0 แทน
+            </span>
+          </button>
+
           {/* ④ ตารางทีม — ทุกทีมกรอกได้เลย ไม่ต้องติ๊กเลือก */}
           <div className="space-y-2">
             <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-              ④ โบนัส / ตอบถูก (N%) ต่อทีม — ถ้าทีมไม่ตอบให้กรอก 0
+              {scoringMode === "A"
+                ? "④ โบนัส / ตอบถูก (N%) ต่อทีม — ถ้าทีมไม่ตอบให้กรอก 0"
+                : '④ โบนัส / N (%) ต่อทีม — ระบบคิด "ผิด" = 100−N และลบสุทธิให้อัตโนมัติ'}
             </label>
             <div className="border border-black/[0.07] rounded-lg overflow-hidden">
               <table className="w-full text-[12px]">
@@ -773,22 +1027,26 @@ function ScoreEntryAndLog({
                     </th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {teams.map((team) => {
-                    const entry = teamEntries[team.id] ?? {
-                      bonus: false,
-                      n: 0,
-                    };
-                    const valid =
-                      scoreFull != null && entry.n >= 0 && entry.n <= 100;
-                    const { correctPortion, incorrectPortion, finalScore } =
-                      valid
-                        ? computeScore(entry.bonus, entry.n, scoreFull!)
-                        : {
-                            correctPortion: 0,
-                            incorrectPortion: 0,
-                            finalScore: 0,
-                          };
+                    const entry = teamEntries[team.id] ?? emptyEntry();
+                    const valid = scoreFull != null;
+                    const {
+                      correctPortion,
+                      incorrectPortion,
+                      finalScore,
+                      wasClamped,
+                      net,
+                    } = valid
+                      ? computeScoreClamped(entry, scoreFull!)
+                      : {
+                          correctPortion: 0,
+                          incorrectPortion: 0,
+                          finalScore: 0,
+                          wasClamped: false,
+                          net: 0,
+                        };
                     const multiplier = entry.bonus ? 2 : 1;
 
                     return (
@@ -833,8 +1091,6 @@ function ScoreEntryAndLog({
                         <td className="py-2 pr-2">
                           <input
                             type="number"
-                            min={0}
-                            max={100}
                             placeholder="0"
                             value={entry.n}
                             onChange={(e) =>
@@ -858,21 +1114,33 @@ function ScoreEntryAndLog({
                               color: "rgba(88,28,135,0.75)",
                             }}
                           >
-                            {entry.bonus ? (
-                              <>
-                                {multiplier}×({entry.n}/100)×
-                                {scoreFull ?? "score"} − (100−{entry.n})/100×
-                                {scoreFull ?? "score"}
-                                <br />={" "}
-                                {valid ? correctPortion.toFixed(1) : "—"} −{" "}
-                                {valid ? incorrectPortion.toFixed(1) : "—"}
-                              </>
+                            {scoringMode === "A" ? (
+                              entry.bonus ? (
+                                <>
+                                  {multiplier}×({entry.n}/100)×
+                                  {scoreFull ?? "score"} − (100−{entry.n})/100×
+                                  {scoreFull ?? "score"}
+                                  <br />={" "}
+                                  {valid
+                                    ? correctPortion.toFixed(1)
+                                    : "—"} −{" "}
+                                  {valid ? incorrectPortion.toFixed(1) : "—"}
+                                </>
+                              ) : (
+                                <>
+                                  ({entry.n}/100)×{scoreFull ?? "score"}{" "}
+                                  (ไม่หักข้อผิด)
+                                  <br />={" "}
+                                  {valid ? correctPortion.toFixed(1) : "—"}
+                                </>
+                              )
                             ) : (
                               <>
-                                ({entry.n}/100)×{scoreFull ?? "score"}{" "}
-                                (ไม่หักข้อผิด)
-                                <br />={" "}
-                                {valid ? correctPortion.toFixed(1) : "—"}
+                                ถูก {entry.n}% − ผิด {100 - entry.n}% = สุทธิ{" "}
+                                {net}%
+                                <br />
+                                {multiplier}×({net}/100)×{scoreFull ?? "score"}
+                                <br />= {valid ? finalScore.toFixed(1) : "—"}
                               </>
                             )}
                           </div>
@@ -893,6 +1161,15 @@ function ScoreEntryAndLog({
                                 fmtScore(finalScore)
                               : "—"}
                           </span>
+                          {wasClamped && (
+                            <div
+                              className="text-[9px] mt-0.5"
+                              style={{ color: "#f59e0b" }}
+                              title="คะแนนติดลบถูกปรับเป็น 0 ตามที่ติ๊กไว้"
+                            >
+                              ⚠ ปรับจากติดลบ
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -941,12 +1218,66 @@ function ScoreEntryAndLog({
                 <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                   ⚠ โหมดนี้บันทึกคะแนนตามตัวเลขที่กรอกโดยตรง ไม่ผ่านสูตร
                   โบนัส/N% ใดๆ ทั้งสิ้น ใช้เมื่อกติกาต้องเปลี่ยนกะทันหันหน้างาน
-                  — ใช้หมวด/ข้อที่เลือกไว้ด้านบน (① ②)
+                  — เลือกหมวด/ข้อของตัวเองด้านล่าง แยกจากฟอร์มปกติด้านบน
                 </p>
 
-                {!selectedCategory || !selectedQuestion ? (
+                {/* selector หมวด/ข้อของตัวเอง — แยกจากฟอร์มปกติโดยเจตนา */}
+                <div className="flex gap-4 flex-wrap">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+                      หมวด
+                    </label>
+                    <select
+                      value={rawCategory?.id ?? ""}
+                      onChange={(e) => {
+                        const cat =
+                          categories.find(
+                            (c) => c.id === Number(e.target.value),
+                          ) ?? null;
+                        setRawCategory(cat);
+                      }}
+                      className="rounded-lg px-3 py-1.5 text-[12px] outline-none border border-black/[0.08] focus:border-black/20 min-w-36"
+                    >
+                      <option value="">— เลือกหมวด —</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+                      ข้อ
+                    </label>
+                    <select
+                      value={rawQuestion?.id ?? ""}
+                      onChange={(e) => {
+                        const q =
+                          rawCategory?.questions.find(
+                            (qq) => qq.id === Number(e.target.value),
+                          ) ?? null;
+                        setRawQuestion(q ?? null);
+                      }}
+                      disabled={!rawCategory}
+                      className="rounded-lg px-3 py-1.5 text-[12px] outline-none border border-black/[0.08] focus:border-black/20 min-w-28 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <option value="">— เลือกข้อ —</option>
+                      {(rawCategory?.questions ?? [])
+                        .sort((a, b) => a.number - b.number)
+                        .map((q) => (
+                          <option key={q.id} value={q.id}>
+                            ข้อ {q.number}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+
+                {!rawCategory || !rawQuestion ? (
                   <p className="text-[11px] text-black/30 italic">
-                    เลือกหมวดและข้อด้านบนก่อน
+                    เลือกหมวดและข้อก่อน
                   </p>
                 ) : (
                   <>
@@ -1024,6 +1355,59 @@ function ScoreEntryAndLog({
             )}
           </div>
         </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {enableModeB ? (
+            <>
+              <div className="flex gap-1.5 p-1 bg-black/[0.04] rounded-lg max-w-sm">
+                <button
+                  onClick={() => setScoringMode("A")}
+                  className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all"
+                  style={{
+                    background: scoringMode === "A" ? "#fff" : "transparent",
+                    color: scoringMode === "A" ? "#000" : "rgba(0,0,0,0.4)",
+                    boxShadow:
+                      scoringMode === "A"
+                        ? "0 1px 2px rgba(0,0,0,0.08)"
+                        : "none",
+                  }}
+                >
+                  กติกา A · % ตอบถูก
+                </button>
+                <button
+                  onClick={() => setScoringMode("B")}
+                  className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all"
+                  style={{
+                    background: scoringMode === "B" ? "#fff" : "transparent",
+                    color: scoringMode === "B" ? "#000" : "rgba(0,0,0,0.4)",
+                    boxShadow:
+                      scoringMode === "B"
+                        ? "0 1px 2px rgba(0,0,0,0.08)"
+                        : "none",
+                  }}
+                >
+                  กติกา B · % สุทธิ
+                </button>
+              </div>
+              <button
+                onClick={toggleEnableModeB}
+                className="text-[10px] text-black/30 hover:text-red-500 underline whitespace-nowrap"
+                title="ซ่อนกติกา B ทั้งฟอร์มเพิ่มคะแนนและ Edit Modal"
+              >
+                <div className="text-red-700 text-9xl">กดทำไม</div>
+                ปิดกติกา B
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={toggleEnableModeB}
+              className="text-[11px] text-black/35 hover:text-black/60 underline"
+              // disabled
+            >
+              {/* + เปิดใช้กติกา B (ทดลอง) */}
+              ห้ามกดปุ่มนี้
+            </button>
+          )}
+        </div>
       </section>
 
       {/* ── Event Log ── */}
@@ -1034,7 +1418,9 @@ function ScoreEntryAndLog({
               <Clock className="w-4 h-4" style={{ color: ORANGE }} />
               Score Event Log
             </h1>
-            <p className="text-black/35 text-sm mt-0.5">กดลบเพื่อ Undo · กดดินสอเพื่อแก้ไข</p>
+            <p className="text-black/35 text-sm mt-0.5">
+              กดลบเพื่อ Undo · กดดินสอเพื่อแก้ไข
+            </p>
           </div>
           <button
             onClick={refreshEvents}
@@ -1154,11 +1540,15 @@ function ScoreEntryAndLog({
               <table className="w-full text-[12px]">
                 <thead className="sticky top-0 z-10 bg-white">
                   <tr className="text-[10px] uppercase tracking-[0.15em] text-black/25 border-b border-black/[0.06]">
-                    <th className="text-left py-3 pl-5 pr-3 font-medium">เวลา</th>
+                    <th className="text-left py-3 pl-5 pr-3 font-medium">
+                      เวลา
+                    </th>
                     <th className="text-left py-3 pr-3 font-medium">ทีม</th>
                     <th className="text-left py-3 pr-3 font-medium">หมวด</th>
                     <th className="text-left py-3 pr-3 font-medium">ข้อ</th>
-                    <th className="text-left py-3 pr-3 font-medium">หมายเหตุ</th>
+                    <th className="text-left py-3 pr-3 font-medium">
+                      หมายเหตุ
+                    </th>
                     <th className="text-right py-3 pr-3 font-medium">คะแนน</th>
                     <th className="py-3 pr-5" />
                   </tr>
@@ -1197,7 +1587,7 @@ function ScoreEntryAndLog({
                         ข้อ {event.question_number}
                       </td>
                       <td
-                        className="py-3 pr-3 text-black/30 italic max-w-[240px] truncate"
+                        className="py-3 pr-3 text-black/30 italic max-w-[240px]"
                         title={event.note ?? ""}
                       >
                         {event.note ?? "—"}
@@ -1292,13 +1682,18 @@ function ScoreEntryAndLog({
                     </td>
                   </tr>
                   <tr className="border-b border-black/[0.04]">
-                    <td className="py-2 pl-3.5 pr-2 text-black/35">หมวด / ข้อ</td>
+                    <td className="py-2 pl-3.5 pr-2 text-black/35">
+                      หมวด / ข้อ
+                    </td>
                     <td className="py-2 pr-3.5 text-black/70">
-                      {editingEvent.category_name} · ข้อ {editingEvent.question_number}
+                      {editingEvent.category_name} · ข้อ{" "}
+                      {editingEvent.question_number}
                     </td>
                   </tr>
                   <tr className="border-b border-black/[0.04]">
-                    <td className="py-2 pl-3.5 pr-2 text-black/35">คะแนนที่บันทึก</td>
+                    <td className="py-2 pl-3.5 pr-2 text-black/35">
+                      คะแนนที่บันทึก
+                    </td>
                     <td className="py-2 pr-3.5">
                       <span
                         className="font-medium tabular-nums"
@@ -1312,19 +1707,25 @@ function ScoreEntryAndLog({
                     </td>
                   </tr>
                   <tr className="border-b border-black/[0.04]">
-                    <td className="py-2 pl-3.5 pr-2 text-black/35 align-top">หมายเหตุ</td>
+                    <td className="py-2 pl-3.5 pr-2 text-black/35 align-top">
+                      หมายเหตุ
+                    </td>
                     <td className="py-2 pr-3.5 text-black/60">
                       {editingEvent.note ?? "—"}
                     </td>
                   </tr>
                   <tr className="border-b border-black/[0.04]">
-                    <td className="py-2 pl-3.5 pr-2 text-black/35">เวลาที่บันทึก</td>
+                    <td className="py-2 pl-3.5 pr-2 text-black/35">
+                      เวลาที่บันทึก
+                    </td>
                     <td className="py-2 pr-3.5 text-black/50 tabular-nums">
                       {formatTime(editingEvent.created_at)}
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-2 pl-3.5 pr-2 text-black/35">record id</td>
+                    <td className="py-2 pl-3.5 pr-2 text-black/35">
+                      record id
+                    </td>
                     <td className="py-2 pr-3.5 font-mono text-[10px] text-black/35">
                       {editingEvent.id}
                     </td>
@@ -1335,122 +1736,311 @@ function ScoreEntryAndLog({
 
             {editParseFailed && (
               <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                ⚠ อ่านค่า N% / โบนัส จากบันทึกเดิมไม่ได้ (อาจเป็นรายการที่กรอกแบบ
-                manual override) กรุณากรอกค่าใหม่ทั้งหมด
+                ⚠ อ่านค่า N% / โบนัส จากบันทึกเดิมไม่ได้
+                (อาจเป็นรายการที่กรอกแบบ manual override) เริ่มที่โหมด
+                &quot;กรอกเอง&quot; ให้แล้ว
               </p>
             )}
 
-            {/* ── ค่าใหม่ที่จะบันทึก — เรียงลำดับและแสดงผลแบบเดียวกับฟอร์มเพิ่มคะแนน ── */}
-            <div className="space-y-3">
-              <div className="text-[10px] uppercase tracking-[0.15em] text-black/35 font-medium">
-                ค่าใหม่ที่จะบันทึกแทน
-              </div>
+            {/* ── สลับโหมด: คำนวณตามสูตร vs กรอกคะแนนเอง ── */}
+            <div className="flex gap-1.5 p-1 bg-black/[0.04] rounded-lg">
+              <button
+                onClick={() => setEditMode("formula")}
+                className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all"
+                style={{
+                  background: editMode === "formula" ? "#fff" : "transparent",
+                  color: editMode === "formula" ? "#000" : "rgba(0,0,0,0.4)",
+                  boxShadow:
+                    editMode === "formula"
+                      ? "0 1px 2px rgba(0,0,0,0.08)"
+                      : "none",
+                }}
+              >
+                คำนวณตามสูตร
+              </button>
+              <button
+                onClick={() => setEditMode("manual")}
+                className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all"
+                style={{
+                  background: editMode === "manual" ? "#fff" : "transparent",
+                  color: editMode === "manual" ? "#7c3aed" : "rgba(0,0,0,0.4)",
+                  boxShadow:
+                    editMode === "manual"
+                      ? "0 1px 2px rgba(0,0,0,0.08)"
+                      : "none",
+                }}
+              >
+                ⚠ กรอกเอง
+              </button>
+            </div>
 
-              {/* ③ คะแนนเต็ม (ลำดับเดียวกับฟอร์มปกติ) */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                  คะแนนเต็มของข้อนี้
-                </label>
-                <input
-                  type="number"
-                  value={editFull ?? ""}
-                  onChange={(e) =>
-                    setEditFull(
-                      e.target.value === "" ? null : Number(e.target.value),
-                    )
-                  }
-                  onWheel={(e) => e.currentTarget.blur()}
-                  className="w-full rounded-lg px-3 py-2 text-xs outline-none border border-black/[0.08] focus:border-black/20"
-                />
-              </div>
+            {editMode === "formula" ? (
+              /* ── ค่าใหม่ที่จะบันทึก — เรียงลำดับและแสดงผลแบบเดียวกับฟอร์มเพิ่มคะแนน ── */
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] uppercase tracking-[0.15em] text-black/35 font-medium">
+                    ค่าใหม่ที่จะบันทึกแทน
+                  </div>
+                  {/* ★ สลับกติกา A/B — แสดงเฉพาะตอนเปิดใช้กติกา B ไว้เท่านั้น */}
+                  {enableModeB && (
+                    <div className="flex gap-1 p-0.5 bg-black/[0.05] rounded-md">
+                      <button
+                        onClick={() => setEditScoringMode("A")}
+                        className="px-2.5 py-1 rounded text-[10px] font-medium transition-all"
+                        style={{
+                          background:
+                            editScoringMode === "A" ? "#fff" : "transparent",
+                          color:
+                            editScoringMode === "A"
+                              ? "#000"
+                              : "rgba(0,0,0,0.4)",
+                          boxShadow:
+                            editScoringMode === "A"
+                              ? "0 1px 2px rgba(0,0,0,0.08)"
+                              : "none",
+                        }}
+                      >
+                        กติกา A
+                      </button>
+                      <button
+                        onClick={() => setEditScoringMode("B")}
+                        className="px-2.5 py-1 rounded text-[10px] font-medium transition-all"
+                        style={{
+                          background:
+                            editScoringMode === "B" ? "#fff" : "transparent",
+                          color:
+                            editScoringMode === "B"
+                              ? "#000"
+                              : "rgba(0,0,0,0.4)",
+                          boxShadow:
+                            editScoringMode === "B"
+                              ? "0 1px 2px rgba(0,0,0,0.08)"
+                              : "none",
+                        }}
+                      >
+                        กติกา B
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              {/* ④ โบนัส + N% (ลำดับ/สไตล์เดียวกับคอลัมน์ในตารางฟอร์มปกติ) */}
-              <div className="flex items-end gap-3">
+                {/* ③ คะแนนเต็ม (ลำดับเดียวกับฟอร์มปกติ) */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                    โบนัส x2
-                  </label>
-                  <button
-                    onClick={() => setEditBonus((v) => !v)}
-                    className="w-9 h-9 rounded-lg border-2 inline-flex items-center justify-center"
-                    style={{
-                      borderColor: editBonus ? ORANGE : "rgba(0,0,0,0.15)",
-                      background: editBonus ? ORANGE : "transparent",
-                    }}
-                  >
-                    {editBonus && (
-                      <span className="text-white text-xs leading-none">✓</span>
-                    )}
-                  </button>
-                </div>
-                <div className="space-y-1.5 flex-1">
-                  <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
-                    ตอบถูก N (%)
+                    คะแนนเต็มของข้อนี้
                   </label>
                   <input
                     type="number"
-                    min={0}
-                    max={100}
-                    value={editN}
+                    value={editFull ?? ""}
                     onChange={(e) =>
-                      setEditN(
-                        e.target.value === "" ? 0 : Number(e.target.value),
+                      setEditFull(
+                        e.target.value === "" ? null : Number(e.target.value),
                       )
                     }
                     onWheel={(e) => e.currentTarget.blur()}
                     className="w-full rounded-lg px-3 py-2 text-xs outline-none border border-black/[0.08] focus:border-black/20"
                   />
                 </div>
-              </div>
 
-              {/* สูตรคำนวณ — สไตล์กล่องม่วงเดียวกับคอลัมน์ "สูตรคำนวณ" ในตารางปกติ */}
-              {editFull != null && (
-                <div
-                  className="rounded-md px-3 py-2 text-[11px] leading-snug"
-                  style={{
-                    background: "rgba(147,51,234,0.04)",
-                    border: "1px solid rgba(147,51,234,0.15)",
-                    color: "rgba(88,28,135,0.75)",
-                  }}
-                >
-                  {editBonus ? (
-                    <>
-                      2×({editN}/100)×{editFull} − (100−{editN})/100×{editFull}
-                      <br />
-                      = {computeScore(editBonus, editN, editFull).correctPortion.toFixed(1)} −{" "}
-                      {computeScore(editBonus, editN, editFull).incorrectPortion.toFixed(1)}
-                    </>
-                  ) : (
-                    <>
-                      ({editN}/100)×{editFull} (ไม่หักข้อผิด)
-                      <br />
-                      = {computeScore(editBonus, editN, editFull).correctPortion.toFixed(1)}
-                    </>
-                  )}
+                {/* ④ โบนัส + N% (ลำดับ/สไตล์เดียวกับคอลัมน์ในตารางฟอร์มปกติ) */}
+                <div className="flex items-end gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+                      โบนัส x2
+                    </label>
+                    <button
+                      onClick={() => setEditBonus((v) => !v)}
+                      className="w-9 h-9 rounded-lg border-2 inline-flex items-center justify-center"
+                      style={{
+                        borderColor: editBonus ? ORANGE : "rgba(0,0,0,0.15)",
+                        background: editBonus ? ORANGE : "transparent",
+                      }}
+                    >
+                      {editBonus && (
+                        <span className="text-white text-xs leading-none">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                  <div className="space-y-1.5 flex-1">
+                    <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+                      {editScoringMode === "A" ? "ตอบถูก N (%)" : "N (%)"}
+                    </label>
+                    <input
+                      type="number"
+                      value={editN}
+                      onChange={(e) =>
+                        setEditN(
+                          e.target.value === "" ? 0 : Number(e.target.value),
+                        )
+                      }
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="w-full rounded-lg px-3 py-2 text-xs outline-none border border-black/[0.08] focus:border-black/20"
+                    />
+                  </div>
                 </div>
-              )}
 
-              {/* คะแนนที่ได้ — ตำแหน่งเดียวกับคอลัมน์ "คะแนนได้" ท้ายตารางปกติ */}
-              {editFull != null && (
+                {/* ★ ไม่นับคะแนนติดลบ — เหมือนฟอร์มเพิ่มคะแนนปกติ แต่แยกอิสระต่อการแก้ไขนี้ */}
+                <button
+                  onClick={() => setEditClampNegative((v) => !v)}
+                  className="flex items-center gap-2 text-xs w-fit"
+                >
+                  <span
+                    className="w-4 h-4 rounded-[4px] border-2 inline-flex items-center justify-center shrink-0"
+                    style={{
+                      borderColor: editClampNegative
+                        ? "#f59e0b"
+                        : "rgba(0,0,0,0.2)",
+                      background: editClampNegative ? "#f59e0b" : "transparent",
+                    }}
+                  >
+                    {editClampNegative && (
+                      <span className="text-white text-[9px] leading-none">
+                        ✓
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-black/60">
+                    ไม่นับคะแนนติดลบ — ถ้าคำนวณแล้วติดลบให้เป็น 0 แทน
+                  </span>
+                </button>
+
+                {/* สูตรคำนวณ — สไตล์กล่องม่วงเดียวกับคอลัมน์ "สูตรคำนวณ" ในตารางปกติ */}
+                {editFull != null && (
+                  <div
+                    className="rounded-md px-3 py-2 text-[11px] leading-snug"
+                    style={{
+                      background: "rgba(147,51,234,0.04)",
+                      border: "1px solid rgba(147,51,234,0.15)",
+                      color: "rgba(88,28,135,0.75)",
+                    }}
+                  >
+                    {editScoringMode === "A" ? (
+                      editBonus ? (
+                        <>
+                          2×({editN}/100)×{editFull} − (100−{editN})/100×
+                          {editFull}
+                          <br />={" "}
+                          {computeScoreA(
+                            editBonus,
+                            editN,
+                            editFull,
+                          ).correctPortion.toFixed(1)}{" "}
+                          −{" "}
+                          {computeScoreA(
+                            editBonus,
+                            editN,
+                            editFull,
+                          ).incorrectPortion.toFixed(1)}
+                        </>
+                      ) : (
+                        <>
+                          ({editN}/100)×{editFull} (ไม่หักข้อผิด)
+                          <br />={" "}
+                          {computeScoreA(
+                            editBonus,
+                            editN,
+                            editFull,
+                          ).correctPortion.toFixed(1)}
+                        </>
+                      )
+                    ) : (
+                      <>
+                        ถูก {editN}% − ผิด {100 - editN}% = สุทธิ{" "}
+                        {computeScoreB(editBonus, editN, editFull).net}%
+                        <br />
+                        {editBonus ? 2 : 1}×(
+                        {computeScoreB(editBonus, editN, editFull).net}/100)×
+                        {editFull}
+                        <br />={" "}
+                        {computeScoreB(
+                          editBonus,
+                          editN,
+                          editFull,
+                        ).finalScore.toFixed(1)}
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* คะแนนที่ได้ — ตำแหน่งเดียวกับคอลัมน์ "คะแนนได้" ท้ายตารางปกติ */}
+                {editFull != null &&
+                  (() => {
+                    const raw = computeScoreByMode(
+                      editScoringMode,
+                      editBonus,
+                      editN,
+                      editFull,
+                    ).finalScore;
+                    const wasClamped = editClampNegative && raw < 0;
+                    const finalPreview = wasClamped ? 0 : raw;
+                    return (
+                      <div className="flex items-center justify-between rounded-md px-3 py-2.5 bg-black/[0.02]">
+                        <span className="text-[11px] text-black/40">
+                          คะแนนที่จะได้
+                        </span>
+                        <div className="text-right">
+                          <span
+                            className="font-medium tabular-nums text-sm"
+                            style={{
+                              color: finalPreview >= 0 ? "#1a7a4c" : NEGATIVE,
+                            }}
+                          >
+                            {finalPreview > 0 ? "+" : ""}
+                            {fmtScore(finalPreview)}
+                          </span>
+                          {wasClamped && (
+                            <div
+                              className="text-[9px]"
+                              style={{ color: "#f59e0b" }}
+                            >
+                              ⚠ ปรับจากติดลบ ({fmtScore(raw)})
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+              </div>
+            ) : (
+              /* ── โหมดกรอกคะแนนเอง — ไม่ผ่านสูตร กรอกค่าตรงเลย ── */
+              <div className="space-y-3">
+                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                  ⚠ โหมดนี้บันทึกคะแนนตามตัวเลขที่กรอกโดยตรง ไม่ผ่านสูตรคำนวณใดๆ
+                </p>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+                    คะแนนใหม่ (กรอกตรง)
+                  </label>
+                  <input
+                    type="number"
+                    value={editManualValue}
+                    onChange={(e) =>
+                      setEditManualValue(
+                        e.target.value === "" ? 0 : Number(e.target.value),
+                      )
+                    }
+                    onWheel={(e) => e.currentTarget.blur()}
+                    className="w-full rounded-lg px-3 py-2 text-sm outline-none border border-black/[0.08] focus:border-black/20"
+                  />
+                </div>
                 <div className="flex items-center justify-between rounded-md px-3 py-2.5 bg-black/[0.02]">
-                  <span className="text-[11px] text-black/40">คะแนนที่จะได้</span>
+                  <span className="text-[11px] text-black/40">
+                    คะแนนที่จะได้
+                  </span>
                   <span
                     className="font-medium tabular-nums text-sm"
                     style={{
-                      color:
-                        computeScore(editBonus, editN, editFull).finalScore >= 0
-                          ? "#1a7a4c"
-                          : NEGATIVE,
+                      color: editManualValue >= 0 ? "#1a7a4c" : NEGATIVE,
                     }}
                   >
-                    {computeScore(editBonus, editN, editFull).finalScore > 0
-                      ? "+"
-                      : ""}
-                    {fmtScore(computeScore(editBonus, editN, editFull).finalScore)}
+                    {editManualValue > 0 ? "+" : ""}
+                    {fmtScore(editManualValue)}
                   </span>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="flex gap-2 pt-2">
               <button
@@ -1461,9 +2051,13 @@ function ScoreEntryAndLog({
               </button>
               <button
                 onClick={handleEditSave}
-                disabled={editFull == null || editSubmitting}
+                disabled={
+                  (editMode === "formula" && editFull == null) || editSubmitting
+                }
                 className="flex-1 py-2.5 rounded-lg text-xs font-medium text-white disabled:opacity-40"
-                style={{ background: "#1a7a4c" }}
+                style={{
+                  background: editMode === "manual" ? "#7c3aed" : "#1a7a4c",
+                }}
               >
                 {editSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
               </button>
@@ -1498,8 +2092,8 @@ function ScoreEntryAndLog({
                     : "ยืนยันการบันทึกลงฐานข้อมูล"}
                 </h3>
                 <p className="text-xs text-black/40 mt-0.5">
-                  {pendingSave.categoryName} · ข้อ {pendingSave.questionNumber} —
-                  จะสร้าง {pendingSave.rows.length} record ใน{" "}
+                  {pendingSave.categoryName} · ข้อ {pendingSave.questionNumber}{" "}
+                  — จะสร้าง {pendingSave.rows.length} record ใน{" "}
                   <span className="font-mono">score_events</span>
                 </p>
               </div>
@@ -1515,9 +2109,15 @@ function ScoreEntryAndLog({
               <table className="w-full text-[12px]">
                 <thead className="sticky top-0 bg-white">
                   <tr className="text-[10px] uppercase tracking-[0.12em] text-black/30 border-b border-black/[0.06]">
-                    <th className="text-left py-2.5 pl-6 pr-3 font-medium">ทีม</th>
-                    <th className="text-right py-2.5 pr-3 font-medium">คะแนน</th>
-                    <th className="text-left py-2.5 pr-6 font-medium">หมายเหตุ</th>
+                    <th className="text-left py-2.5 pl-6 pr-3 font-medium">
+                      ทีม
+                    </th>
+                    <th className="text-right py-2.5 pr-3 font-medium">
+                      คะแนน
+                    </th>
+                    <th className="text-left py-2.5 pr-6 font-medium">
+                      หมายเหตุ
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1580,7 +2180,8 @@ function ScoreEntryAndLog({
                 disabled={submitting}
                 className="flex-1 py-2.5 rounded-lg text-xs font-medium text-white disabled:opacity-40"
                 style={{
-                  background: pendingSave.kind === "raw" ? "#7c3aed" : "#1a7a4c",
+                  background:
+                    pendingSave.kind === "raw" ? "#7c3aed" : "#1a7a4c",
                 }}
               >
                 {submitting ? "กำลังบันทึก..." : "✓ ยืนยันบันทึก"}
@@ -1614,6 +2215,12 @@ export default function AdminPanel() {
 
   const [activeSection, setActiveSection] = useState("fleet-management");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // ส่งต่อคำสั่ง "jump มาดูคะแนนข้อนี้" จาก ControlPage ไปยัง ScoreEntryAndLog
+  const [jumpTarget, setJumpTarget] = useState<{
+    categoryId: number;
+    questionNumber: number;
+  } | null>(null);
 
   const refresh = useCallback(async () => {
     const fresh = await loadData();
@@ -1890,7 +2497,11 @@ export default function AdminPanel() {
               </h1>
             </div>
             <div className="border border-black/[0.07] rounded-xl p-6">
-              <ControlPage />
+              <ControlPage
+                onJumpToScore={(categoryId, questionNumber) =>
+                  setJumpTarget({ categoryId, questionNumber })
+                }
+              />
             </div>
           </section>
           {/* Timer */}
@@ -1902,8 +2513,13 @@ export default function AdminPanel() {
               </h1>
             </div>
             <div className="border border-black/[0.07] rounded-xl p-6">
-              <Link href="https://keepthescore.com/board/jbmyjghsmkjbe">Timer</Link>
-              <iframe src="https://keepthescore.com/board/jbmyjghsmkjbe" className="w-full h-96"/>
+              <Link href="https://keepthescore.com/board/jbmyjghsmkjbe">
+                Timer
+              </Link>
+              <iframe
+                src="https://keepthescore.com/board/jbmyjghsmkjbe"
+                className="w-full h-96"
+              />
             </div>
           </section>
 
@@ -1925,6 +2541,8 @@ export default function AdminPanel() {
             teams={data.teams}
             onRefreshScores={refresh}
             refreshVersion={refreshVersion}
+            jumpTarget={jumpTarget}
+            onJumpHandled={() => setJumpTarget(null)}
           />
 
           {/* Score Audit Matrix */}

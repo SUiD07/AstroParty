@@ -219,98 +219,96 @@ function launchConfetti() {
 // ---------------------------------------------------------------------------
 // Cosmos Background
 // ---------------------------------------------------------------------------
-function CosmosBackground() {
-  const [stars, setStars] = useState<
-    {
-      id: number;
-      left: number;
-      top: number;
-      size: number;
-      dur: number;
-      dl: number;
-    }[]
-  >([]);
+// function CosmosBackground() {
+//   const [stars, setStars] = useState<
+//     {
+//       id: number;
+//       left: number;
+//       top: number;
+//       size: number;
+//       dur: number;
+//       dl: number;
+//     }[]
+//   >([]);
 
-  useEffect(() => {
-    setStars(
-      Array.from({ length: 130 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        top: Math.random() * 100,
-        size: 0.8 + Math.random() * 1.8,
-        dur: 2 + Math.random() * 5,
-        dl: Math.random() * 4,
-      })),
-    );
-  }, []);
+//   useEffect(() => {
+//     setStars(
+//       Array.from({ length: 130 }, (_, i) => ({
+//         id: i,
+//         left: Math.random() * 100,
+//         top: Math.random() * 100,
+//         size: 0.8 + Math.random() * 1.8,
+//         dur: 2 + Math.random() * 5,
+//         dl: Math.random() * 4,
+//       })),
+//     );
+//   }, []);
 
-  return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        pointerEvents: "none",
-        overflow: "hidden",
-      }}
-    >
-      {/* Nebula layers */}
-      <div
-        className="ap-nebula"
-        style={{
-          width: 900,
-          height: 500,
-          top: -150,
-          left: -250,
-          background:
-            "radial-gradient(ellipse, rgba(83,143,238,0.13), transparent 70%)",
-          animation: "ndrift 22s ease-in-out infinite alternate",
-        }}
-      />
-      <div
-        className="ap-nebula"
-        style={{
-          width: 600,
-          height: 600,
-          bottom: -80,
-          right: -120,
-          background:
-            "radial-gradient(ellipse, rgba(237,130,64,0.09), transparent 70%)",
-          animation: "ndrift 28s ease-in-out infinite alternate-reverse",
-        }}
-      />
-      <div
-        className="ap-nebula"
-        style={{
-          width: 400,
-          height: 300,
-          top: "38%",
-          left: "40%",
-          background:
-            "radial-gradient(ellipse, rgba(252,212,125,0.05), transparent 70%)",
-          animation: "ndrift 16s ease-in-out infinite alternate",
-        }}
-      />
-      {/* Stars */}
-      {stars.map((s) => (
-        <div
-          key={s.id}
-          className="ap-star"
-          style={
-            {
-              left: `${s.left}%`,
-              top: `${s.top}%`,
-              width: s.size,
-              height: s.size,
-              opacity: 0.3 + Math.random() * 0.5,
-              "--dur": `${s.dur}s`,
-              "--dl": `${s.dl}s`,
-            } as React.CSSProperties
-          }
-        />
-      ))}
-    </div>
-  );
-}
+//   return (
+//     <div
+//       style={{
+//         position: "absolute",
+//         inset: 0,
+//         pointerEvents: "none",
+//         overflow: "hidden",
+//       }}
+//     >
+//       <div
+//         className="ap-nebula"
+//         style={{
+//           width: 900,
+//           height: 500,
+//           top: -150,
+//           left: -250,
+//           background:
+//             "radial-gradient(ellipse, rgba(83,143,238,0.13), transparent 70%)",
+//           animation: "ndrift 22s ease-in-out infinite alternate",
+//         }}
+//       />
+//       <div
+//         className="ap-nebula"
+//         style={{
+//           width: 600,
+//           height: 600,
+//           bottom: -80,
+//           right: -120,
+//           background:
+//             "radial-gradient(ellipse, rgba(237,130,64,0.09), transparent 70%)",
+//           animation: "ndrift 28s ease-in-out infinite alternate-reverse",
+//         }}
+//       />
+//       <div
+//         className="ap-nebula"
+//         style={{
+//           width: 400,
+//           height: 300,
+//           top: "38%",
+//           left: "40%",
+//           background:
+//             "radial-gradient(ellipse, rgba(252,212,125,0.05), transparent 70%)",
+//           animation: "ndrift 16s ease-in-out infinite alternate",
+//         }}
+//       />
+//       {stars.map((s) => (
+//         <div
+//           key={s.id}
+//           className="ap-star"
+//           style={
+//             {
+//               left: `${s.left}%`,
+//               top: `${s.top}%`,
+//               width: s.size,
+//               height: s.size,
+//               opacity: 0.3 + Math.random() * 0.5,
+//               "--dur": `${s.dur}s`,
+//               "--dl": `${s.dl}s`,
+//             } as React.CSSProperties
+//           }
+//         />
+//       ))}
+//     </div>
+//   );
+// }
 
 // ---------------------------------------------------------------------------
 // Shared UI atoms
@@ -395,7 +393,6 @@ function SlideHeader({
             ...fontDisplay,
             fontSize: "clamp(3rem,2.2vw,1.7rem)",
             fontWeight: 900,
-            // color: C.blueLight,
             color: "#fff",
             letterSpacing: "0.10em",
             textTransform: "uppercase",
@@ -403,17 +400,6 @@ function SlideHeader({
         >
           {title}
         </h2>
-        {/* <div
-          style={{
-            position: "absolute",
-            bottom: -5,
-            left: 0,
-            width: 44,
-            height: 2,
-            borderRadius: 2,
-            background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
-          }}
-        /> */}
       </div>
       {right && (
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -441,10 +427,6 @@ function JeopardyCell({
   onClick: () => void;
 }) {
   const answered = events.length > 0;
-  // const label =
-  //   question.points != null
-  //     ? `+${question.points}`
-  //     : `+${question.number * 100}`;
   const MAX_VISIBLE = 9;
   const visibleEvents = events.slice(0, MAX_VISIBLE);
   const hiddenCount = Math.max(0, events.length - MAX_VISIBLE);
@@ -455,29 +437,6 @@ function JeopardyCell({
         e.stopPropagation();
         onClick();
       }}
-            // style={{
-      //   position: "relative",
-      //   minHeight: 62,
-      //   padding: "8px 6px",
-      //   borderRadius: 8,
-      //   // border: answered
-      //   //   ? `1px solid rgba(26,26,26,0.22)`
-      //   //   : `1px solid rgba(237,130,64,0.25)`,
-      //   border: `1px solid rgba(237,130,64,0.25)`,
-      //   // background: answered
-      //   //   ? "rgba(7,17,30,0.88)"
-      //   //   : `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
-      //   background: `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`,
-      //   cursor: "pointer",
-      //   display: "flex",
-      //   flexDirection: "column",
-      //   alignItems: "center",
-      //   justifyContent: "center",
-      //   gap: 4,
-      //   transition: "all 0.2s",
-      //   // opacity: answered ? 0.62 : 1,
-      //   opacity: 1,
-      // }}
       style={{
         position: "relative",
         minHeight: 62,
@@ -504,26 +463,6 @@ function JeopardyCell({
           ? "glowPulse 1.4s ease-in-out infinite"
           : "none",
       }}
-      // onMouseEnter={(e) => {
-      //   const el = e.currentTarget as HTMLDivElement;
-      //   // el.style.boxShadow = answered
-      //   //   ? "none"
-      //   //   : `0 0 18px rgba(237,130,64,0.28)`;
-      //   el.style.boxShadow = `0 0 18px rgba(237,130,64,0.28)`;
-
-      //   // if (!answered) {
-      //   //   el.style.borderColor = `rgba(237,130,64,0.45)`;
-      //   // }
-      //   el.style.borderColor = `rgba(237,130,64,0.45)`;
-      // }}
-      // onMouseLeave={(e) => {
-      //   const el = e.currentTarget as HTMLDivElement;
-      //   el.style.boxShadow = "none";
-      //   // el.style.borderColor = answered
-      //   //   ? "rgba(26,26,26,0.22)"
-      //   //   : "rgba(237,130,64,0.25)";
-      //   el.style.borderColor = "rgba(237,130,64,0.25)";
-      // }}
       onMouseEnter={(e) => {
         const el = e.currentTarget as HTMLDivElement;
         if (answered) {
@@ -567,7 +506,6 @@ function JeopardyCell({
                     padding: "2px 4px",
                     borderRadius: 4,
                     background: `${team.color}1A`,
-                    // borderLeft: `2px solid ${team.color}`,
                     fontSize: 10,
                     fontWeight: 700,
                     color: ev.delta > 0 ? team.color : "#f87171",
@@ -598,8 +536,6 @@ function JeopardyCell({
               +{hiddenCount} more
             </div>
           )}
-
-          {/* answered dot */}
 
           <div
             style={{
@@ -641,6 +577,7 @@ function QuestionModal({
   teams,
   canvaLinks,
   onClose,
+  scrollPulse,
 }: {
   category: Category;
   question: Question;
@@ -648,11 +585,25 @@ function QuestionModal({
   teams: RaceData["teams"];
   canvaLinks: Record<number, string>;
   onClose: () => void;
+  scrollPulse?: number;
 }) {
-  // const label =
-  //   question.points != null
-  //     ? `+${question.points}`
-  //     : `+${question.number * 100}`;
+  // ★ เลื่อนไปจุดคะแนน (ใต้ Canva iframe) เมื่อแอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน"
+  // ใน /control — เทียบค่าเดิมที่เคยเห็นตอน modal นี้ mount กับค่าที่ได้รับใหม่
+  // ถ้าไม่ตรงกัน = มีคำสั่งเลื่อนมาจริง (ไม่ใช่แค่ modal เพิ่ง mount)
+  const scoreSectionRef = useRef<HTMLDivElement>(null);
+  const prevScrollPulseRef = useRef(scrollPulse);
+  useEffect(() => {
+    if (
+      scrollPulse !== undefined &&
+      scrollPulse !== prevScrollPulseRef.current
+    ) {
+      scoreSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      prevScrollPulseRef.current = scrollPulse;
+    }
+  }, [scrollPulse]);
 
   return (
     <div
@@ -675,12 +626,8 @@ function QuestionModal({
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
         style={{
           position: "relative",
-          // background: "rgba(10,20,38,0.97)",
           border: `1px solid ${borderWarm}`,
           borderRadius: 14,
-          // width: 440,
-          // maxWidth: "90vw",
-          // maxHeight: "85vh",
           width: "95%",
           height: "95%",
           maxWidth: "95%",
@@ -691,7 +638,6 @@ function QuestionModal({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ── Sticky header with close button ── */}
         <div
           style={{
             padding: "28px 40px 0",
@@ -756,24 +702,18 @@ function QuestionModal({
               ข้อ {question.number}
             </h3>
             <div
-              // className="fixed bottom-0 left-0 z-50 origin-bottom-left"
               style={{
                 transform: "scale(0.47)",
-                // transformOrigin: "bottom left",
               }}
             >
               <iframe
                 src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
-                // width="500"
-                // height="500"
                 className="pointer-events-auto h-20 w-auto"
-                // frameBorder="0"
               ></iframe>
             </div>
           </div>
         </div>
 
-        {/* ── Scrollable content ── */}
         <div
           style={{
             overflowY: "auto",
@@ -781,7 +721,6 @@ function QuestionModal({
             flex: 1,
           }}
         >
-          {/* Canva iframe */}
           {canvaLinks[question.id] && (
             <div style={{ marginTop: 0 }}>
               <iframe
@@ -797,7 +736,8 @@ function QuestionModal({
               />
             </div>
           )}
-          {/* Events */}
+          {/* ★ marker สำหรับเลื่อนมาจากปุ่ม "เลื่อนให้ผู้ชมดูคะแนน" ในหน้า /control */}
+          <div ref={scoreSectionRef} />
           {events.length === 0 ? (
             <div
               style={{
@@ -988,7 +928,7 @@ function Slide1() {
         />
       </div>
 
-      <div
+      {/* <div
         style={{
           position: "absolute",
           top: "10%",
@@ -1027,9 +967,9 @@ function Slide1() {
             transform: "translate(-50%,-50%) rotateX(70deg)",
           }}
         />
-      </div>
+      </div> */}
 
-      <div
+      {/* <div
         style={{
           position: "absolute",
           bottom: "14%",
@@ -1056,7 +996,7 @@ function Slide1() {
             transform: "translate(-50%,-50%) rotateX(70deg)",
           }}
         />
-      </div>
+      </div> */}
       <div
         style={{
           display: "flex",
@@ -1417,6 +1357,7 @@ interface Slide3Props extends SlideCommonProps {
   activeHighlightId: number | null;
   onCellClick: (cat: Category, q: Question) => void;
   onBackgroundClick: () => void;
+  scrollPulse: number;
 }
 
 function Slide3({
@@ -1431,6 +1372,7 @@ function Slide3({
   activeHighlightId,
   onCellClick,
   onBackgroundClick,
+  scrollPulse,
 }: Slide3Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
@@ -1616,6 +1558,7 @@ function Slide3({
             teams={data.teams}
             canvaLinks={canvaLinks}
             onClose={onCloseModal}
+            scrollPulse={scrollPulse}
           />
         )}
       </AnimatePresence>
@@ -2373,9 +2316,9 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
 
         <div
           style={{
-            background: "rgba(4,12,28,.82)",
-            border: `1px solid rgba(237,130,64,.2)`,
-            borderRadius: 12,
+            // background: "rgba(4,12,28,.82)",
+            // border: `1px solid rgba(237,130,64,.2)`,
+            // borderRadius: 12,
             padding: "20px 24px",
             width: "100%",
             maxHeight: "56vh",
@@ -2386,15 +2329,15 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
           <div
             style={{
               ...orbitron,
-              fontSize: 7,
+              fontSize: 10,
               letterSpacing: ".22em",
-              color: "rgba(255,255,255,.45)",
+              // color: "rgba(255,255,255,.45)",
               marginBottom: 12,
               paddingBottom: 8,
-              borderBottom: `1px solid rgba(237,130,64,.15)`,
+              // borderBottom: `1px solid rgba(237,130,64,.15)`,
             }}
           >
-            🏅 รางวัลชมเชย — {consolationTeams.length} ทีม
+            🏅 รางวัลชมเชย {consolationTeams.length} ทีม
           </div>
 
           {consolationTeams.length === 0 ? (
@@ -2402,7 +2345,7 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
               style={{
                 ...notoTH,
                 fontSize: 12,
-                color: "rgba(255,255,255,.35)",
+                // color: "rgba(255,255,255,.35)",
                 textAlign: "center",
                 padding: "12px 0",
               }}
@@ -2426,7 +2369,7 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
                     padding: "10px 12px",
                     borderRadius: 8,
                     background: "rgba(10,10,10,.6)",
-                    border: `1px solid rgba(255,255,255,.04)`,
+                    // border: `1px solid rgba(255,255,255,.04)`,
                     marginBottom: 7,
                     position: "relative",
                     overflow: "hidden",
@@ -2439,7 +2382,7 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
                       top: 0,
                       bottom: 0,
                       width: 2,
-                      background: team.color,
+                      // background: team.color,
                       opacity: 0.6,
                       borderRadius: "1px 0 0 1px",
                     }}
@@ -2451,7 +2394,7 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
                       fontWeight: 900,
                       width: 22,
                       textAlign: "center",
-                      color: "rgba(255,255,255,.5)",
+                      // color: "rgba(255,255,255,.5)",
                     }}
                   >
                     {rank + 1}
@@ -2462,7 +2405,7 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
                       height: 8,
                       borderRadius: "50%",
                       background: team.color,
-                      boxShadow: `0 0 8px ${team.color}88`,
+                      // boxShadow: `0 0 8px ${team.color}88`,
                       marginLeft: 6,
                     }}
                   />
@@ -2486,12 +2429,12 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
                       ...orbitron,
                       fontSize: 13,
                       fontWeight: 900,
-                      color: "rgba(255,255,255,.6)",
+                      // color: "rgba(255,255,255,.6)",
                     }}
                   >
                     {pos.score}
                     <span style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}>
-                      PTS
+                      คะแนน
                     </span>
                   </span>
                 </div>
@@ -2716,9 +2659,9 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
   );
 }
 
-// =========================================================================
+// ---------------------------------------------------------------------------
 // SLIDE 10 — รางวัลชนะเลิศ
-// =========================================================================
+// ---------------------------------------------------------------------------
 function Slide10({ data, sortedPositions }: AwardSlideProps) {
   // ตอนนี้ Slide10 เป็น component ที่ identity คงที่ (module-level)
   // useEffect นี้จะยิงแค่ตอน "mount จริง" (เช่น navigate เข้าสไลด์นี้ครั้งแรก)
@@ -2877,7 +2820,6 @@ function FooterTicker() {
         right: 0,
         height: 28,
         zIndex: 45,
-        // background: "rgba(7,17,30,.92)",
         borderTop: `1px solid rgba(237,130,64,.12)`,
         overflow: "hidden",
         display: "flex",
@@ -2991,7 +2933,6 @@ function NavBar({
     display: "flex",
     alignItems: "center",
     gap: 6,
-    // background: "rgba(10,20,38,0.90)",
     border: `1px solid ${border}`,
     borderRadius: 28,
     padding: "7px 14px",
@@ -3027,7 +2968,6 @@ function NavBar({
         maxWidth: "calc(100vw - 32px)",
       }}
     >
-      {/* ── STATUS TOGGLE ── */}
       <div style={{ pointerEvents: "all" }}>
         <button
           style={{ ...pillStyle, cursor: "pointer" }}
@@ -3101,10 +3041,8 @@ function NavBar({
         </>
       )}
 
-      {/* ── DIVIDER ── */}
       <div style={{ width: 1, height: 20, background: border }} />
 
-      {/* ── NAV TOGGLE ── */}
       <div style={{ pointerEvents: "all" }}>
         <button
           style={{ ...pillStyle, cursor: "pointer" }}
@@ -3139,7 +3077,6 @@ function NavBar({
             </button>
           </div>
 
-          {/* Dot indicators */}
           <div style={{ ...pillStyle, gap: 7, pointerEvents: "all" }}>
             {Array.from({ length: totalSlides }, (_, i) => (
               <button
@@ -3163,7 +3100,6 @@ function NavBar({
             ))}
           </div>
 
-          {/* Slide jump emoji */}
           <div
             style={{
               ...pillStyle,
@@ -3226,6 +3162,11 @@ export default function ViewerDashboard() {
   const [localHighlightId, setLocalHighlightId] = useState<number | null>(null);
   // admin ชนะเสมอถ้ามีค่า
   const activeHighlightId = adminHighlightId ?? localHighlightId;
+
+  // ★ scrollPulse — เพิ่มค่าขึ้นทุกครั้งที่ตรวจพบว่า scroll_signal จาก DB เปลี่ยน
+  // (แอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน" ใน /control) ส่งลง QuestionModal ให้เลื่อนจอ
+  const [scrollPulse, setScrollPulse] = useState(0);
+  const lastScrollSignalRef = useRef<number | null>(null);
 
   // FIX B: เก็บ categories ล่าสุดไว้ใน ref เพื่อไม่ต้อง resubscribe presentation_state
   // ทุกครั้งที่ categories เปลี่ยน (เช่นตอนแอดมินอัปเดตคะแนน)
@@ -3308,6 +3249,8 @@ export default function ViewerDashboard() {
     loadPresentationState().then((s: PresentationState) => {
       setCurrentSlide(s.current_slide);
       setAdminHighlightId(s.highlighted_question_id);
+      // เก็บค่า scroll_signal เริ่มต้นไว้เฉยๆ ไม่ trigger การเลื่อน (แค่ sync ครั้งแรก)
+      lastScrollSignalRef.current = s.scroll_signal;
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
         if (found) setSelectedCell(found);
@@ -3318,6 +3261,16 @@ export default function ViewerDashboard() {
       setCurrentSlide(s.current_slide);
       setAdminHighlightId(s.highlighted_question_id);
       setLocalHighlightId(null);
+
+      // ★ ถ้า scroll_signal เปลี่ยนจากที่เคยเห็นล่าสุด = แอดมินกดปุ่มเลื่อนมาจริง
+      // (ไม่ใช่แค่ effect นี้เพิ่งรันครั้งแรก) → bump scrollPulse ให้ modal เลื่อนจอ
+      if (
+        lastScrollSignalRef.current !== null &&
+        s.scroll_signal !== lastScrollSignalRef.current
+      ) {
+        setScrollPulse((p) => p + 1);
+      }
+      lastScrollSignalRef.current = s.scroll_signal;
 
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
@@ -3406,6 +3359,7 @@ export default function ViewerDashboard() {
         activeHighlightId={activeHighlightId}
         onCellClick={handleCellClick}
         onBackgroundClick={handleBackgroundClick}
+        scrollPulse={scrollPulse}
       />
     ),
     4: (
@@ -3495,7 +3449,6 @@ export default function ViewerDashboard() {
           />
         </div>
 
-        {/* Slides */}
         <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
           <AnimatePresence mode="wait">
             <motion.div

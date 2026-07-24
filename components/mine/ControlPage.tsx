@@ -3,11 +3,16 @@
 /**
  * หน้า /control — สำหรับแอดมิน/พิธีกร
  * ใช้คุมสไลด์และ highlight/เปิด modal คำถาม jeopardy ให้ทุกจอ /display sync ตาม
- * Sync ทุก instance ของหน้านี้แบบ realtime (เปิดพร้อมกันหลายเครื่อง/หลายคนเห็นตรงกัน)
- * เพิ่มปุ่ม "เคลียร์ไฮไลท์" แยกจากเปิด/ปิด modal
- * ย้าย status bar ขึ้นบนสุด ทำให้เด่นขึ้น (sticky)
- * ปุ่ม highlight/เปิด-ปิด modal/เคลียร์ไฮไลท์ กดได้เฉพาะตอนอยู่สไลด์ 3 เท่านั้น
- * (ปุ่มเลื่อนสไลด์ยังกดได้ตลอดเวลา เพื่อให้แอดมินเลื่อนมาสไลด์ 3 ได้ก่อน)
+ *
+ * ── อัปเดตรอบนี้ ──
+ * - Sync ทุก instance ของหน้านี้แบบ realtime
+ * - ปุ่มเคลียร์ไฮไลท์ + status bar เด่นด้านบน
+ * - ปุ่ม highlight/เปิด-ปิด modal/เคลียร์ไฮไลท์ กดได้เฉพาะตอนอยู่สไลด์ 3
+ * - ★ Jeopardy cell จัดเป็น grid แบบเดียวกับหน้า viewer (คอลัมน์ = หมวด, แถว = เลขข้อ)
+ *   เพื่อให้ตำแหน่งตรงกับที่เห็นบนจอจริง กดง่ายขึ้น
+ * - ★ ปุ่ม "ปิด Modal" กดได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น
+ * - ★ ปุ่ม "↓ ดูคะแนนข้อนี้" โผล่ตอนมีคำถามถูกไฮไลท์อยู่ — เลื่อนหน้า admin
+ *   ไปยัง Score Event Log พร้อม filter ไปที่หมวด/ข้อนั้นให้อัตโนมัติ
  */
 
 import { useEffect, useState } from "react";
@@ -32,18 +37,23 @@ interface Category {
 
 const TOTAL_SLIDES = 10;
 const JEOPARDY_SLIDE = 3;
+const MAX_QUESTIONS_PER_CATEGORY = 6; // ต้องตรงกับ Slide3 ฝั่ง viewer
 
 const ORANGE = "#ED8240";
 
-export default function ControlPage() {
+export default function ControlPage({
+  onJumpToScore,
+}: {
+  onJumpToScore?: (categoryId: number, questionNumber: number) => void;
+}) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [current, setCurrent] = useState<{
     slide: number;
     qId: number | null;
     open: boolean;
-  }>({ slide: 1, qId: null, open: false });
+    scrollSignal: number;
+  }>({ slide: 1, qId: null, open: false, scrollSignal: 0 });
 
-  // โหลดครั้งแรก + subscribe realtime — ทุกคนที่เปิดหน้านี้เห็นสถานะเดียวกันเสมอ
   useEffect(() => {
     loadCategories().then(setCategories);
     loadPresentationState().then((s: PresentationState) =>
@@ -51,6 +61,7 @@ export default function ControlPage() {
         slide: s.current_slide,
         qId: s.highlighted_question_id,
         open: s.modal_open,
+        scrollSignal: s.scroll_signal,
       }),
     );
 
@@ -59,6 +70,7 @@ export default function ControlPage() {
         slide: s.current_slide,
         qId: s.highlighted_question_id,
         open: s.modal_open,
+        scrollSignal: s.scroll_signal,
       });
     });
 
@@ -68,7 +80,6 @@ export default function ControlPage() {
   const isOnJeopardySlide = current.slide === JEOPARDY_SLIDE;
 
   const goSlide = async (n: number) => {
-    // อัปเดต optimistic ไว้ก่อน — ถ้ามาจาก broadcast ของตัวเองจะ sync ค่าเดิมซ้ำ ไม่มีปัญหา
     setCurrent((c) => ({ ...c, slide: n }));
     await updatePresentationState({ current_slide: n });
   };
@@ -92,25 +103,48 @@ export default function ControlPage() {
   };
 
   const openModal = async () => {
-    if (!isOnJeopardySlide || !current.qId) return;
+    if (!isOnJeopardySlide || !current.qId || current.open) return;
     setCurrent((c) => ({ ...c, open: true }));
     await updatePresentationState({ modal_open: true });
   };
 
   const closeModal = async () => {
-    if (!isOnJeopardySlide) return;
+    // FIX: ปิดได้เฉพาะตอนเปิดอยู่จริงเท่านั้น
+    if (!isOnJeopardySlide || !current.open) return;
     setCurrent((c) => ({ ...c, open: false }));
     await updatePresentationState({ modal_open: false });
   };
 
-  const highlightedQuestionLabel = (() => {
+  // ★ ส่งสัญญาณให้ทุกจอ viewer ที่เปิด QuestionModal ค้างอยู่ เลื่อนไปดูจุดคะแนน
+  // ที่อยู่ใต้ Canva iframe — ใช้ได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น
+  // (increment ค่าขึ้นทุกครั้งที่กด เพื่อให้ viewer เทียบค่าเก่า-ใหม่แล้วรู้ว่ามีคำสั่งมาใหม่)
+  const triggerScrollToScore = async () => {
+    if (!isOnJeopardySlide || !current.open) return;
+    const next = current.scrollSignal + 1;
+    setCurrent((c) => ({ ...c, scrollSignal: next }));
+    await updatePresentationState({ scroll_signal: next });
+  };
+
+  // หา category ของคำถามที่ถูกไฮไลท์อยู่ (ใช้ทั้งแสดง label และปุ่ม jump-to-score)
+  const highlightedInfo = (() => {
     if (!current.qId) return null;
     for (const cat of categories) {
       const q = cat.questions?.find((qq) => qq.id === current.qId);
-      if (q) return `${cat.name} · ข้อ ${q.number}`;
+      if (q) return { category: cat, question: q };
     }
-    return `#${current.qId}`;
+    return null;
   })();
+
+  const highlightedQuestionLabel = highlightedInfo
+    ? `${highlightedInfo.category.name} · ข้อ ${highlightedInfo.question.number}`
+    : current.qId
+      ? `#${current.qId}`
+      : null;
+
+  const handleJumpToScore = () => {
+    if (!highlightedInfo || !onJumpToScore) return;
+    onJumpToScore(highlightedInfo.category.id, highlightedInfo.question.number);
+  };
 
   return (
     <div
@@ -155,6 +189,28 @@ export default function ControlPage() {
             value={current.open ? "เปิดอยู่" : "ปิดอยู่"}
             highlight={current.open}
           />
+
+          {/* {highlightedInfo && onJumpToScore && (
+            <button
+              onClick={handleJumpToScore}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 14px",
+                borderRadius: 6,
+                border: "1px solid rgba(52,211,153,0.4)",
+                background: "rgba(52,211,153,0.1)",
+                color: "#34d399",
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ↓ ดูคะแนนข้อนี้
+            </button>
+          )} */}
+
           {!isOnJeopardySlide && (
             <span
               style={{
@@ -206,7 +262,8 @@ export default function ControlPage() {
 
         <h2 style={{ marginBottom: 4 }}>Jeopardy Cells</h2>
         <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 12 }}>
-          ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} เท่านั้น
+          ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} เท่านั้น —
+          จัดเรียงตรงตามตำแหน่งบนจอ viewer
         </p>
 
         <div
@@ -216,37 +273,83 @@ export default function ControlPage() {
             transition: "opacity .2s",
           }}
         >
-          {categories.map((cat) => (
-            <div key={cat.id} style={{ marginBottom: 16 }}>
-              <strong>{cat.name}</strong>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 6,
-                  marginTop: 6,
-                  flexWrap: "wrap",
-                }}
-              >
-                {cat.questions?.map((q) => (
-                  <button
-                    key={q.id}
-                    onClick={() => highlightQuestion(q.id)}
-                    disabled={!isOnJeopardySlide}
-                    style={{
-                      padding: "10px 14px",
-                      borderRadius: 6,
-                      border: "none",
-                      cursor: isOnJeopardySlide ? "pointer" : "not-allowed",
-                      background: current.qId === q.id ? ORANGE : "#333",
-                      color: "#fff",
-                    }}
-                  >
-                    ข้อ {q.number}
-                  </button>
-                ))}
-              </div>
+          {/* ★ Grid เหมือน Slide3 ฝั่ง viewer: คอลัมน์ = หมวด, แถว = เลขข้อ */}
+          {categories.length === 0 ? (
+            <p style={{ fontSize: 12, opacity: 0.4 }}>ยังไม่มีหมวดคำถาม</p>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: `repeat(${categories.length}, minmax(90px, 1fr))`,
+                gap: 6,
+                maxWidth: 720,
+              }}
+            >
+              {/* หัวคอลัมน์ = ชื่อหมวด */}
+              {categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  style={{
+                    padding: "8px 6px",
+                    textAlign: "center",
+                    background: "rgba(237,130,64,0.08)",
+                    border: "1px solid rgba(237,130,64,0.22)",
+                    borderRadius: 6,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    color: "rgba(255,255,255,0.6)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={cat.name}
+                >
+                  {cat.name}
+                </div>
+              ))}
+
+              {/* แถวคำถาม เรียงตามเลขข้อ 1..MAX */}
+              {Array.from({ length: MAX_QUESTIONS_PER_CATEGORY }, (_, qi) =>
+                categories.map((cat) => {
+                  const q = cat.questions?.find((qq) => qq.number === qi + 1);
+                  if (!q) {
+                    return (
+                      <div key={`${cat.id}-${qi}`} style={{ minHeight: 44 }} />
+                    );
+                  }
+                  const isActive = current.qId === q.id;
+                  return (
+                    <button
+                      key={q.id}
+                      onClick={() => highlightQuestion(q.id)}
+                      disabled={!isOnJeopardySlide}
+                      style={{
+                        minHeight: 44,
+                        padding: "8px 6px",
+                        borderRadius: 6,
+                        border: isActive
+                          ? `2px solid ${ORANGE}`
+                          : "1px solid rgba(255,255,255,0.08)",
+                        cursor: isOnJeopardySlide ? "pointer" : "not-allowed",
+                        background: isActive
+                          ? "rgba(237,130,64,0.18)"
+                          : "#1a1a1a",
+                        color: isActive ? ORANGE : "#fff",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        boxShadow: isActive
+                          ? `0 0 10px rgba(237,130,64,.4)`
+                          : "none",
+                      }}
+                    >
+                      ข้อ {q.number}
+                    </button>
+                  );
+                }),
+              )}
             </div>
-          ))}
+          )}
 
           <div
             style={{
@@ -258,37 +361,64 @@ export default function ControlPage() {
           >
             <button
               onClick={openModal}
-              disabled={!isOnJeopardySlide || !current.qId}
+              disabled={!isOnJeopardySlide || !current.qId || current.open}
               style={{
                 padding: "12px 20px",
                 borderRadius: 6,
                 border: "none",
                 cursor:
-                  isOnJeopardySlide && current.qId ? "pointer" : "not-allowed",
+                  isOnJeopardySlide && current.qId && !current.open
+                    ? "pointer"
+                    : "not-allowed",
                 background:
-                  isOnJeopardySlide && current.qId ? "#34d399" : "#333",
+                  isOnJeopardySlide && current.qId && !current.open
+                    ? "#34d399"
+                    : "#333",
                 color: "#fff",
                 fontWeight: 700,
-                opacity: isOnJeopardySlide && current.qId ? 1 : 0.5,
+                opacity:
+                  isOnJeopardySlide && current.qId && !current.open ? 1 : 0.5,
               }}
             >
               เปิด Modal
             </button>
             <button
               onClick={closeModal}
-              disabled={!isOnJeopardySlide}
+              disabled={!isOnJeopardySlide || !current.open}
               style={{
                 padding: "12px 20px",
                 borderRadius: 6,
                 border: "none",
-                cursor: isOnJeopardySlide ? "pointer" : "not-allowed",
+                cursor:
+                  isOnJeopardySlide && current.open ? "pointer" : "not-allowed",
                 background: "#f87171",
                 color: "#fff",
                 fontWeight: 700,
-                opacity: isOnJeopardySlide ? 1 : 0.5,
+                opacity: isOnJeopardySlide && current.open ? 1 : 0.5,
               }}
             >
               ปิด Modal
+            </button>
+            <button
+              onClick={triggerScrollToScore}
+              disabled={!isOnJeopardySlide || !current.open}
+              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปยังจุดคะแนนใต้ Canva iframe"
+              style={{
+                padding: "12px 20px",
+                borderRadius: 6,
+                border: "1px solid rgba(52,211,153,0.4)",
+                cursor:
+                  isOnJeopardySlide && current.open ? "pointer" : "not-allowed",
+                background:
+                  isOnJeopardySlide && current.open
+                    ? "rgba(52,211,153,0.12)"
+                    : "transparent",
+                color: "#34d399",
+                fontWeight: 700,
+                opacity: isOnJeopardySlide && current.open ? 1 : 0.5,
+              }}
+            >
+              เลื่อนให้ผู้ชมดูคะแนน
             </button>
             <button
               onClick={clearHighlight}

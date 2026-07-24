@@ -211,10 +211,16 @@ export async function deleteCanvaLink(questionId: number) {
  * (คุมสไลด์ + highlight/เปิด modal คำถาม jeopardy จากหน้า /control)
   */
 
+/**
+ * เพิ่ม scroll_signal เข้าไปใน PresentationState
+ * (ใช้ส่งสัญญาณ "เลื่อนให้ผู้ชมดูคะแนน" จากหน้า /control ไปยังทุกจอ viewer)
+ */
+
 export interface PresentationState {
   current_slide: number;
   highlighted_question_id: number | null;
   modal_open: boolean;
+  scroll_signal: number;
   updated_at: string;
 }
 
@@ -232,7 +238,10 @@ export async function updatePresentationState(
   patch: Partial<
     Pick<
       PresentationState,
-      "current_slide" | "highlighted_question_id" | "modal_open"
+      | "current_slide"
+      | "highlighted_question_id"
+      | "modal_open"
+      | "scroll_signal"
     >
   >,
 ) {
@@ -259,4 +268,21 @@ export function subscribeToPresentationState(
       (payload) => cb(payload.new as PresentationState),
     )
     .subscribe();
+}
+
+/**
+ * ฟังก์ชันแก้ไข score event ที่มีอยู่แล้วแบบ UPDATE จริง
+ * (ไม่ใช่ลบแล้วสร้างใหม่ — id และ created_at ของ record เดิมยังคงอยู่)
+ */
+
+export async function updateScoreEvent(
+  id: number,
+  delta: number,
+  note: string,
+) {
+  const { error } = await supabase
+    .from("score_events")
+    .update({ delta, note })
+    .eq("id", id);
+  if (error) throw error;
 }
