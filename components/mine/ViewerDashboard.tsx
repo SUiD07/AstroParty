@@ -12,6 +12,17 @@
  *        เพื่อไม่ให้ re-mount ทุกครั้งที่ parent re-render (ทุกครั้งที่มี score event)
  * FIX B: เปลี่ยน dependency array ของ presentation_state effect เป็น []
  *        ใช้ categoriesRef แทนการอ้าง categories ตรงๆ กัน stale closure
+ * FIX C: CanvaFramePool — cache iframe ของทุกคำถามที่เคยเปิดใน modal ไม่ให้ reload ซ้ำ
+ *        ตอนเปิด-ปิด modal (เดิม iframe reload ทุกครั้งที่ modal mount ใหม่)
+ * FIX D: QuestionModal ไม่ unmount ตอนปิดแล้ว (ใช้ prop `visible` คุม opacity/
+ *        pointer-events แทน conditional render) เพื่อไม่ให้ CanvaFramePool
+ *        เสีย cache ทุกครั้งที่ปิด modal
+ * FIX E: pointer-events ของ iframe ที่ active ใน CanvaFramePool ต้องเช็คคู่กับ
+ *        modalVisible ด้วย ไม่งั้น iframe จะรับคลิกทะลุออกมาแม้ modal ถูกซ่อนอยู่
+ *        (ทำให้กดปุ่มบนกระดาน Question Board ไม่ได้)
+ * FIX F: Slide3 mount ค้างตลอดไม่ unmount ตอนสลับสไลด์ (เดิมใช้ key={currentSlide}
+ *        ใน AnimatePresence ทำให้ Slide3 unmount ทุกครั้งที่เปลี่ยนสไลด์ เสีย cache
+ *        ของ CanvaFramePool) — สไลด์อื่นยัง mount/unmount ตามปกติ
  */
 
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -568,7 +579,75 @@ function JeopardyCell({
 }
 
 // ---------------------------------------------------------------------------
+// CanvaFramePool — cache iframe ของทุกคำถามที่เคยเปิด ไม่ reload ซ้ำ
+// ไม่ว่าจะเปิด-ปิด modal กี่ครั้ง หรือสลับไปเปิดคำถามอื่นแล้วย้อนกลับมา
+// ---------------------------------------------------------------------------
+function CanvaFramePool({
+  canvaLinks,
+  activeQuestionId,
+  modalVisible,
+}: {
+  canvaLinks: Record<number, string>;
+  activeQuestionId: number;
+  modalVisible: boolean;
+}) {
+  const [openedIds, setOpenedIds] = useState<number[]>([]);
+
+  useEffect(() => {
+    if (canvaLinks[activeQuestionId] === undefined) return;
+    setOpenedIds((prev) =>
+      prev.includes(activeQuestionId) ? prev : [...prev, activeQuestionId],
+    );
+  }, [activeQuestionId, canvaLinks]);
+
+  if (openedIds.length === 0) return null;
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "min(90vh, calc((100vw - 80px) * 9 / 16))",
+      }}
+    >
+      {openedIds.map((qId) => {
+        const src = canvaLinks[qId];
+        if (!src) return null;
+        const isActive = qId === activeQuestionId;
+        // ★ ต้อง active "และ" modal visible พร้อมกัน iframe ถึงรับคลิกได้
+        // ไม่งั้น iframe ที่ซ่อนอยู่ (opacity 0) จะยังรับ pointer events
+        // ทะลุ parent ที่ตั้ง pointer-events:none ไว้ (CSS ข้อยกเว้นของ iframe)
+        const isInteractive = isActive && modalVisible;
+        return (
+          <iframe
+            key={qId}
+            src={src}
+            allowFullScreen
+            allow="fullscreen"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              border: "none",
+              borderRadius: 8,
+              opacity: isActive ? 1 : 0,
+              visibility: isActive ? "visible" : "hidden",
+              pointerEvents: isInteractive ? "auto" : "none",
+              zIndex: isActive ? 1 : 0,
+              transition: "opacity .15s ease",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // QuestionModal
+// ไม่ unmount ตอนปิดแล้ว — คุมด้วย prop `visible` แทน (opacity/pointer-events)
+// เพื่อไม่ให้ CanvaFramePool ข้างในเสีย cache ของ iframe ทุกครั้งที่ปิด modal
 // ---------------------------------------------------------------------------
 function QuestionModal({
   category,
@@ -578,6 +657,7 @@ function QuestionModal({
   canvaLinks,
   onClose,
   scrollPulse,
+  visible,
 }: {
   category: Category;
   question: Question;
@@ -586,6 +666,7 @@ function QuestionModal({
   canvaLinks: Record<number, string>;
   onClose: () => void;
   scrollPulse?: number;
+  visible: boolean;
 }) {
   // ★ เลื่อนไปจุดคะแนน (ใต้ Canva iframe) เมื่อแอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน"
   // ใน /control — เทียบค่าเดิมที่เคยเห็นตอน modal นี้ mount กับค่าที่ได้รับใหม่
@@ -616,13 +697,18 @@ function QuestionModal({
         justifyContent: "center",
         background: "rgba(0,0,0,0.78)",
         backdropFilter: "blur(6px)",
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? "auto" : "none",
+        transition: "opacity .2s ease",
       }}
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0, y: 14 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 14 }}
+        animate={{
+          scale: visible ? 1 : 0.9,
+          opacity: visible ? 1 : 0,
+          y: visible ? 0 : 14,
+        }}
         transition={{ type: "spring", stiffness: 300, damping: 26 }}
         style={{
           position: "relative",
@@ -708,6 +794,7 @@ function QuestionModal({
             >
               <iframe
                 src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
+                // src="https://stagetimer.io/output/6a5f772898e737c7ac88e520/?v=2&signature=d65fa0d941b542ed188a72c82d07eedf235c47965388f9fd62cec850b6fe3479"
                 className="pointer-events-auto h-20 w-auto"
               ></iframe>
             </div>
@@ -721,21 +808,15 @@ function QuestionModal({
             flex: 1,
           }}
         >
-          {canvaLinks[question.id] && (
-            <div style={{ marginTop: 0 }}>
-              <iframe
-                src={canvaLinks[question.id]}
-                allowFullScreen
-                allow="fullscreen"
-                style={{
-                  width: "100%",
-                  height: "min(90vh, calc((100vw - 80px) * 9 / 16))",
-                  border: "none",
-                  borderRadius: 8,
-                }}
-              />
-            </div>
-          )}
+          <div
+            style={{ marginTop: 0, pointerEvents: visible ? "auto" : "none" }}
+          >
+            <CanvaFramePool
+              canvaLinks={canvaLinks}
+              activeQuestionId={question.id}
+              modalVisible={visible}
+            />
+          </div>
           {/* ★ marker สำหรับเลื่อนมาจากปุ่ม "เลื่อนให้ผู้ชมดูคะแนน" ในหน้า /control */}
           <div ref={scoreSectionRef} />
           {events.length === 0 ? (
@@ -1347,7 +1428,9 @@ function Slide2({
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 3 — QUESTION BOARD (top-level, hoisted แล้วก่อนหน้านี้)
+// SLIDE 3 — QUESTION BOARD (top-level, hoisted)
+// ★ Mount ค้างตลอด session (ดู Main component ด้านล่าง) เพื่อรักษา cache
+//   ของ CanvaFramePool ไว้ไม่ให้ reload ซ้ำเวลาสลับสไลด์ไปมา
 // ---------------------------------------------------------------------------
 interface Slide3Props extends SlideCommonProps {
   answeredCount: number;
@@ -1376,6 +1459,13 @@ function Slide3({
 }: Slide3Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
+
+  // ★ เก็บ selectedCell ล่าสุดไว้ ไม่ให้ QuestionModal unmount ตอนปิด
+  // (จำเป็นสำหรับ CanvaFramePool ข้างใน ไม่งั้น state ของ pool จะรีเซ็ตทุกครั้ง)
+  const [lastCell, setLastCell] = useState<Slide3Props["selectedCell"]>(null);
+  useEffect(() => {
+    if (selectedCell) setLastCell(selectedCell);
+  }, [selectedCell]);
 
   return (
     <div
@@ -1549,19 +1639,18 @@ function Slide3({
         )}
       </div>
 
-      <AnimatePresence>
-        {selectedCell && (
-          <QuestionModal
-            category={selectedCell.category}
-            question={selectedCell.question}
-            events={getEvents(selectedCell.question.id)}
-            teams={data.teams}
-            canvaLinks={canvaLinks}
-            onClose={onCloseModal}
-            scrollPulse={scrollPulse}
-          />
-        )}
-      </AnimatePresence>
+      {lastCell && (
+        <QuestionModal
+          category={lastCell.category}
+          question={lastCell.question}
+          events={getEvents(lastCell.question.id)}
+          teams={data.teams}
+          canvaLinks={canvaLinks}
+          onClose={onCloseModal}
+          scrollPulse={scrollPulse}
+          visible={!!selectedCell}
+        />
+      )}
     </div>
   );
 }
@@ -2663,9 +2752,9 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
 // SLIDE 10 — รางวัลชนะเลิศ
 // ---------------------------------------------------------------------------
 function Slide10({ data, sortedPositions }: AwardSlideProps) {
-  // ตอนนี้ Slide10 เป็น component ที่ identity คงที่ (module-level)
-  // useEffect นี้จะยิงแค่ตอน "mount จริง" (เช่น navigate เข้าสไลด์นี้ครั้งแรก)
-  // ไม่ยิงซ้ำทุกครั้งที่ parent re-render จาก score event แล้ว
+  // Slide10 เป็น component identity คงที่ (module-level)
+  // useEffect นี้จะยิงแค่ตอน "mount จริง" (navigate เข้าสไลด์นี้ครั้งแรก)
+  // ไม่ยิงซ้ำทุกครั้งที่ parent re-render จาก score event
   useEffect(() => {
     launchConfetti();
   }, []);
@@ -3335,6 +3424,8 @@ export default function ViewerDashboard() {
 
   // FIX A: ทุก Slide ตอนนี้เป็น top-level function ที่ identity คงที่
   // ส่งข้อมูลผ่าน props แทนการปิด (closure) ทับ re-render ของ parent
+  // ★ FIX F: Slide3 ไม่ได้อยู่ใน record นี้แล้ว — render แยกต่างหากด้านล่าง
+  //   เพื่อให้ mount ค้างตลอด session ไม่ unmount ตอนสลับสไลด์ (ดู JSX ท้ายไฟล์)
   const slides: Record<number, React.ReactNode> = {
     1: <Slide1 />,
     2: (
@@ -3344,22 +3435,6 @@ export default function ViewerDashboard() {
         sortedPositions={sortedPositions}
         answeredCount={answeredCount}
         totalQCount={totalQCount}
-      />
-    ),
-    3: (
-      <Slide3
-        data={data}
-        categories={categories}
-        scoreEvents={scoreEvents}
-        canvaLinks={canvaLinks}
-        answeredCount={answeredCount}
-        totalQCount={totalQCount}
-        selectedCell={selectedCell}
-        onCloseModal={handleModalClose}
-        activeHighlightId={activeHighlightId}
-        onCellClick={handleCellClick}
-        onBackgroundClick={handleBackgroundClick}
-        scrollPulse={scrollPulse}
       />
     ),
     4: (
@@ -3450,17 +3525,56 @@ export default function ViewerDashboard() {
         </div>
 
         <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
+          {/* ★ FIX F: Slide3 mount ค้างตลอด session ไม่ unmount ตอนสลับสไลด์
+              เพื่อรักษา cache ของ CanvaFramePool (เดิมใช้ key={currentSlide}
+              ทำให้ Slide3 ถูก unmount/remount ทุกครั้งที่เปลี่ยนสไลด์) */}
+          <motion.div
+            animate={{ opacity: currentSlide === 3 ? 1 : 0 }}
+            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              visibility: currentSlide === 3 ? "visible" : "hidden",
+              pointerEvents: currentSlide === 3 ? "auto" : "none",
+              zIndex: currentSlide === 3 ? 2 : 1,
+            }}
+          >
+            <Slide3
+              data={data}
+              categories={categories}
+              scoreEvents={scoreEvents}
+              canvaLinks={canvaLinks}
+              answeredCount={answeredCount}
+              totalQCount={totalQCount}
+              selectedCell={selectedCell}
+              onCloseModal={handleModalClose}
+              activeHighlightId={activeHighlightId}
+              onCellClick={handleCellClick}
+              onBackgroundClick={handleBackgroundClick}
+              scrollPulse={scrollPulse}
+            />
+          </motion.div>
+
+          {/* สไลด์อื่นๆ (1,2,4-10) — mount/unmount + animation แบบเดิมทุกอย่าง */}
           <AnimatePresence mode="wait">
-            <motion.div
-              key={currentSlide}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
-              style={{ position: "absolute", inset: 0, display: "flex" }}
-            >
-              {slides[currentSlide]}
-            </motion.div>
+            {currentSlide !== 3 && (
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -30 }}
+                transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  zIndex: 1,
+                }}
+              >
+                {slides[currentSlide]}
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
         <FooterTicker />
