@@ -422,6 +422,16 @@ function SlideHeader({
 }
 
 // ---------------------------------------------------------------------------
+// getMaxCachedFrames — iOS Safari memory จำกัดกว่า desktop มาก
+// ต้องตั้ง cap ให้ต่ำกว่าเพื่อป้องกัน tab crash
+// ---------------------------------------------------------------------------
+function getMaxCachedFrames(): number {
+  if (typeof navigator === "undefined") return 6;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  return isIOS ? 3 : 6;
+}
+
+// ---------------------------------------------------------------------------
 // JeopardyCell
 // ---------------------------------------------------------------------------
 function JeopardyCell({
@@ -430,12 +440,14 @@ function JeopardyCell({
   teams,
   isHighlighted,
   onClick,
+  preloadStatus,
 }: {
   question: Question;
   events: ScoreEvent[];
   teams: RaceData["teams"];
   isHighlighted?: boolean;
   onClick: () => void;
+  preloadStatus?: "loading" | "loaded";
 }) {
   const answered = events.length > 0;
   const MAX_VISIBLE = 9;
@@ -496,6 +508,30 @@ function JeopardyCell({
           : "rgba(255,255,255,0.07)";
       }}
     >
+      {preloadStatus && (
+        <div
+          style={{
+            position: "absolute",
+            top: 4,
+            left: 5,
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: preloadStatus === "loaded" ? "#34d399" : "#ED8240",
+            animation:
+              preloadStatus === "loading"
+                ? "twinkle 1s ease-in-out infinite"
+                : "none",
+            boxShadow:
+              preloadStatus === "loaded"
+                ? "0 0 6px rgba(52,211,153,.7)"
+                : "0 0 6px rgba(237,130,64,.6)",
+          }}
+          title={
+            preloadStatus === "loaded" ? "Canva พร้อมแล้ว" : "กำลังโหลด Canva"
+          }
+        />
+      )}
       {answered ? (
         <>
           <div
@@ -579,26 +615,54 @@ function JeopardyCell({
 }
 
 // ---------------------------------------------------------------------------
-// CanvaFramePool — cache iframe ของทุกคำถามที่เคยเปิด ไม่ reload ซ้ำ
-// ไม่ว่าจะเปิด-ปิด modal กี่ครั้ง หรือสลับไปเปิดคำถามอื่นแล้วย้อนกลับมา
+// CanvaFramePool — cache iframe ของคำถามที่เคยเปิด/preload ไม่ reload ซ้ำ
+// จำกัดจำนวนด้วย LRU (maxCached) กัน memory บวมไม่จำกัดบนมือถือ
+// แจ้งสถานะ loading/loaded/evicted ออกไปให้ parent แสดงจุดสถานะ
+// ที่ JeopardyCell และ NavBar
 // ---------------------------------------------------------------------------
 function CanvaFramePool({
   canvaLinks,
   activeQuestionId,
   modalVisible,
+  maxCached = 4,
+  onStatusChange,
 }: {
   canvaLinks: Record<number, string>;
   activeQuestionId: number;
   modalVisible: boolean;
+  maxCached?: number;
+  onStatusChange?: (
+    qId: number,
+    status: "loading" | "loaded" | "evicted",
+  ) => void;
 }) {
   const [openedIds, setOpenedIds] = useState<number[]>([]);
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
 
   useEffect(() => {
     if (canvaLinks[activeQuestionId] === undefined) return;
-    setOpenedIds((prev) =>
-      prev.includes(activeQuestionId) ? prev : [...prev, activeQuestionId],
-    );
-  }, [activeQuestionId, canvaLinks]);
+    setOpenedIds((prev) => {
+      const alreadyIn = prev.includes(activeQuestionId);
+      // ย้ายคำถามนี้ขึ้นมาเป็น "ล่าสุด" (MRU) — เอาตัวซ้ำออกก่อนแล้วเพิ่มต่อท้าย
+      const withoutActive = prev.filter((id) => id !== activeQuestionId);
+      const next = [...withoutActive, activeQuestionId];
+
+      if (!alreadyIn) {
+        onStatusChangeRef.current?.(activeQuestionId, "loading");
+      }
+
+      // ถ้าเกิน cap ตัดตัวเก่าสุด (ตัวหน้าสุดของ array) ออก คืน memory ทันที
+      if (next.length > maxCached) {
+        const evicted = next.slice(0, next.length - maxCached);
+        evicted.forEach((id) => onStatusChangeRef.current?.(id, "evicted"));
+        return next.slice(next.length - maxCached);
+      }
+      return next;
+    });
+  }, [activeQuestionId, canvaLinks, maxCached]);
 
   if (openedIds.length === 0) return null;
 
@@ -624,6 +688,8 @@ function CanvaFramePool({
             src={src}
             allowFullScreen
             allow="fullscreen"
+            loading="lazy"
+            onLoad={() => onStatusChangeRef.current?.(qId, "loaded")}
             style={{
               position: "absolute",
               inset: 0,
@@ -658,6 +724,7 @@ function QuestionModal({
   onClose,
   scrollPulse,
   visible,
+  onCanvaStatusChange,
 }: {
   category: Category;
   question: Question;
@@ -667,6 +734,10 @@ function QuestionModal({
   onClose: () => void;
   scrollPulse?: number;
   visible: boolean;
+  onCanvaStatusChange?: (
+    qId: number,
+    status: "loading" | "loaded" | "evicted",
+  ) => void;
 }) {
   // ★ เลื่อนไปจุดคะแนน (ใต้ Canva iframe) เมื่อแอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน"
   // ใน /control — เทียบค่าเดิมที่เคยเห็นตอน modal นี้ mount กับค่าที่ได้รับใหม่
@@ -815,6 +886,8 @@ function QuestionModal({
               canvaLinks={canvaLinks}
               activeQuestionId={question.id}
               modalVisible={visible}
+              maxCached={getMaxCachedFrames()}
+              onStatusChange={onCanvaStatusChange}
             />
           </div>
           {/* ★ marker สำหรับเลื่อนมาจากปุ่ม "เลื่อนให้ผู้ชมดูคะแนน" ในหน้า /control */}
@@ -1441,6 +1514,11 @@ interface Slide3Props extends SlideCommonProps {
   onCellClick: (cat: Category, q: Question) => void;
   onBackgroundClick: () => void;
   scrollPulse: number;
+  canvaStatus: Record<number, "loading" | "loaded">;
+  onCanvaStatusChange: (
+    qId: number,
+    status: "loading" | "loaded" | "evicted",
+  ) => void;
 }
 
 function Slide3({
@@ -1456,6 +1534,8 @@ function Slide3({
   onCellClick,
   onBackgroundClick,
   scrollPulse,
+  canvaStatus,
+  onCanvaStatusChange,
 }: Slide3Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
@@ -1464,8 +1544,25 @@ function Slide3({
   // (จำเป็นสำหรับ CanvaFramePool ข้างใน ไม่งั้น state ของ pool จะรีเซ็ตทุกครั้ง)
   const [lastCell, setLastCell] = useState<Slide3Props["selectedCell"]>(null);
   useEffect(() => {
-    if (selectedCell) setLastCell(selectedCell);
-  }, [selectedCell]);
+    // เปิด modal จริงแล้ว — ใช้ค่านี้เป็นหลักเสมอ
+    if (selectedCell) {
+      setLastCell(selectedCell);
+      return;
+    }
+    // ★ ยังไม่เปิด modal แต่มีคำถามถูก highlight ไว้ (จังหวะคลิกแรก
+    // หรือแอดมิน highlight จากระยะไกล) → mount QuestionModal แบบซ่อนไว้
+    // (visible=false เพราะ selectedCell ยังเป็น null) เพื่อให้
+    // CanvaFramePool เริ่ม preload iframe รอล่วงหน้าระหว่างที่ยังไม่กดเปิดจริง
+    if (activeHighlightId != null) {
+      for (const cat of categories) {
+        const q = cat.questions?.find((qq) => qq.id === activeHighlightId);
+        if (q) {
+          setLastCell({ category: cat, question: q });
+          return;
+        }
+      }
+    }
+  }, [selectedCell, activeHighlightId, categories]);
 
   return (
     <div
@@ -1631,6 +1728,9 @@ function Slide3({
                     teams={data.teams}
                     isHighlighted={q.id === activeHighlightId}
                     onClick={() => onCellClick(cat, q)}
+                    preloadStatus={
+                      q.id === activeHighlightId ? canvaStatus[q.id] : undefined
+                    }
                   />
                 );
               }),
@@ -1649,6 +1749,7 @@ function Slide3({
           onClose={onCloseModal}
           scrollPulse={scrollPulse}
           visible={!!selectedCell}
+          onCanvaStatusChange={onCanvaStatusChange}
         />
       )}
     </div>
@@ -3002,6 +3103,7 @@ interface NavBarProps {
   onNext: () => void;
   onPrev: () => void;
   onRefresh: () => void;
+  canvaLoadingCount: number;
 }
 
 function NavBar({
@@ -3014,6 +3116,7 @@ function NavBar({
   onNext,
   onPrev,
   onRefresh,
+  canvaLoadingCount,
 }: NavBarProps) {
   const [showNav, setShowNav] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
@@ -3073,6 +3176,20 @@ function NavBar({
               flexShrink: 0,
             }}
           />
+          {canvaLoadingCount > 0 && (
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "#ED8240",
+                boxShadow: "0 0 7px rgba(237,130,64,.8)",
+                animation: "twinkle 1s ease-in-out infinite",
+                flexShrink: 0,
+              }}
+              title={`กำลังโหลด Canva ${canvaLoadingCount} ข้อ`}
+            />
+          )}
           <span
             style={{
               ...orbitron,
@@ -3245,6 +3362,28 @@ export default function ViewerDashboard() {
   } | null>(null);
 
   const [canvaLinks, setCanvaLinks] = useState<Record<number, string>>({});
+
+  // ★ สถานะ preload ของ Canva ต่อคำถาม — ใช้แสดงจุดที่ JeopardyCell และ NavBar
+  const [canvaStatus, setCanvaStatus] = useState<
+    Record<number, "loading" | "loaded">
+  >({});
+  const handleCanvaStatusChange = useCallback(
+    (qId: number, status: "loading" | "loaded" | "evicted") => {
+      setCanvaStatus((prev) => {
+        if (status === "evicted") {
+          if (!(qId in prev)) return prev;
+          const next = { ...prev };
+          delete next[qId];
+          return next;
+        }
+        return { ...prev, [qId]: status };
+      });
+    },
+    [],
+  );
+  const canvaLoadingCount = Object.values(canvaStatus).filter(
+    (s) => s === "loading",
+  ).length;
 
   // ── Admin / Local highlight control ──────────────────────────────────
   const [adminHighlightId, setAdminHighlightId] = useState<number | null>(null);
@@ -3553,6 +3692,8 @@ export default function ViewerDashboard() {
               onCellClick={handleCellClick}
               onBackgroundClick={handleBackgroundClick}
               scrollPulse={scrollPulse}
+              canvaStatus={canvaStatus}
+              onCanvaStatusChange={handleCanvaStatusChange}
             />
           </motion.div>
 
@@ -3588,6 +3729,7 @@ export default function ViewerDashboard() {
           onNext={nextSlide}
           onPrev={prevSlide}
           onRefresh={handleRefresh}
+          canvaLoadingCount={canvaLoadingCount}
         />
       </div>
     </>
