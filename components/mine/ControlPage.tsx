@@ -24,6 +24,10 @@
  *   เดิม — ใช้ scroll_top_signal ใหม่ใน presentation_state (pattern เดียวกับ
  *   scroll_signal เดิม)
  * - Jeopardy cell จัดเป็น grid แบบเดียวกับหน้า viewer (คอลัมน์ = หมวด, แถว = เลขข้อ)
+ * - ★★★ อัปเดต: หน้า viewer เพิ่มสไลด์ Canva เต็มจอเป็นสไลด์ที่ 2 ทำให้ทุกสไลด์
+ *   ถัดจากนั้นเลื่อนเลขหน้าขึ้น 1 (รวมทั้งหมดเป็น 11 สไลด์) และสไลด์ Question
+ *   Board (Jeopardy) ย้ายจากตำแหน่งที่ 3 ไปเป็นตำแหน่งที่ 4 — ปรับ TOTAL_SLIDES
+ *   และ JEOPARDY_SLIDE ด้านล่างให้ตรงกัน
  */
 
 import { useEffect, useState } from "react";
@@ -49,8 +53,8 @@ interface Category {
   questions: Question[];
 }
 
-const TOTAL_SLIDES = 10;
-const JEOPARDY_SLIDE = 3;
+const TOTAL_SLIDES = 11;
+const JEOPARDY_SLIDE = 4;
 const MAX_QUESTIONS_PER_CATEGORY = 6; // ต้องตรงกับ Slide3 ฝั่ง viewer
 
 const ORANGE = "#ED8240";

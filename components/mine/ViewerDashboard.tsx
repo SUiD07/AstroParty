@@ -1083,6 +1083,7 @@ function Slide1() {
           }}
         />
       </div> */}
+      {/* ── LOGO ROW (เดิม) — เก็บไว้อ้างอิง ปิดใช้งานชั่วคราว ──
       <div
         style={{
           display: "flex",
@@ -1120,8 +1121,11 @@ function Slide1() {
           style={{ width: "clamp(7rem,9vw,10rem)", height: "auto" }}
         />
       </div>
+      */}
 
-      <div
+      {/* ── LOGO ROW (ใหม่) — จัดกลางทั้งแถว โลโก้ AMSci อยู่กลางและใหญ่เด่น ── */}
+
+      {/* <div
         style={{
           width: 40,
           height: 2,
@@ -1130,7 +1134,7 @@ function Slide1() {
           marginBottom: 40,
           flexShrink: 0,
         }}
-      />
+      /> */}
 
       <div
         style={{
@@ -1144,18 +1148,72 @@ function Slide1() {
           minHeight: 0,
         }}
       >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 32,
+            paddingTop: 64,
+            paddingBottom: 48,
+            flexShrink: 0,
+          }}
+        >
+          <img
+            src="/smcu_old.webp"
+            alt="สโมสรนิสิตคณะแพทยศาสตร์"
+            style={{
+              width: "clamp(9rem,4.5vw,4.5rem)",
+              height: "auto",
+              // opacity: 0.85,
+            }}
+          />
+  
+          <div
+            style={{
+              width: 1,
+              height: 56,
+              background: "rgba(255,255,255,0.08)",
+            }}
+          />
+  
+          <img
+            src="/logo.png"
+            alt="AMSci 2026"
+            style={{ width: "clamp(25rem,17vw,20rem)", height: "auto" }}
+          />
+  
+          <div
+            style={{
+              width: 1,
+              height: 56,
+              background: "rgba(255,255,255,0.08)",
+            }}
+          />
+  
+          <img
+            src="/MD_Chula.png"
+            alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
+            style={{
+              width: "clamp(9rem,4.5vw,4.5rem)",
+              height: "auto",
+              // opacity: 0.85,
+            }}
+          />
+        </div>
         <p
           style={{
             ...notoTH,
             color: C.orange,
-            fontSize: "clamp(0.8rem,1.4vw,1.1rem)",
-            letterSpacing: "0.25em",
+            fontSize: "clamp(1.5rem,1.4vw,1.1rem)",
+            // letterSpacing: "0.25em",
             marginBottom: 24,
           }}
         >
-          AMSci 2026
+          Ananda Mahidol Day&apos;s Biology and Medical Science Test 2026
         </p>
 
+        {/* ── "Final Round" heading (เดิม) — เอาออกจากสไลด์ตามคำขอ เก็บไว้อ้างอิง ──
         <h1
           style={{
             ...fontDisplay,
@@ -1168,6 +1226,7 @@ function Slide1() {
         >
           Final Round
         </h1>
+        */}
 
         <div
           style={{
@@ -1180,15 +1239,17 @@ function Slide1() {
           <p
             style={{
               ...notoTH,
-              fontSize: "clamp(1rem,2vw,1.45rem)",
+              fontSize: "clamp(0.7rem,1.5vw,1.45rem)",
               color: "rgba(255,255,255,0.65)",
               lineHeight: 1.9,
               margin: 0,
             }}
           >
-            ถ่ายทอดสดการแข่งขันตอบปัญหาวิชาการและวิทยาศาสตร์การแพทย์
-            <br />
-            ระดับมัธยมศึกษาตอนปลาย
+            งานแข่งขันตอบปัญหาวิชาการและวิทยาศาสตร์การแพทย์ โดยนิสิตแพทย์จุฬาฯ
+            <br/>
+            เนื่องในงานสัปดาห์วันอานันทมหิดล
+            {/* <br/> */}{" "}
+            ประจำปีการศึกษา 2569
           </p>
 
           <div
@@ -1200,7 +1261,7 @@ function Slide1() {
             }}
           />
 
-          <p
+          {/* <p
             style={{
               ...notoTH,
               fontSize: "clamp(0.75rem,1.3vw,1rem)",
@@ -1213,7 +1274,7 @@ function Slide1() {
             สยามบรมราชกุมารี
             <br />
             เนื่องในสัปดาห์วันอานันทมหิดล ปี 2568
-          </p>
+          </p> */}
         </div>
       </div>
 
@@ -1221,7 +1282,7 @@ function Slide1() {
         <p
           style={{
             ...fontDisplay,
-            color: "rgba(255,255,255,0.15)",
+            color: "rgba(255,255,255,0.65)",
             fontSize: 11,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
@@ -1230,6 +1291,42 @@ function Slide1() {
           Faculty of Medicine · Chulalongkorn University
         </p>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SLIDE (ใหม่) — CANVA INTRO (เต็มจอ)
+// ★ ใส่ลิงก์ Canva จริงใน INTRO_CANVA_URL ด้านล่าง (ตอนนี้เป็นค่าตัวอย่าง)
+//   iframe ขยายเต็มพื้นที่สไลด์เท่าที่ทำได้ (width/height 100% ของ container
+//   ซึ่งเต็มจอ inset:0 อยู่แล้ว) เว้น padding เล็กน้อยรอบขอบเท่านั้น
+// ---------------------------------------------------------------------------
+const INTRO_CANVA_URL =
+  "https://www.canva.com/design/DAHPWmXRz-8/uGmhgJxkpGvoMveLuyJr2g/view?embed";
+
+function SlideCanvaIntro() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: 12,
+      }}
+    >
+      <iframe
+        src={INTRO_CANVA_URL}
+        allowFullScreen
+        allow="fullscreen"
+        style={{
+          width: "100%",
+          height: "100%",
+          border: "none",
+          borderRadius: 8,
+        }}
+      />
     </div>
   );
 }
@@ -3225,24 +3322,24 @@ function NavBar({
               pointerEvents: "all",
             }}
           >
-            {(["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"] as const).map(
-              (icon, i) => (
-                <button
-                  key={i}
-                  style={{
-                    ...btnStyle,
-                    fontSize: 16,
-                    opacity: currentSlide === i + 1 ? 1 : 0.45,
-                    padding: "3px 8px",
-                    background:
-                      currentSlide === i + 1 ? "rgba(237,130,64,.12)" : "none",
-                  }}
-                  onClick={() => onGoToSlide(i + 1)}
-                >
-                  {icon}
-                </button>
-              ),
-            )}
+            {(
+              ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"] as const
+            ).map((icon, i) => (
+              <button
+                key={i}
+                style={{
+                  ...btnStyle,
+                  fontSize: 16,
+                  opacity: currentSlide === i + 1 ? 1 : 0.45,
+                  padding: "3px 8px",
+                  background:
+                    currentSlide === i + 1 ? "rgba(237,130,64,.12)" : "none",
+                }}
+                onClick={() => onGoToSlide(i + 1)}
+              >
+                {icon}
+              </button>
+            ))}
           </div>
         </>
       )}
@@ -3254,7 +3351,7 @@ function NavBar({
 // Main
 // ---------------------------------------------------------------------------
 export default function ViewerDashboard() {
-  const totalSlides = 10;
+  const totalSlides = 11;
   const [currentSlide, setCurrentSlide] = useState(1);
 
   const [data, setData] = useState<RaceData>({
@@ -3479,9 +3576,12 @@ export default function ViewerDashboard() {
   // ส่งข้อมูลผ่าน props แทนการปิด (closure) ทับ re-render ของ parent
   // ★ FIX F: Slide3 ไม่ได้อยู่ใน record นี้แล้ว — render แยกต่างหากด้านล่าง
   //   เพื่อให้ mount ค้างตลอด session ไม่ unmount ตอนสลับสไลด์ (ดู JSX ท้ายไฟล์)
+  // ★ อัปเดต: เพิ่มสไลด์ Canva เต็มจอเป็นสไลด์ที่ 2 ทำให้ Question Board (Slide3)
+  //   เลื่อนไปอยู่ตำแหน่งสไลด์ที่ 4 แทนที่ 3 เดิม (ดูเงื่อนไข currentSlide === 4 ด้านล่าง)
   const slides: Record<number, React.ReactNode> = {
     1: <Slide1 />,
-    2: (
+    2: <SlideCanvaIntro />,
+    3: (
       <Slide2
         data={data}
         categories={categories}
@@ -3490,7 +3590,9 @@ export default function ViewerDashboard() {
         totalQCount={totalQCount}
       />
     ),
-    4: (
+    // ★ ไม่มี key 4 — สไลด์ Question Board (Slide3) ถูก render แยกไว้ด้านล่าง
+    //   ตลอด session (ดู FIX D) และตอนนี้อยู่ที่ตำแหน่งสไลด์ที่ 4 แทนที่ 3 เดิม
+    5: (
       <Slide4
         data={data}
         topSix={topSix}
@@ -3498,12 +3600,12 @@ export default function ViewerDashboard() {
         scoreRange={scoreRange}
       />
     ),
-    5: <Slide5 data={data} sortedPositions={sortedPositions} />,
-    6: <Slide6 />,
-    7: <Slide7 data={data} sortedPositions={sortedPositions} />,
-    8: <Slide8 data={data} sortedPositions={sortedPositions} />,
-    9: <Slide9 data={data} sortedPositions={sortedPositions} />,
-    10: <Slide10 data={data} sortedPositions={sortedPositions} />,
+    6: <Slide5 data={data} sortedPositions={sortedPositions} />,
+    7: <Slide6 />,
+    8: <Slide7 data={data} sortedPositions={sortedPositions} />,
+    9: <Slide8 data={data} sortedPositions={sortedPositions} />,
+    10: <Slide9 data={data} sortedPositions={sortedPositions} />,
+    11: <Slide10 data={data} sortedPositions={sortedPositions} />,
   };
 
   return (
@@ -3583,15 +3685,15 @@ export default function ViewerDashboard() {
               ทุกครั้งที่เปลี่ยนสไลด์ ซึ่งจะทำให้ CanvaSingleFrame ข้างใน
               ถูกทำลายและต้อง navigate ใหม่ทุกครั้งโดยไม่จำเป็น) */}
           <motion.div
-            animate={{ opacity: currentSlide === 3 ? 1 : 0 }}
+            animate={{ opacity: currentSlide === 4 ? 1 : 0 }}
             transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
             style={{
               position: "absolute",
               inset: 0,
               display: "flex",
-              visibility: currentSlide === 3 ? "visible" : "hidden",
-              pointerEvents: currentSlide === 3 ? "auto" : "none",
-              zIndex: currentSlide === 3 ? 2 : 1,
+              visibility: currentSlide === 4 ? "visible" : "hidden",
+              pointerEvents: currentSlide === 4 ? "auto" : "none",
+              zIndex: currentSlide === 4 ? 2 : 1,
             }}
           >
             <Slide3
@@ -3612,9 +3714,9 @@ export default function ViewerDashboard() {
             />
           </motion.div>
 
-          {/* สไลด์อื่นๆ (1,2,4-10) — mount/unmount + animation แบบเดิมทุกอย่าง */}
+          {/* สไลด์อื่นๆ (1,2,3,5-11) — mount/unmount + animation แบบเดิมทุกอย่าง */}
           <AnimatePresence mode="wait">
-            {currentSlide !== 3 && (
+            {currentSlide !== 4 && (
               <motion.div
                 key={currentSlide}
                 initial={{ opacity: 0, x: 30 }}
