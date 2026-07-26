@@ -1,0 +1,1 @@
+alter table presentation_state add column if not exists scroll_top_signal integer not null default 0;

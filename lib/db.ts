@@ -228,6 +228,10 @@ export function splitCanvaUrl(url: string): { base: string; page: string } {
  * จากหน้า /control โดยไม่ต้องปิด-เปิด modal ใหม่ (แยกอิสระจากเลขหน้าเริ่มต้น
  * ที่ตั้งไว้ล่วงหน้าใน CanvaLinkManager ต่อคำถาม) ค่า null = ยังไม่ override
  * ให้ viewer ใช้เลขหน้าเริ่มต้นของคำถามนั้นตามปกติ
+ *
+ * ★ เพิ่ม scroll_top_signal — ตรงข้ามกับ scroll_signal คือส่งสัญญาณ
+ * "เลื่อนกลับขึ้นไปดูโจทย์ (Canva)" จากหน้า /control ไปยังทุกจอ viewer
+ * (ใช้ pattern increment เหมือน scroll_signal เดิม)
  */
 
 export interface PresentationState {
@@ -235,6 +239,7 @@ export interface PresentationState {
   highlighted_question_id: number | null;
   modal_open: boolean;
   scroll_signal: number;
+  scroll_top_signal: number;
   canva_current_page: number | null;
   updated_at: string;
 }
@@ -257,6 +262,7 @@ export async function updatePresentationState(
       | "highlighted_question_id"
       | "modal_open"
       | "scroll_signal"
+      | "scroll_top_signal"
       | "canva_current_page"
     >
   >,

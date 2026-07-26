@@ -17,9 +17,17 @@
  *   ใช้ค่า canva_current_page ใน presentation_state แยกอิสระจากเลขหน้าเริ่มต้น
  *   ที่ตั้งไว้ล่วงหน้าต่อคำถามใน CanvaLinkManager — รีเซ็ตกลับเป็นค่าเริ่มต้น
  *   ทุกครั้งที่ปิด modal หรือ highlight คำถามใหม่
+ *  * - ★★ ปรับ UI ทั้งหมดให้เข้ากับธีม minimal ของ AdminPanel.tsx (white/black,
+ *   border-black/[0.07], rounded-xl, ORANGE accent) แทนธีมมืดเดิมที่แยกจากกัน
+ *   เพราะ component นี้ถูกเสียบอยู่ใน section ของ AdminPanel อยู่แล้ว
+ * - ★★ เพิ่มปุ่ม "↑ เลื่อนขึ้นไปดูโจทย์ (Canva)" คู่กับปุ่ม "↓ เลื่อนให้ผู้ชมดูคะแนน"
+ *   เดิม — ใช้ scroll_top_signal ใหม่ใน presentation_state (pattern เดียวกับ
+ *   scroll_signal เดิม)
+ * - Jeopardy cell จัดเป็น grid แบบเดียวกับหน้า viewer (คอลัมน์ = หมวด, แถว = เลขข้อ)
  */
 
 import { useEffect, useState } from "react";
+import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import {
   loadCategories,
   loadPresentationState,
@@ -46,6 +54,9 @@ const JEOPARDY_SLIDE = 3;
 const MAX_QUESTIONS_PER_CATEGORY = 6; // ต้องตรงกับ Slide3 ฝั่ง viewer
 
 const ORANGE = "#ED8240";
+const GREEN = "#1a7a4c";
+const NEGATIVE = "#d4183d";
+const BLUE = "#2563eb";
 
 export default function ControlPage({
   onJumpToScore,
@@ -60,8 +71,16 @@ export default function ControlPage({
     qId: number | null;
     open: boolean;
     scrollSignal: number;
+    scrollTopSignal: number;
     canvaPage: number | null; // ★ override เลขหน้าปัจจุบัน (null = ยังไม่ override)
-  }>({ slide: 1, qId: null, open: false, scrollSignal: 0, canvaPage: null });
+  }>({
+    slide: 1,
+    qId: null,
+    open: false,
+    scrollSignal: 0,
+    scrollTopSignal: 0,
+    canvaPage: null,
+  });
 
   useEffect(() => {
     loadCategories().then(setCategories);
@@ -72,6 +91,7 @@ export default function ControlPage({
         qId: s.highlighted_question_id,
         open: s.modal_open,
         scrollSignal: s.scroll_signal,
+        scrollTopSignal: s.scroll_top_signal,
         canvaPage: s.canva_current_page,
       }),
     );
@@ -82,6 +102,7 @@ export default function ControlPage({
         qId: s.highlighted_question_id,
         open: s.modal_open,
         scrollSignal: s.scroll_signal,
+        scrollTopSignal: s.scroll_top_signal,
         canvaPage: s.canva_current_page,
       });
     });
@@ -124,7 +145,7 @@ export default function ControlPage({
   };
 
   const closeModal = async () => {
-    // FIX: ปิดได้เฉพาะตอนเปิดอยู่จริงเท่านั้น
+    // ปิดได้เฉพาะตอนเปิดอยู่จริงเท่านั้น
     if (!isOnJeopardySlide || !current.open) return;
     // ★ ปิด modal = จบคำถามนี้แล้ว เคลียร์ override เลขหน้ากลับเป็น null
     // เพื่อให้เปิดคำถามถัดไปเริ่มที่เลขหน้าเริ่มต้นเสมอ
@@ -137,12 +158,19 @@ export default function ControlPage({
 
   // ★ ส่งสัญญาณให้ทุกจอ viewer ที่เปิด QuestionModal ค้างอยู่ เลื่อนไปดูจุดคะแนน
   // ที่อยู่ใต้ Canva iframe — ใช้ได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น
-  // (increment ค่าขึ้นทุกครั้งที่กด เพื่อให้ viewer เทียบค่าเก่า-ใหม่แล้วรู้ว่ามีคำสั่งมาใหม่)
   const triggerScrollToScore = async () => {
     if (!isOnJeopardySlide || !current.open) return;
     const next = current.scrollSignal + 1;
     setCurrent((c) => ({ ...c, scrollSignal: next }));
     await updatePresentationState({ scroll_signal: next });
+  };
+
+  // ★★ NEW — ตรงข้ามกับด้านบน: เลื่อนกลับขึ้นไปดูโจทย์ (Canva) ที่อยู่บนสุด
+  const triggerScrollToTop = async () => {
+    if (!isOnJeopardySlide || !current.open) return;
+    const next = current.scrollTopSignal + 1;
+    setCurrent((c) => ({ ...c, scrollTopSignal: next }));
+    await updatePresentationState({ scroll_top_signal: next });
   };
 
   // หา category ของคำถามที่ถูกไฮไลท์อยู่ (ใช้ทั้งแสดง label และปุ่ม jump-to-score)
@@ -161,11 +189,6 @@ export default function ControlPage({
       ? `#${current.qId}`
       : null;
 
-  const handleJumpToScore = () => {
-    if (!highlightedInfo || !onJumpToScore) return;
-    onJumpToScore(highlightedInfo.category.id, highlightedInfo.question.number);
-  };
-
   // ★ เลขหน้า Canva เริ่มต้นของคำถามที่ highlight อยู่ (parse จาก canva_url)
   const assignedPage = (() => {
     if (!current.qId) return null;
@@ -179,178 +202,116 @@ export default function ControlPage({
   // ★ เลขหน้าที่กำลังแสดงอยู่จริงตอนนี้ (override ถ้ามี ไม่งั้นใช้ค่าเริ่มต้น)
   const effectivePage = current.canvaPage ?? assignedPage ?? 1;
 
-  // ★ ปุ่มเลื่อนหน้าใช้ได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น (เหมือนปุ่มเลื่อนดูคะแนน)
-  const canNavigateCanvaPage = isOnJeopardySlide && current.open;
+  // ★ ปุ่มเลื่อนหน้าใช้ได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น
+  const canControlOpenModal = isOnJeopardySlide && current.open;
 
   const changeCanvaPage = async (delta: number) => {
-    if (!canNavigateCanvaPage) return;
+    if (!canControlOpenModal) return;
     const nextPage = Math.max(1, effectivePage + delta);
     setCurrent((c) => ({ ...c, canvaPage: nextPage }));
     await updatePresentationState({ canva_current_page: nextPage });
   };
 
   return (
-    <div
-      style={{
-        fontFamily: "sans-serif",
-        color: "#fff",
-        background: "#111",
-        minHeight: "100vh",
-      }}
-    >
-      {/* ── Status bar — sticky ด้านบนสุด เด่นชัด ── */}
-      <div
-        style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          background: "linear-gradient(180deg, #1a1005, #0d0904 90%)",
-          borderBottom: `2px solid ${ORANGE}`,
-          padding: "16px 24px",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 24,
-            flexWrap: "wrap",
-          }}
-        >
+    <div className="space-y-6">
+      {/* ── Status bar ── */}
+      <div className="flex items-center gap-6 flex-wrap">
+        <StatusChip
+          label="สไลด์ปัจจุบัน"
+          value={`${current.slide} / ${TOTAL_SLIDES}`}
+        />
+        <StatusChip
+          label="ไฮไลท์คำถาม"
+          value={highlightedQuestionLabel ?? "— ไม่มี —"}
+          dim={!highlightedQuestionLabel}
+        />
+        <StatusChip
+          label="Modal"
+          value={current.open ? "เปิดอยู่" : "ปิดอยู่"}
+          highlight={current.open}
+        />
+        {current.open && (
           <StatusChip
-            label="สไลด์ปัจจุบัน"
-            value={`${current.slide} / ${TOTAL_SLIDES}`}
+            label="หน้า Canva ปัจจุบัน"
+            value={`หน้า ${effectivePage}`}
+            highlight={current.canvaPage != null}
           />
-          <StatusChip
-            label="ไฮไลท์คำถาม"
-            value={highlightedQuestionLabel ?? "— ไม่มี —"}
-            dim={!highlightedQuestionLabel}
-          />
-          <StatusChip
-            label="Modal"
-            value={current.open ? "เปิดอยู่" : "ปิดอยู่"}
-            highlight={current.open}
-          />
-          {current.open && (
-            <StatusChip
-              label="หน้า Canva ปัจจุบัน"
-              value={`หน้า ${effectivePage}`}
-              highlight={current.canvaPage != null}
-            />
-          )}
-          {/* {highlightedInfo && onJumpToScore && (
-            <button
-              onClick={handleJumpToScore}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "8px 14px",
-                borderRadius: 6,
-                border: "1px solid rgba(52,211,153,0.4)",
-                background: "rgba(52,211,153,0.1)",
-                color: "#34d399",
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              ↓ ดูคะแนนข้อนี้
-            </button>
-          )} */}
+        )}
 
-          {!isOnJeopardySlide && (
-            <span
-              style={{
-                marginLeft: "auto",
-                fontSize: 12,
-                color: "#f59e0b",
-                background: "rgba(245,158,11,0.12)",
-                border: "1px solid rgba(245,158,11,0.35)",
-                padding: "6px 12px",
-                borderRadius: 6,
-              }}
-            >
-              ⚠ ปุ่ม Jeopardy ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} —
-              เลื่อนไปสไลด์ {JEOPARDY_SLIDE} ก่อน
-            </span>
-          )}
+        {!isOnJeopardySlide && (
+          <span className="ml-auto text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md">
+            ⚠ ปุ่ม Jeopardy ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} — เลื่อนไป
+            สไลด์ {JEOPARDY_SLIDE} ก่อน
+          </span>
+        )}
+      </div>
+
+      {/* ── Slide Control ── */}
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+          Slide Control
+        </label>
+        <div className="flex gap-1.5 flex-wrap">
+          {Array.from({ length: TOTAL_SLIDES }, (_, i) => {
+            const active = current.slide === i + 1;
+            return (
+              <button
+                key={i}
+                onClick={() => goSlide(i + 1)}
+                className="w-9 h-9 rounded-lg text-xs font-medium border transition-all"
+                style={{
+                  background: active ? ORANGE : "transparent",
+                  borderColor: active ? ORANGE : "rgba(0,0,0,0.1)",
+                  color: active ? "#fff" : "rgba(0,0,0,0.5)",
+                }}
+              >
+                {i + 1}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* ── เนื้อหา ── */}
-      <div style={{ padding: 24 }}>
-        <h2 style={{ marginBottom: 12 }}>Slide Control</h2>
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 32,
-            flexWrap: "wrap",
-          }}
-        >
-          {Array.from({ length: TOTAL_SLIDES }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => goSlide(i + 1)}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 6,
-                border: "none",
-                cursor: "pointer",
-                background: current.slide === i + 1 ? ORANGE : "#333",
-                color: "#fff",
-                fontWeight: 700,
-              }}
-            >
-              {i + 1}
-            </button>
-          ))}
+      <div className="h-px bg-black/[0.06]" />
+
+      {/* ── Jeopardy Cells ── */}
+      <div className="space-y-2">
+        <div className="flex items-baseline justify-between">
+          <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
+            Jeopardy Cells
+          </label>
+          <span className="text-[10px] text-black/25">
+            ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} — จัดเรียงตรงตามตำแหน่งบนจอ
+            viewer
+          </span>
         </div>
 
-        <h2 style={{ marginBottom: 4 }}>Jeopardy Cells</h2>
-        <p style={{ fontSize: 12, opacity: 0.5, marginBottom: 12 }}>
-          ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} เท่านั้น —
-          จัดเรียงตรงตามตำแหน่งบนจอ viewer
-        </p>
-
         <div
+          className="transition-opacity duration-200"
           style={{
             opacity: isOnJeopardySlide ? 1 : 0.4,
             pointerEvents: isOnJeopardySlide ? "auto" : "none",
-            transition: "opacity .2s",
           }}
         >
-          {/* ★ Grid เหมือน Slide3 ฝั่ง viewer: คอลัมน์ = หมวด, แถว = เลขข้อ */}
           {categories.length === 0 ? (
-            <p style={{ fontSize: 12, opacity: 0.4 }}>ยังไม่มีหมวดคำถาม</p>
+            <p className="text-[11px] text-black/30 italic py-3">
+              ยังไม่มีหมวดคำถาม
+            </p>
           ) : (
             <div
+              className="grid gap-1.5 max-w-2xl"
               style={{
-                display: "grid",
-                gridTemplateColumns: `repeat(${categories.length}, minmax(90px, 1fr))`,
-                gap: 6,
-                maxWidth: 720,
+                gridTemplateColumns: `repeat(${categories.length}, minmax(80px, 1fr))`,
               }}
             >
-              {/* หัวคอลัมน์ = ชื่อหมวด */}
               {categories.map((cat) => (
                 <div
                   key={cat.id}
+                  className="px-2 py-1.5 text-center rounded-md border text-[10px] font-medium tracking-wide overflow-hidden text-ellipsis whitespace-nowrap"
                   style={{
-                    padding: "8px 6px",
-                    textAlign: "center",
-                    background: "rgba(237,130,64,0.08)",
-                    border: "1px solid rgba(237,130,64,0.22)",
-                    borderRadius: 6,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: "0.06em",
-                    color: "rgba(255,255,255,0.6)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    background: "rgba(237,130,64,0.06)",
+                    borderColor: "rgba(237,130,64,0.2)",
+                    color: "rgba(0,0,0,0.55)",
                   }}
                   title={cat.name}
                 >
@@ -358,13 +319,12 @@ export default function ControlPage({
                 </div>
               ))}
 
-              {/* แถวคำถาม เรียงตามเลขข้อ 1..MAX */}
               {Array.from({ length: MAX_QUESTIONS_PER_CATEGORY }, (_, qi) =>
                 categories.map((cat) => {
                   const q = cat.questions?.find((qq) => qq.number === qi + 1);
                   if (!q) {
                     return (
-                      <div key={`${cat.id}-${qi}`} style={{ minHeight: 44 }} />
+                      <div key={`${cat.id}-${qi}`} style={{ minHeight: 38 }} />
                     );
                   }
                   const isActive = current.qId === q.id;
@@ -373,23 +333,16 @@ export default function ControlPage({
                       key={q.id}
                       onClick={() => highlightQuestion(q.id)}
                       disabled={!isOnJeopardySlide}
+                      className="rounded-md border text-[12px] font-semibold transition-all"
                       style={{
-                        minHeight: 44,
-                        padding: "8px 6px",
-                        borderRadius: 6,
-                        border: isActive
-                          ? `2px solid ${ORANGE}`
-                          : "1px solid rgba(255,255,255,0.08)",
+                        minHeight: 38,
+                        borderColor: isActive ? ORANGE : "rgba(0,0,0,0.08)",
+                        borderWidth: isActive ? 2 : 1,
                         cursor: isOnJeopardySlide ? "pointer" : "not-allowed",
                         background: isActive
-                          ? "rgba(237,130,64,0.18)"
-                          : "#1a1a1a",
-                        color: isActive ? ORANGE : "#fff",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        boxShadow: isActive
-                          ? `0 0 10px rgba(237,130,64,.4)`
-                          : "none",
+                          ? "rgba(237,130,64,0.10)"
+                          : "transparent",
+                        color: isActive ? ORANGE : "rgba(0,0,0,0.6)",
                       }}
                     >
                       ข้อ {q.number}
@@ -400,154 +353,149 @@ export default function ControlPage({
             </div>
           )}
 
-          <div
-            style={{
-              marginTop: 32,
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
+          {/* ── Action buttons ── */}
+          <div className="mt-6 flex items-center gap-2 flex-wrap">
             <button
               onClick={openModal}
               disabled={!isOnJeopardySlide || !current.qId || current.open}
+              className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:cursor-not-allowed"
               style={{
-                padding: "12px 20px",
-                borderRadius: 6,
-                border: "none",
-                cursor:
-                  isOnJeopardySlide && current.qId && !current.open
-                    ? "pointer"
-                    : "not-allowed",
                 background:
                   isOnJeopardySlide && current.qId && !current.open
-                    ? "#34d399"
-                    : "#333",
-                color: "#fff",
-                fontWeight: 700,
-                opacity:
-                  isOnJeopardySlide && current.qId && !current.open ? 1 : 0.5,
+                    ? GREEN
+                    : "rgba(0,0,0,0.08)",
+                color:
+                  isOnJeopardySlide && current.qId && !current.open
+                    ? "#fff"
+                    : "rgba(0,0,0,0.3)",
               }}
             >
               เปิด Modal
             </button>
+
             <button
               onClick={closeModal}
               disabled={!isOnJeopardySlide || !current.open}
+              className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:cursor-not-allowed"
               style={{
-                padding: "12px 20px",
-                borderRadius: 6,
-                border: "none",
-                cursor:
-                  isOnJeopardySlide && current.open ? "pointer" : "not-allowed",
-                background: "#f87171",
-                color: "#fff",
-                fontWeight: 700,
-                opacity: isOnJeopardySlide && current.open ? 1 : 0.5,
+                background:
+                  isOnJeopardySlide && current.open
+                    ? NEGATIVE
+                    : "rgba(0,0,0,0.08)",
+                color:
+                  isOnJeopardySlide && current.open
+                    ? "#fff"
+                    : "rgba(0,0,0,0.3)",
               }}
             >
               ปิด Modal
             </button>
 
-            {/* ★★ NEW: ปุ่มเลื่อนหน้า Canva ของ modal ที่เปิดอยู่ ── */}
+            <div className="w-px h-6 bg-black/[0.08]" />
+
+            {/* ── ◀ / ▶ เลื่อนหน้า Canva ของ modal ที่เปิดอยู่ ── */}
             <div
+              className="flex items-center gap-1 px-1.5 py-1 rounded-lg border transition-opacity"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "6px 8px",
-                borderRadius: 6,
-                border: "1px solid rgba(96,165,250,0.35)",
-                background: canNavigateCanvaPage
-                  ? "rgba(96,165,250,0.08)"
+                borderColor: canControlOpenModal
+                  ? "rgba(37,99,235,0.3)"
+                  : "rgba(0,0,0,0.08)",
+                background: canControlOpenModal
+                  ? "rgba(37,99,235,0.06)"
                   : "transparent",
-                opacity: canNavigateCanvaPage ? 1 : 0.4,
+                opacity: canControlOpenModal ? 1 : 0.4,
               }}
               title="เลื่อนหน้า Canva ของ Modal ที่เปิดอยู่ ไม่ต้องปิด-เปิดใหม่"
             >
               <button
                 onClick={() => changeCanvaPage(-1)}
-                disabled={!canNavigateCanvaPage}
+                disabled={!canControlOpenModal}
+                className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
                 style={{
-                  padding: "8px 14px",
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: canNavigateCanvaPage ? "pointer" : "not-allowed",
-                  background: canNavigateCanvaPage ? "#60a5fa" : "#333",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 14,
+                  background: canControlOpenModal ? BLUE : "transparent",
+                  color: canControlOpenModal ? "#fff" : "rgba(0,0,0,0.25)",
                 }}
               >
-                ◀
+                <ChevronLeft className="w-3.5 h-3.5" />
               </button>
               <span
+                className="text-[11px] font-medium min-w-[52px] text-center"
                 style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "#60a5fa",
-                  minWidth: 64,
-                  textAlign: "center",
+                  color: canControlOpenModal ? BLUE : "rgba(0,0,0,0.3)",
                 }}
               >
                 หน้า {effectivePage}
               </span>
               <button
                 onClick={() => changeCanvaPage(1)}
-                disabled={!canNavigateCanvaPage}
+                disabled={!canControlOpenModal}
+                className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
                 style={{
-                  padding: "8px 14px",
-                  borderRadius: 6,
-                  border: "none",
-                  cursor: canNavigateCanvaPage ? "pointer" : "not-allowed",
-                  background: canNavigateCanvaPage ? "#60a5fa" : "#333",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 14,
+                  background: canControlOpenModal ? BLUE : "transparent",
+                  color: canControlOpenModal ? "#fff" : "rgba(0,0,0,0.25)",
                 }}
               >
-                ▶
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
+            <div className="w-px h-6 bg-black/[0.08]" />
+
+            {/* ── ↑ เลื่อนขึ้นไปดูโจทย์ / ↓ เลื่อนดูคะแนน ── */}
             <button
-              onClick={triggerScrollToScore}
-              disabled={!isOnJeopardySlide || !current.open}
-              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปยังจุดคะแนนใต้ Canva iframe"
+              onClick={triggerScrollToTop}
+              disabled={!canControlOpenModal}
+              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ขึ้นไปดูโจทย์ (Canva) ด้านบน"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
               style={{
-                padding: "12px 20px",
-                borderRadius: 6,
-                border: "1px solid rgba(52,211,153,0.4)",
-                cursor:
-                  isOnJeopardySlide && current.open ? "pointer" : "not-allowed",
-                background:
-                  isOnJeopardySlide && current.open
-                    ? "rgba(52,211,153,0.12)"
-                    : "transparent",
-                color: "#34d399",
-                fontWeight: 700,
-                opacity: isOnJeopardySlide && current.open ? 1 : 0.5,
+                borderColor: canControlOpenModal
+                  ? "rgba(52,211,153,0.4)"
+                  : "rgba(0,0,0,0.08)",
+                background: canControlOpenModal
+                  ? "rgba(52,211,153,0.10)"
+                  : "transparent",
+                color: canControlOpenModal ? "#0f9d68" : "rgba(0,0,0,0.3)",
               }}
             >
+              <ArrowUp className="w-3.5 h-3.5" />
+              เลื่อนขึ้นไปดูโจทย์
+            </button>
+
+            <button
+              onClick={triggerScrollToScore}
+              disabled={!canControlOpenModal}
+              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปยังจุดคะแนนใต้ Canva iframe"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
+              style={{
+                borderColor: canControlOpenModal
+                  ? "rgba(52,211,153,0.4)"
+                  : "rgba(0,0,0,0.08)",
+                background: canControlOpenModal
+                  ? "rgba(52,211,153,0.10)"
+                  : "transparent",
+                color: canControlOpenModal ? "#0f9d68" : "rgba(0,0,0,0.3)",
+              }}
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
               เลื่อนให้ผู้ชมดูคะแนน
             </button>
+
+            <div className="w-px h-6 bg-black/[0.08]" />
+
             <button
               onClick={clearHighlight}
               disabled={!isOnJeopardySlide || !current.qId}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
               style={{
-                padding: "12px 20px",
-                borderRadius: 6,
-                border: "1px solid rgba(255,255,255,0.2)",
-                cursor:
-                  isOnJeopardySlide && current.qId ? "pointer" : "not-allowed",
-                background: "transparent",
-                color: "#fff",
-                fontWeight: 700,
-                opacity: isOnJeopardySlide && current.qId ? 1 : 0.5,
+                borderColor: "rgba(0,0,0,0.1)",
+                color:
+                  isOnJeopardySlide && current.qId
+                    ? "rgba(0,0,0,0.55)"
+                    : "rgba(0,0,0,0.25)",
               }}
             >
-              ✕ เคลียร์ไฮไลท์
+              <X className="w-3.5 h-3.5" />
+              เคลียร์ไฮไลท์
             </button>
           </div>
         </div>
@@ -557,7 +505,7 @@ export default function ControlPage({
 }
 
 // ---------------------------------------------------------------------------
-// StatusChip — ใช้แสดงในแถบสถานะบนสุด
+// StatusChip — ใช้แสดงในแถบสถานะบนสุด (ปรับให้เข้ากับธีมขาว/ดำของ AdminPanel)
 // ---------------------------------------------------------------------------
 function StatusChip({
   label,
@@ -571,26 +519,14 @@ function StatusChip({
   highlight?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      <span
-        style={{
-          fontSize: 10,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          color: "rgba(255,255,255,0.4)",
-        }}
-      >
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-[0.12em] text-black/30">
         {label}
       </span>
       <span
+        className="text-sm font-semibold"
         style={{
-          fontSize: 18,
-          fontWeight: 800,
-          color: highlight
-            ? "#34d399"
-            : dim
-              ? "rgba(255,255,255,0.35)"
-              : "#fff",
+          color: highlight ? "#1a7a4c" : dim ? "rgba(0,0,0,0.3)" : "#000",
         }}
       >
         {value}

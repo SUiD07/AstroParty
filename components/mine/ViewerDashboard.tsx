@@ -641,6 +641,7 @@ function QuestionModal({
   canvaLinks,
   onClose,
   scrollPulse,
+  scrollTopPulse,
   visible,
   canvaPageOverride,
 }: {
@@ -651,6 +652,7 @@ function QuestionModal({
   canvaLinks: Record<number, string>;
   onClose: () => void;
   scrollPulse?: number;
+  scrollTopPulse?: number;
   visible: boolean;
   canvaPageOverride?: number | null;
 }) {
@@ -671,6 +673,20 @@ function QuestionModal({
       prevScrollPulseRef.current = scrollPulse;
     }
   }, [scrollPulse]);
+
+  // ★ เลื่อนกลับขึ้นไปดูโจทย์ (Canva) เมื่อแอดมินกดปุ่ม "เลื่อนขึ้นไปดูโจทย์"
+  // ใน /control — ตรงข้ามกับ scrollPulse ด้านบน ใช้ pattern เทียบค่าเดิมเหมือนกัน
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevScrollTopPulseRef = useRef(scrollTopPulse);
+  useEffect(() => {
+    if (
+      scrollTopPulse !== undefined &&
+      scrollTopPulse !== prevScrollTopPulseRef.current
+    ) {
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      prevScrollTopPulseRef.current = scrollTopPulse;
+    }
+  }, [scrollTopPulse]);
 
   return (
     <div
@@ -788,6 +804,7 @@ function QuestionModal({
         </div>
 
         <div
+          ref={scrollContainerRef}
           style={{
             overflowY: "auto",
             padding: "0 20px 50px",
@@ -1429,6 +1446,7 @@ interface Slide3Props extends SlideCommonProps {
   onCellClick: (cat: Category, q: Question) => void;
   onBackgroundClick: () => void;
   scrollPulse: number;
+  scrollTopPulse: number;
   canvaPageOverride: number | null;
 }
 
@@ -1445,6 +1463,7 @@ function Slide3({
   onCellClick,
   onBackgroundClick,
   scrollPulse,
+  scrollTopPulse,
   canvaPageOverride,
 }: Slide3Props) {
   const getEvents = (qId: number) =>
@@ -1655,6 +1674,7 @@ function Slide3({
           canvaLinks={canvaLinks}
           onClose={onCloseModal}
           scrollPulse={scrollPulse}
+          scrollTopPulse={scrollTopPulse}
           visible={!!selectedCell}
           canvaPageOverride={canvaPageOverride}
         />
@@ -3265,6 +3285,11 @@ export default function ViewerDashboard() {
   const [scrollPulse, setScrollPulse] = useState(0);
   const lastScrollSignalRef = useRef<number | null>(null);
 
+  // ★ scrollTopPulse — เหมือน scrollPulse แต่ตรงข้าม ใช้ตอนแอดมินกดปุ่ม
+  // "เลื่อนขึ้นไปดูโจทย์" ใน /control ส่งลง QuestionModal ให้เลื่อนกลับขึ้นบนสุด
+  const [scrollTopPulse, setScrollTopPulse] = useState(0);
+  const lastScrollTopSignalRef = useRef<number | null>(null);
+
   // ★ canvaPageOverride — ค่าเลขหน้า Canva ที่แอดมิน override ไว้จาก /control
   // (ปุ่ม ◀/▶ เลื่อนหน้าของ modal ที่เปิดอยู่) null = ยังไม่ override ให้ใช้
   // เลขหน้าเริ่มต้นของคำถามนั้นตามที่ตั้งไว้ใน CanvaLinkManager ตามปกติ
@@ -3355,6 +3380,7 @@ export default function ViewerDashboard() {
       setAdminHighlightId(s.highlighted_question_id);
       // เก็บค่า scroll_signal เริ่มต้นไว้เฉยๆ ไม่ trigger การเลื่อน (แค่ sync ครั้งแรก)
       lastScrollSignalRef.current = s.scroll_signal;
+      lastScrollTopSignalRef.current = s.scroll_top_signal;
       setCanvaPageOverride(s.canva_current_page);
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
@@ -3377,6 +3403,16 @@ export default function ViewerDashboard() {
         setScrollPulse((p) => p + 1);
       }
       lastScrollSignalRef.current = s.scroll_signal;
+
+      // ★ เหมือนกันแต่ตรงข้าม — scroll_top_signal เปลี่ยน = แอดมินกดปุ่ม
+      // "เลื่อนขึ้นไปดูโจทย์" → bump scrollTopPulse ให้ modal เลื่อนกลับขึ้นบนสุด
+      if (
+        lastScrollTopSignalRef.current !== null &&
+        s.scroll_top_signal !== lastScrollTopSignalRef.current
+      ) {
+        setScrollTopPulse((p) => p + 1);
+      }
+      lastScrollTopSignalRef.current = s.scroll_top_signal;
 
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
@@ -3571,6 +3607,7 @@ export default function ViewerDashboard() {
               onCellClick={handleCellClick}
               onBackgroundClick={handleBackgroundClick}
               scrollPulse={scrollPulse}
+              scrollTopPulse={scrollTopPulse}
               canvaPageOverride={canvaPageOverride}
             />
           </motion.div>
