@@ -1,0 +1,1 @@
+alter table presentation_state add column if not exists canva_current_page integer;

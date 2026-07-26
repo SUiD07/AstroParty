@@ -13,6 +13,10 @@
  * - ★ ปุ่ม "ปิด Modal" กดได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น
  * - ★ ปุ่ม "↓ ดูคะแนนข้อนี้" โผล่ตอนมีคำถามถูกไฮไลท์อยู่ — เลื่อนหน้า admin
  *   ไปยัง Score Event Log พร้อม filter ไปที่หมวด/ข้อนั้นให้อัตโนมัติ
+ * - ★★ NEW: ปุ่ม ◀ / ▶ เลื่อนหน้า Canva ของ modal ที่เปิดอยู่ (ไม่ปิด-เปิด modal ใหม่)
+ *   ใช้ค่า canva_current_page ใน presentation_state แยกอิสระจากเลขหน้าเริ่มต้น
+ *   ที่ตั้งไว้ล่วงหน้าต่อคำถามใน CanvaLinkManager — รีเซ็ตกลับเป็นค่าเริ่มต้น
+ *   ทุกครั้งที่ปิด modal หรือ highlight คำถามใหม่
  */
 
 import { useEffect, useState } from "react";
@@ -22,6 +26,8 @@ import {
   updatePresentationState,
   subscribeToPresentationState,
   unsubscribe,
+  loadCanvaLinks,
+  splitCanvaUrl,
   type PresentationState,
 } from "@/lib/db";
 
@@ -47,21 +53,26 @@ export default function ControlPage({
   onJumpToScore?: (categoryId: number, questionNumber: number) => void;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
+  // ★ เลขหน้า Canva เริ่มต้นของแต่ละคำถาม (ตั้งไว้ล่วงหน้าใน CanvaLinkManager)
+  const [canvaLinks, setCanvaLinks] = useState<Record<number, string>>({});
   const [current, setCurrent] = useState<{
     slide: number;
     qId: number | null;
     open: boolean;
     scrollSignal: number;
-  }>({ slide: 1, qId: null, open: false, scrollSignal: 0 });
+    canvaPage: number | null; // ★ override เลขหน้าปัจจุบัน (null = ยังไม่ override)
+  }>({ slide: 1, qId: null, open: false, scrollSignal: 0, canvaPage: null });
 
   useEffect(() => {
     loadCategories().then(setCategories);
+    loadCanvaLinks().then(setCanvaLinks);
     loadPresentationState().then((s: PresentationState) =>
       setCurrent({
         slide: s.current_slide,
         qId: s.highlighted_question_id,
         open: s.modal_open,
         scrollSignal: s.scroll_signal,
+        canvaPage: s.canva_current_page,
       }),
     );
 
@@ -71,6 +82,7 @@ export default function ControlPage({
         qId: s.highlighted_question_id,
         open: s.modal_open,
         scrollSignal: s.scroll_signal,
+        canvaPage: s.canva_current_page,
       });
     });
 
@@ -86,19 +98,22 @@ export default function ControlPage({
 
   const highlightQuestion = async (qId: number) => {
     if (!isOnJeopardySlide) return;
-    setCurrent((c) => ({ ...c, qId, open: false }));
+    // ★ เลือกคำถามใหม่ — เคลียร์ override เลขหน้าเก่าทิ้งด้วยเสมอ
+    setCurrent((c) => ({ ...c, qId, open: false, canvaPage: null }));
     await updatePresentationState({
       highlighted_question_id: qId,
       modal_open: false,
+      canva_current_page: null,
     });
   };
 
   const clearHighlight = async () => {
     if (!isOnJeopardySlide) return;
-    setCurrent((c) => ({ ...c, qId: null, open: false }));
+    setCurrent((c) => ({ ...c, qId: null, open: false, canvaPage: null }));
     await updatePresentationState({
       highlighted_question_id: null,
       modal_open: false,
+      canva_current_page: null,
     });
   };
 
@@ -111,8 +126,13 @@ export default function ControlPage({
   const closeModal = async () => {
     // FIX: ปิดได้เฉพาะตอนเปิดอยู่จริงเท่านั้น
     if (!isOnJeopardySlide || !current.open) return;
-    setCurrent((c) => ({ ...c, open: false }));
-    await updatePresentationState({ modal_open: false });
+    // ★ ปิด modal = จบคำถามนี้แล้ว เคลียร์ override เลขหน้ากลับเป็น null
+    // เพื่อให้เปิดคำถามถัดไปเริ่มที่เลขหน้าเริ่มต้นเสมอ
+    setCurrent((c) => ({ ...c, open: false, canvaPage: null }));
+    await updatePresentationState({
+      modal_open: false,
+      canva_current_page: null,
+    });
   };
 
   // ★ ส่งสัญญาณให้ทุกจอ viewer ที่เปิด QuestionModal ค้างอยู่ เลื่อนไปดูจุดคะแนน
@@ -144,6 +164,29 @@ export default function ControlPage({
   const handleJumpToScore = () => {
     if (!highlightedInfo || !onJumpToScore) return;
     onJumpToScore(highlightedInfo.category.id, highlightedInfo.question.number);
+  };
+
+  // ★ เลขหน้า Canva เริ่มต้นของคำถามที่ highlight อยู่ (parse จาก canva_url)
+  const assignedPage = (() => {
+    if (!current.qId) return null;
+    const url = canvaLinks[current.qId];
+    if (!url) return null;
+    const { page } = splitCanvaUrl(url);
+    const n = Number(page);
+    return page !== "" && !Number.isNaN(n) ? n : null;
+  })();
+
+  // ★ เลขหน้าที่กำลังแสดงอยู่จริงตอนนี้ (override ถ้ามี ไม่งั้นใช้ค่าเริ่มต้น)
+  const effectivePage = current.canvaPage ?? assignedPage ?? 1;
+
+  // ★ ปุ่มเลื่อนหน้าใช้ได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น (เหมือนปุ่มเลื่อนดูคะแนน)
+  const canNavigateCanvaPage = isOnJeopardySlide && current.open;
+
+  const changeCanvaPage = async (delta: number) => {
+    if (!canNavigateCanvaPage) return;
+    const nextPage = Math.max(1, effectivePage + delta);
+    setCurrent((c) => ({ ...c, canvaPage: nextPage }));
+    await updatePresentationState({ canva_current_page: nextPage });
   };
 
   return (
@@ -189,7 +232,13 @@ export default function ControlPage({
             value={current.open ? "เปิดอยู่" : "ปิดอยู่"}
             highlight={current.open}
           />
-
+          {current.open && (
+            <StatusChip
+              label="หน้า Canva ปัจจุบัน"
+              value={`หน้า ${effectivePage}`}
+              highlight={current.canvaPage != null}
+            />
+          )}
           {/* {highlightedInfo && onJumpToScore && (
             <button
               onClick={handleJumpToScore}
@@ -357,6 +406,7 @@ export default function ControlPage({
               display: "flex",
               gap: 12,
               flexWrap: "wrap",
+              alignItems: "center",
             }}
           >
             <button
@@ -399,6 +449,68 @@ export default function ControlPage({
             >
               ปิด Modal
             </button>
+
+            {/* ★★ NEW: ปุ่มเลื่อนหน้า Canva ของ modal ที่เปิดอยู่ ── */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 8px",
+                borderRadius: 6,
+                border: "1px solid rgba(96,165,250,0.35)",
+                background: canNavigateCanvaPage
+                  ? "rgba(96,165,250,0.08)"
+                  : "transparent",
+                opacity: canNavigateCanvaPage ? 1 : 0.4,
+              }}
+              title="เลื่อนหน้า Canva ของ Modal ที่เปิดอยู่ ไม่ต้องปิด-เปิดใหม่"
+            >
+              <button
+                onClick={() => changeCanvaPage(-1)}
+                disabled={!canNavigateCanvaPage}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: canNavigateCanvaPage ? "pointer" : "not-allowed",
+                  background: canNavigateCanvaPage ? "#60a5fa" : "#333",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                ◀
+              </button>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "#60a5fa",
+                  minWidth: 64,
+                  textAlign: "center",
+                }}
+              >
+                หน้า {effectivePage}
+              </span>
+              <button
+                onClick={() => changeCanvaPage(1)}
+                disabled={!canNavigateCanvaPage}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: canNavigateCanvaPage ? "pointer" : "not-allowed",
+                  background: canNavigateCanvaPage ? "#60a5fa" : "#333",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                ▶
+              </button>
+            </div>
+
             <button
               onClick={triggerScrollToScore}
               disabled={!isOnJeopardySlide || !current.open}

@@ -42,7 +42,7 @@ import {
 } from "@/lib/db";
 import type { ScoreEvent } from "@/lib/db";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
-import { loadCanvaLinks } from "@/lib/db";
+import { loadCanvaLinks, splitCanvaUrl } from "@/lib/db";
 import {
   loadPresentationState,
   // updatePresentationState,
@@ -580,6 +580,22 @@ function JeopardyCell({
 }
 
 // ---------------------------------------------------------------------------
+// computeCanvaSrc — คำนวณ src จริงของ iframe โดยรองรับ "เลื่อนหน้า Canva
+// ของ modal ที่เปิดอยู่" จากหน้า /control (canva_current_page ใน
+// presentation_state) ถ้ามีค่า override ให้ใช้แทนเลขหน้าเริ่มต้นของคำถามนั้น
+// ---------------------------------------------------------------------------
+function computeCanvaSrc(
+  fullUrl: string | undefined,
+  pageOverride: number | null,
+): string | undefined {
+  if (!fullUrl) return undefined;
+  if (pageOverride == null) return fullUrl;
+  const { base } = splitCanvaUrl(fullUrl);
+  if (!base) return fullUrl;
+  return `${base}#${pageOverride}`;
+}
+
+// ---------------------------------------------------------------------------
 // CanvaSingleFrame — iframe เดียวถาวรตลอด session
 //
 // ★ ทุกคำถามใช้ไฟล์ Canva เดียวกัน ต่างกันแค่เลขหน้าท้าย URL (#26, #27, ...)
@@ -626,6 +642,7 @@ function QuestionModal({
   onClose,
   scrollPulse,
   visible,
+  canvaPageOverride,
 }: {
   category: Category;
   question: Question;
@@ -635,6 +652,7 @@ function QuestionModal({
   onClose: () => void;
   scrollPulse?: number;
   visible: boolean;
+  canvaPageOverride?: number | null;
 }) {
   // ★ เลื่อนไปจุดคะแนน (ใต้ Canva iframe) เมื่อแอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน"
   // ใน /control — เทียบค่าเดิมที่เคยเห็นตอน modal นี้ mount กับค่าที่ได้รับใหม่
@@ -780,7 +798,10 @@ function QuestionModal({
             style={{ marginTop: 0, pointerEvents: visible ? "auto" : "none" }}
           >
             <CanvaSingleFrame
-              src={canvaLinks[question.id]}
+              src={computeCanvaSrc(
+                canvaLinks[question.id],
+                canvaPageOverride ?? null,
+              )}
               modalVisible={visible}
             />
           </div>
@@ -1408,6 +1429,7 @@ interface Slide3Props extends SlideCommonProps {
   onCellClick: (cat: Category, q: Question) => void;
   onBackgroundClick: () => void;
   scrollPulse: number;
+  canvaPageOverride: number | null;
 }
 
 function Slide3({
@@ -1423,6 +1445,7 @@ function Slide3({
   onCellClick,
   onBackgroundClick,
   scrollPulse,
+  canvaPageOverride,
 }: Slide3Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
@@ -1633,6 +1656,7 @@ function Slide3({
           onClose={onCloseModal}
           scrollPulse={scrollPulse}
           visible={!!selectedCell}
+          canvaPageOverride={canvaPageOverride}
         />
       )}
     </div>
@@ -3241,6 +3265,13 @@ export default function ViewerDashboard() {
   const [scrollPulse, setScrollPulse] = useState(0);
   const lastScrollSignalRef = useRef<number | null>(null);
 
+  // ★ canvaPageOverride — ค่าเลขหน้า Canva ที่แอดมิน override ไว้จาก /control
+  // (ปุ่ม ◀/▶ เลื่อนหน้าของ modal ที่เปิดอยู่) null = ยังไม่ override ให้ใช้
+  // เลขหน้าเริ่มต้นของคำถามนั้นตามที่ตั้งไว้ใน CanvaLinkManager ตามปกติ
+  const [canvaPageOverride, setCanvaPageOverride] = useState<number | null>(
+    null,
+  );
+
   // FIX B: เก็บ categories ล่าสุดไว้ใน ref เพื่อไม่ต้อง resubscribe presentation_state
   // ทุกครั้งที่ categories เปลี่ยน (เช่นตอนแอดมินอัปเดตคะแนน)
   const categoriesRef = useRef<Category[]>([]);
@@ -3324,6 +3355,7 @@ export default function ViewerDashboard() {
       setAdminHighlightId(s.highlighted_question_id);
       // เก็บค่า scroll_signal เริ่มต้นไว้เฉยๆ ไม่ trigger การเลื่อน (แค่ sync ครั้งแรก)
       lastScrollSignalRef.current = s.scroll_signal;
+      setCanvaPageOverride(s.canva_current_page);
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
         if (found) setSelectedCell(found);
@@ -3334,6 +3366,7 @@ export default function ViewerDashboard() {
       setCurrentSlide(s.current_slide);
       setAdminHighlightId(s.highlighted_question_id);
       setLocalHighlightId(null);
+      setCanvaPageOverride(s.canva_current_page);
 
       // ★ ถ้า scroll_signal เปลี่ยนจากที่เคยเห็นล่าสุด = แอดมินกดปุ่มเลื่อนมาจริง
       // (ไม่ใช่แค่ effect นี้เพิ่งรันครั้งแรก) → bump scrollPulse ให้ modal เลื่อนจอ
@@ -3538,6 +3571,7 @@ export default function ViewerDashboard() {
               onCellClick={handleCellClick}
               onBackgroundClick={handleBackgroundClick}
               scrollPulse={scrollPulse}
+              canvaPageOverride={canvaPageOverride}
             />
           </motion.div>
 

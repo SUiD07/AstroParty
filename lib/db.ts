@@ -206,6 +206,15 @@ export async function deleteCanvaLink(questionId: number) {
     .eq("id", questionId);
 }
 
+// ★ แยก URL เต็มของ Canva ออกเป็น base (ก่อน #) กับ page (หลัง #)
+// ใช้ร่วมกันทั้งฝั่งแอดมิน (CanvaLinkManager, ControlPage) และฝั่ง viewer
+// เพราะทุกคำถามใช้ไฟล์ Canva เดียวกัน ต่างกันแค่เลขหน้าท้าย URL
+export function splitCanvaUrl(url: string): { base: string; page: string } {
+  const idx = url.indexOf("#");
+  if (idx === -1) return { base: url, page: "" };
+  return { base: url.slice(0, idx), page: url.slice(idx + 1) };
+}
+
 /**
  *ฟังก์ชันจัดการ presentation_state
  * (คุมสไลด์ + highlight/เปิด modal คำถาม jeopardy จากหน้า /control)
@@ -214,6 +223,11 @@ export async function deleteCanvaLink(questionId: number) {
 /**
  * เพิ่ม scroll_signal เข้าไปใน PresentationState
  * (ใช้ส่งสัญญาณ "เลื่อนให้ผู้ชมดูคะแนน" จากหน้า /control ไปยังทุกจอ viewer)
+ *
+ * ★ เพิ่ม canva_current_page — ใช้ควบคุม "เลื่อนหน้า Canva ของ modal ที่เปิดอยู่"
+ * จากหน้า /control โดยไม่ต้องปิด-เปิด modal ใหม่ (แยกอิสระจากเลขหน้าเริ่มต้น
+ * ที่ตั้งไว้ล่วงหน้าใน CanvaLinkManager ต่อคำถาม) ค่า null = ยังไม่ override
+ * ให้ viewer ใช้เลขหน้าเริ่มต้นของคำถามนั้นตามปกติ
  */
 
 export interface PresentationState {
@@ -221,6 +235,7 @@ export interface PresentationState {
   highlighted_question_id: number | null;
   modal_open: boolean;
   scroll_signal: number;
+  canva_current_page: number | null;
   updated_at: string;
 }
 
@@ -242,6 +257,7 @@ export async function updatePresentationState(
       | "highlighted_question_id"
       | "modal_open"
       | "scroll_signal"
+      | "canva_current_page"
     >
   >,
 ) {
