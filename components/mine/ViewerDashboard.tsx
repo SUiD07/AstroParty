@@ -7,15 +7,15 @@
  * Fonts: Noto Sans Thai + Orbitron (display)
  *
  * ── แก้ไขในรอบนี้ ──
- * FIX A: ยก Slide1, Slide2, Slide4–Slide10, NavBar, FooterTicker, RefreshBtn
- *        ออกมาเป็น top-level function (เหมือน Slide3 ที่เคยแก้ไปแล้ว)
+ * FIX A: ยก Slide1, Slide3, Slide5–Slide11, NavBar, FooterTicker, RefreshBtn
+ *        ออกมาเป็น top-level function (เหมือน Slide4 ที่เคยแก้ไปแล้ว)
  *        เพื่อไม่ให้ re-mount ทุกครั้งที่ parent re-render (ทุกครั้งที่มี score event)
  * FIX B: เปลี่ยน dependency array ของ presentation_state effect เป็น []
  *        ใช้ categoriesRef แทนการอ้าง categories ตรงๆ กัน stale closure
  * FIX C: QuestionModal ไม่ unmount ตอนปิดแล้ว (ใช้ prop `visible` คุม opacity/
  *        pointer-events แทน conditional render)
- * FIX D: Slide3 mount ค้างตลอดไม่ unmount ตอนสลับสไลด์ (เดิมใช้ key={currentSlide}
- *        ใน AnimatePresence ทำให้ Slide3 unmount ทุกครั้งที่เปลี่ยนสไลด์) —
+ * FIX D: Slide4 mount ค้างตลอดไม่ unmount ตอนสลับสไลด์ (เดิมใช้ key={currentSlide}
+ *        ใน AnimatePresence ทำให้ Slide4 unmount ทุกครั้งที่เปลี่ยนสไลด์) —
  *        สไลด์อื่นยัง mount/unmount ตามปกติ
  * FIX E: CanvaSingleFrame — ทุกคำถามใช้ไฟล์ Canva เดียวกัน ต่างกันแค่เลขหน้า
  *        ท้าย URL (#26, #27, ...) ยืนยันแล้วว่าเปลี่ยน src ที่ต่างกันแค่
@@ -24,6 +24,22 @@
  *        เบาๆ) จึงใช้ iframe เดียวถาวรแทนระบบ pool + LRU cache ที่เคยทำไว้
  *        ก่อนหน้า — เรียบง่ายกว่ามาก ไม่มีปัญหาเรื่อง memory บวมบนมือถือ
  *        หรือสถานะ loading/loaded ที่ไม่แม่นยำอีกต่อไป
+ * FIX F: ★★ Rename ฟังก์ชันทุกสไลด์ให้ตรงกับตำแหน่งจริงที่แสดงบนจอ
+ *        (เดิมหลังแทรก Slide2/Canva-Intro เข้ามา ชื่อฟังก์ชัน Slide2..Slide10
+ *        เพี้ยนไปคนละตัวกับตำแหน่งจริง เช่น "Slide3" แปะอยู่ที่ตำแหน่งสไลด์ 4
+ *        ทำให้สับสนตอนแก้โค้ด) ตอนนี้ชื่อฟังก์ชัน SlideN ตรงกับเลขสไลด์ N
+ *        ที่เห็นจริงบนจอเสมอ — ยกเว้น Question Board (Slide4) ซึ่งยัง render
+ *        แยกอยู่นอก `slides` record ตามเดิม (ดู FIX D/G)
+ * FIX G: Slide2 (Canva Intro) mount ค้างตลอด session เหมือน Slide4 — เพราะ
+ *        ใช้ไฟล์ Canva เดียวกัน จึงมีปัญหา "reload ทุกครั้งที่กลับมาสไลด์นี้"
+ *        แบบเดียวกับที่เคยแก้ให้ Slide4 (FIX D/E) ย้ายออกจาก `slides` record
+ *        มาเป็น persistent-mount wrapper แยกต่างหาก
+ * FIX H: ★★ Slide2 ใช้ canvaPageOverride ตัวเดียวกับ Slide4 (Question Board)
+ *        เพราะทั้งสองสไลด์ใช้ไฟล์ Canva เดียวกัน และไม่มีทางแสดงพร้อมกัน
+ *        (คนละสไลด์) จึงใช้ประโยชน์จากปุ่ม ◀/▶ "เลื่อนหน้า Canva" ที่ทำไว้ใน
+ *        /control ร่วมกันได้เลยโดยไม่ต้องเพิ่ม state/คอลัมน์ DB ใหม่ — ดู
+ *        ControlPage.tsx ที่แยกเงื่อนไข "อยู่สไลด์ Canva Intro" ออกจาก
+ *        "เปิด modal คำถามอยู่" เพื่อคำนวณเลขหน้าเริ่มต้นให้ถูก context
  */
 
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -608,9 +624,13 @@ function computeCanvaSrc(
 function CanvaSingleFrame({
   src,
   modalVisible,
+  fill,
 }: {
   src: string | undefined;
   modalVisible: boolean;
+  // ★ fill=true → ยืดเต็มพื้นที่ container (ใช้กับสไลด์เต็มจอ เช่น Slide2)
+  // ค่าเริ่มต้น (undefined/false) → ขนาดคงที่แบบกล่อง 16:9 ในกรอบ modal
+  fill?: boolean;
 }) {
   if (!src) return null;
   return (
@@ -620,7 +640,7 @@ function CanvaSingleFrame({
       allow="fullscreen"
       style={{
         width: "100%",
-        height: "min(90vh, calc((100vw - 80px) * 9 / 16))",
+        height: fill ? "100%" : "min(90vh, calc((100vw - 80px) * 9 / 16))",
         border: "none",
         borderRadius: 8,
         pointerEvents: modalVisible ? "auto" : "none",
@@ -1168,7 +1188,7 @@ function Slide1() {
               // opacity: 0.85,
             }}
           />
-  
+
           <div
             style={{
               width: 1,
@@ -1176,13 +1196,13 @@ function Slide1() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-  
+
           <img
             src="/logo.png"
             alt="AMSci 2026"
             style={{ width: "clamp(25rem,17vw,20rem)", height: "auto" }}
           />
-  
+
           <div
             style={{
               width: 1,
@@ -1190,7 +1210,7 @@ function Slide1() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-  
+
           <img
             src="/MD_Chula.png"
             alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
@@ -1203,9 +1223,10 @@ function Slide1() {
         </div>
         <p
           style={{
-            ...notoTH,
-            color: C.orange,
-            fontSize: "clamp(1.5rem,1.4vw,1.1rem)",
+            // ...notoTH,
+            ...fontDisplay,
+            // color: C.orange,
+            fontSize: "clamp(2rem,1.4vw,1.1rem)",
             // letterSpacing: "0.25em",
             marginBottom: 24,
           }}
@@ -1246,10 +1267,9 @@ function Slide1() {
             }}
           >
             งานแข่งขันตอบปัญหาวิชาการและวิทยาศาสตร์การแพทย์ โดยนิสิตแพทย์จุฬาฯ
-            <br/>
+            <br />
             เนื่องในงานสัปดาห์วันอานันทมหิดล
-            {/* <br/> */}{" "}
-            ประจำปีการศึกษา 2569
+            {/* <br/> */} ประจำปีการศึกษา 2569
           </p>
 
           <div
@@ -1296,15 +1316,24 @@ function Slide1() {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE (ใหม่) — CANVA INTRO (เต็มจอ)
-// ★ ใส่ลิงก์ Canva จริงใน INTRO_CANVA_URL ด้านล่าง (ตอนนี้เป็นค่าตัวอย่าง)
-//   iframe ขยายเต็มพื้นที่สไลด์เท่าที่ทำได้ (width/height 100% ของ container
-//   ซึ่งเต็มจอ inset:0 อยู่แล้ว) เว้น padding เล็กน้อยรอบขอบเท่านั้น
+// SLIDE 2 — CANVA INTRO (เต็มจอ)
+// ★ ใช้ไฟล์ Canva เดียวกันกับ Question Board (Slide4) เลยได้ประโยชน์จาก
+//   ปุ่ม ◀/▶ "เลื่อนหน้า Canva" ที่ทำไว้ใน /control ร่วมกันได้เลย — ควบคุมผ่าน
+//   canvaPageOverride ตัวเดียวกัน (ดู ControlPage.tsx ที่แยกเงื่อนไข "อยู่สไลด์
+//   Canva Intro" ออกจาก "เปิด modal คำถามอยู่" เพื่อสลับ base page ให้ถูก context)
+// ★ ใช้ CanvaSingleFrame ตัวเดียวกับที่ Question Board ใช้ — iframe จะไม่ถูก
+//   ทำลายตอนสลับสไลด์ไปมา (ดู persistent-mount wrapper ใน Main ด้านล่าง)
+//   แก้ปัญหาเดิมที่ Canva ต้องโหลดใหม่ทุกครั้งที่กลับมาสไลด์นี้
 // ---------------------------------------------------------------------------
 const INTRO_CANVA_URL =
   "https://www.canva.com/design/DAHPWmXRz-8/uGmhgJxkpGvoMveLuyJr2g/view?embed";
 
-function SlideCanvaIntro() {
+interface Slide2Props {
+  canvaPageOverride: number | null;
+  isActive: boolean;
+}
+
+function Slide2({ canvaPageOverride, isActive }: Slide2Props) {
   return (
     <div
       style={{
@@ -1316,25 +1345,19 @@ function SlideCanvaIntro() {
         padding: 12,
       }}
     >
-      <iframe
-        src={INTRO_CANVA_URL}
-        allowFullScreen
-        allow="fullscreen"
-        style={{
-          width: "100%",
-          height: "100%",
-          border: "none",
-          borderRadius: 8,
-        }}
+      <CanvaSingleFrame
+        src={computeCanvaSrc(INTRO_CANVA_URL, canvaPageOverride)}
+        modalVisible={isActive}
+        fill
       />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 2 — OVERVIEW
+// SLIDE 3 — OVERVIEW
 // ---------------------------------------------------------------------------
-interface Slide2Props {
+interface Slide3Props {
   data: RaceData;
   categories: Category[];
   sortedPositions: Position[];
@@ -1342,13 +1365,13 @@ interface Slide2Props {
   totalQCount: number;
 }
 
-function Slide2({
+function Slide3({
   data,
   categories,
   sortedPositions,
   answeredCount,
   totalQCount,
-}: Slide2Props) {
+}: Slide3Props) {
   const leaderName = sortedPositions[0]
     ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)?.name ?? "—")
     : "—";
@@ -1367,7 +1390,7 @@ function Slide2({
             ...fontDisplay,
           }}
         >
-          Round {data.state.round}
+          Round 4{/* {data.state.round} */}
         </h1>
 
         <div className="mt-5 space-y-1.5">
@@ -1386,7 +1409,7 @@ function Slide2({
       />
 
       <div className="px-16 pb-12 flex gap-5 max-w-3xl">
-        <div
+        {/* <div
           className="flex-1 rounded-2xl p-6"
           style={{
             background: "#111",
@@ -1410,18 +1433,18 @@ function Slide2({
           >
             {data.teams.length}
           </p>
-        </div>
+        </div> */}
 
         <div
           className="flex-1 rounded-2xl p-6"
           style={{
-            background: "#111",
+            // background: "#111",
             border: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
-              color: "rgba(255,255,255,0.25)",
+              // color: "rgba(255,255,255,0.25)",
               fontSize: 10,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -1439,13 +1462,13 @@ function Slide2({
             }}
           >
             {answeredCount}
-            <span className="text-white/20 ml-1" style={{ fontSize: "1.5rem" }}>
+            <span className="text-white ml-1" style={{ fontSize: "1.5rem" }}>
               / {totalQCount}
             </span>
           </p>
         </div>
 
-        <div
+        {/* <div
           className="flex-1 rounded-2xl p-6"
           style={{
             background: "#111",
@@ -1472,7 +1495,7 @@ function Slide2({
           >
             {leaderName}
           </p>
-        </div>
+        </div> */}
       </div>
 
       {categories.length > 0 && (
@@ -1530,11 +1553,11 @@ function Slide2({
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 3 — QUESTION BOARD (top-level, hoisted)
+// SLIDE 4 — QUESTION BOARD (top-level, hoisted)
 // ★ Mount ค้างตลอด session (ดู Main component ด้านล่าง) เพื่อให้ QuestionModal
 //   และ CanvaSingleFrame ข้างในไม่ถูกทำลายเวลาสลับสไลด์ไปมา
 // ---------------------------------------------------------------------------
-interface Slide3Props extends SlideCommonProps {
+interface Slide4Props extends SlideCommonProps {
   answeredCount: number;
   totalQCount: number;
   selectedCell: { category: Category; question: Question } | null;
@@ -1547,7 +1570,7 @@ interface Slide3Props extends SlideCommonProps {
   canvaPageOverride: number | null;
 }
 
-function Slide3({
+function Slide4({
   data,
   categories,
   scoreEvents,
@@ -1562,12 +1585,12 @@ function Slide3({
   scrollPulse,
   scrollTopPulse,
   canvaPageOverride,
-}: Slide3Props) {
+}: Slide4Props) {
   const getEvents = (qId: number) =>
     scoreEvents.filter((e) => e.question_id === qId);
 
   // ★ เก็บ selectedCell ล่าสุดไว้ ไม่ให้ QuestionModal unmount ตอนปิด
-  const [lastCell, setLastCell] = useState<Slide3Props["selectedCell"]>(null);
+  const [lastCell, setLastCell] = useState<Slide4Props["selectedCell"]>(null);
   useEffect(() => {
     // เปิด modal จริงแล้ว — ใช้ค่านี้เป็นหลักเสมอ
     if (selectedCell) {
@@ -1724,10 +1747,12 @@ function Slide3({
               >
                 <span
                   style={{
-                    ...notoTH,
+                    // ...notoTH,
+                    ...orbitron,
+                    // ...fontDisplay,
                     fontSize: "clamp(0.72rem, 1.1vw, 0.95rem)",
                     fontWeight: 600,
-                    color: "rgba(255,255,255,0.55)",
+                    // color: "rgba(255,255,255,0.55)",
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
                     lineHeight: 1.3,
@@ -1781,16 +1806,16 @@ function Slide3({
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 4 — SPACE RACE
+// SLIDE 5 — SPACE RACE
 // ---------------------------------------------------------------------------
-interface Slide4Props {
+interface Slide5Props {
   data: RaceData;
   topSix: Position[];
   minScore: number;
   scoreRange: number;
 }
 
-function Slide4({ data, topSix, minScore, scoreRange }: Slide4Props) {
+function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
   return (
     <div
       style={{
@@ -2130,17 +2155,17 @@ function LeaderboardDecor({ compact }: { compact?: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 5 — LIVE LEADERBOARD
+// SLIDE 6 — LIVE LEADERBOARD
 // ซ้าย fix สูงสุด 4 ทีม, ขวาคือทีมที่เหลือ (ปกติ 2 ทีมจาก 6 ทีมรวม)
 // ถ้าทีมทั้งหมด < 4 คอลัมน์ขวาว่าง เติม decoration ล้วน
 // ถ้าขวามีทีมน้อยกว่าซ้าย (แถวเหลือ) เติม decoration ในช่องว่างที่เหลือ
 // ---------------------------------------------------------------------------
-interface Slide5Props {
+interface Slide6Props {
   data: RaceData;
   sortedPositions: Position[];
 }
 
-function Slide5({ data, sortedPositions }: Slide5Props) {
+function Slide6({ data, sortedPositions }: Slide6Props) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -2389,9 +2414,9 @@ function Slide5({ data, sortedPositions }: Slide5Props) {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 6 — CALCULATING (static)
+// SLIDE 7 — CALCULATING (static)
 // ---------------------------------------------------------------------------
-function Slide6() {
+function Slide7() {
   return (
     <div
       style={{
@@ -2474,14 +2499,14 @@ function Slide6() {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 7 — รางวัลชมเชย
+// SLIDE 8 — รางวัลชมเชย
 // ---------------------------------------------------------------------------
 interface AwardSlideProps {
   data: RaceData;
   sortedPositions: Position[];
 }
 
-function Slide7({ data, sortedPositions }: AwardSlideProps) {
+function Slide8({ data, sortedPositions }: AwardSlideProps) {
   const consolationTeams = sortedPositions.slice(3);
 
   return (
@@ -2662,9 +2687,9 @@ function Slide7({ data, sortedPositions }: AwardSlideProps) {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 8 — รางวัลรองชนะเลิศอันดับ 2
+// SLIDE 9 — รางวัลรองชนะเลิศอันดับ 2
 // ---------------------------------------------------------------------------
-function Slide8({ data, sortedPositions }: AwardSlideProps) {
+function Slide9({ data, sortedPositions }: AwardSlideProps) {
   const t3 = sortedPositions[2]
     ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
     : null;
@@ -2768,9 +2793,9 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 9 — รางวัลรองชนะเลิศอันดับ 1
+// SLIDE 10 — รางวัลรองชนะเลิศอันดับ 1
 // ---------------------------------------------------------------------------
-function Slide9({ data, sortedPositions }: AwardSlideProps) {
+function Slide10({ data, sortedPositions }: AwardSlideProps) {
   const ru = sortedPositions[1]
     ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
     : null;
@@ -2874,10 +2899,10 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 10 — รางวัลชนะเลิศ
+// SLIDE 11 — รางวัลชนะเลิศ
 // ---------------------------------------------------------------------------
-function Slide10({ data, sortedPositions }: AwardSlideProps) {
-  // Slide10 เป็น component identity คงที่ (module-level)
+function Slide11({ data, sortedPositions }: AwardSlideProps) {
+  // Slide11 เป็น component identity คงที่ (module-level)
   // useEffect นี้จะยิงแค่ตอน "mount จริง" (navigate เข้าสไลด์นี้ครั้งแรก)
   // ไม่ยิงซ้ำทุกครั้งที่ parent re-render จาก score event
   useEffect(() => {
@@ -3060,11 +3085,15 @@ function FooterTicker() {
         <span style={{ color: C.gold, fontWeight: 600 }}>
           วันที่ 9 สิงหาคม 2569
         </span>
-        &nbsp;·&nbsp;ช่วงเช้า&nbsp;
+        {/* &nbsp;·&nbsp;ช่วงเช้า&nbsp;
         <span style={{ color: C.orange, fontWeight: 600 }}>Elimination</span>
         &nbsp;·&nbsp;ช่วงบ่าย&nbsp;
         <span style={{ color: C.orange, fontWeight: 600 }}>Semi-final</span>
-        &nbsp;และ&nbsp;
+        &nbsp;และ&nbsp; */}
+        <span style={{ color: C.blueLight, fontWeight: 600 }}>
+          {" "}
+          การแข่งขันรอบ{" "}
+        </span>
         <span style={{ color: C.orange, fontWeight: 600 }}>Final</span>
         &nbsp;·&nbsp;รับชมการถ่ายทอดสดได้ทาง&nbsp;
         <span style={{ color: C.blueLight, fontWeight: 600 }}>
@@ -3574,15 +3603,17 @@ export default function ViewerDashboard() {
 
   // FIX A: ทุก Slide ตอนนี้เป็น top-level function ที่ identity คงที่
   // ส่งข้อมูลผ่าน props แทนการปิด (closure) ทับ re-render ของ parent
-  // ★ FIX F: Slide3 ไม่ได้อยู่ใน record นี้แล้ว — render แยกต่างหากด้านล่าง
-  //   เพื่อให้ mount ค้างตลอด session ไม่ unmount ตอนสลับสไลด์ (ดู JSX ท้ายไฟล์)
-  // ★ อัปเดต: เพิ่มสไลด์ Canva เต็มจอเป็นสไลด์ที่ 2 ทำให้ Question Board (Slide3)
-  //   เลื่อนไปอยู่ตำแหน่งสไลด์ที่ 4 แทนที่ 3 เดิม (ดูเงื่อนไข currentSlide === 4 ด้านล่าง)
+  // ★ FIX F: Slide4 (Question Board) mount ค้างตลอด session ไม่อยู่ใน record นี้
+  //   — render แยกต่างหากด้านล่าง (ดู JSX ท้ายไฟล์)
+  // ★ FIX G: Slide2 (Canva Intro) ก็ mount ค้างตลอด session เหมือนกัน — เพราะ
+  //   ใช้ไฟล์ Canva เดียวกับ Question Board จึงมีปัญหา "reload ทุกครั้งที่กลับมา
+  //   สไลด์นี้" แบบเดียวกัน ถ้าปล่อยให้ unmount/remount ตาม key={currentSlide}
+  //   ปกติ — จึงย้ายออกจาก record นี้เช่นกัน (ดู JSX ท้ายไฟล์)
   const slides: Record<number, React.ReactNode> = {
     1: <Slide1 />,
-    2: <SlideCanvaIntro />,
+    // ★ ไม่มี key 2 — Slide2 (Canva Intro) render แยกไว้ด้านล่างตลอด session
     3: (
-      <Slide2
+      <Slide3
         data={data}
         categories={categories}
         sortedPositions={sortedPositions}
@@ -3590,22 +3621,22 @@ export default function ViewerDashboard() {
         totalQCount={totalQCount}
       />
     ),
-    // ★ ไม่มี key 4 — สไลด์ Question Board (Slide3) ถูก render แยกไว้ด้านล่าง
-    //   ตลอด session (ดู FIX D) และตอนนี้อยู่ที่ตำแหน่งสไลด์ที่ 4 แทนที่ 3 เดิม
+    // ★ ไม่มี key 4 — สไลด์ Question Board (Slide4) ถูก render แยกไว้ด้านล่าง
+    //   ตลอด session (ดู FIX D)
     5: (
-      <Slide4
+      <Slide5
         data={data}
         topSix={topSix}
         minScore={minScore}
         scoreRange={scoreRange}
       />
     ),
-    6: <Slide5 data={data} sortedPositions={sortedPositions} />,
-    7: <Slide6 />,
-    8: <Slide7 data={data} sortedPositions={sortedPositions} />,
-    9: <Slide8 data={data} sortedPositions={sortedPositions} />,
-    10: <Slide9 data={data} sortedPositions={sortedPositions} />,
-    11: <Slide10 data={data} sortedPositions={sortedPositions} />,
+    6: <Slide6 data={data} sortedPositions={sortedPositions} />,
+    7: <Slide7 />,
+    8: <Slide8 data={data} sortedPositions={sortedPositions} />,
+    9: <Slide9 data={data} sortedPositions={sortedPositions} />,
+    10: <Slide10 data={data} sortedPositions={sortedPositions} />,
+    11: <Slide11 data={data} sortedPositions={sortedPositions} />,
   };
 
   return (
@@ -3636,7 +3667,7 @@ export default function ViewerDashboard() {
           <Grainient
             color1="#000000"
             color2="#6C240A"
-            color3="#ED8240"
+            color3="#000000"
             timeSpeed={0.35}
             colorBalance={0}
             warpStrength={1}
@@ -3680,8 +3711,30 @@ export default function ViewerDashboard() {
         </div>
 
         <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
-          {/* ★ FIX D: Slide3 mount ค้างตลอด session ไม่ unmount ตอนสลับสไลด์
-              (เดิมใช้ key={currentSlide} ทำให้ Slide3 ถูก unmount/remount
+          {/* ★ FIX G: Slide2 (Canva Intro) mount ค้างตลอด session เหมือน Slide4
+              เพราะใช้ไฟล์ Canva เดียวกัน ถ้าปล่อยให้ unmount/remount ตาม
+              key={currentSlide} ปกติ จะโหลด Canva ใหม่ทุกครั้งที่กลับมาสไลด์นี้
+              โดยไม่จำเป็น (เหตุผลเดียวกับ FIX D ของ Slide4) */}
+          <motion.div
+            animate={{ opacity: currentSlide === 2 ? 1 : 0 }}
+            transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              visibility: currentSlide === 2 ? "visible" : "hidden",
+              pointerEvents: currentSlide === 2 ? "auto" : "none",
+              zIndex: currentSlide === 2 ? 2 : 1,
+            }}
+          >
+            <Slide2
+              canvaPageOverride={canvaPageOverride}
+              isActive={currentSlide === 2}
+            />
+          </motion.div>
+
+          {/* ★ FIX D: Slide4 mount ค้างตลอด session ไม่ unmount ตอนสลับสไลด์
+              (เดิมใช้ key={currentSlide} ทำให้ Slide4 ถูก unmount/remount
               ทุกครั้งที่เปลี่ยนสไลด์ ซึ่งจะทำให้ CanvaSingleFrame ข้างใน
               ถูกทำลายและต้อง navigate ใหม่ทุกครั้งโดยไม่จำเป็น) */}
           <motion.div
@@ -3696,7 +3749,7 @@ export default function ViewerDashboard() {
               zIndex: currentSlide === 4 ? 2 : 1,
             }}
           >
-            <Slide3
+            <Slide4
               data={data}
               categories={categories}
               scoreEvents={scoreEvents}
@@ -3714,9 +3767,9 @@ export default function ViewerDashboard() {
             />
           </motion.div>
 
-          {/* สไลด์อื่นๆ (1,2,3,5-11) — mount/unmount + animation แบบเดิมทุกอย่าง */}
+          {/* สไลด์อื่นๆ (1,3,5-11) — mount/unmount + animation แบบเดิมทุกอย่าง */}
           <AnimatePresence mode="wait">
-            {currentSlide !== 4 && (
+            {currentSlide !== 2 && currentSlide !== 4 && (
               <motion.div
                 key={currentSlide}
                 initial={{ opacity: 0, x: 30 }}

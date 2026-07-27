@@ -4,7 +4,6 @@
  * หน้า /control — สำหรับแอดมิน/พิธีกร
  * ใช้คุมสไลด์และ highlight/เปิด modal คำถาม jeopardy ให้ทุกจอ /display sync ตาม
  *
- * ── อัปเดตรอบนี้ ──
  * - Sync ทุก instance ของหน้านี้แบบ realtime
  * - ปุ่มเคลียร์ไฮไลท์ + status bar เด่นด้านบน
  * - ปุ่ม highlight/เปิด-ปิด modal/เคลียร์ไฮไลท์ กดได้เฉพาะตอนอยู่สไลด์ 3
@@ -17,17 +16,24 @@
  *   ใช้ค่า canva_current_page ใน presentation_state แยกอิสระจากเลขหน้าเริ่มต้น
  *   ที่ตั้งไว้ล่วงหน้าต่อคำถามใน CanvaLinkManager — รีเซ็ตกลับเป็นค่าเริ่มต้น
  *   ทุกครั้งที่ปิด modal หรือ highlight คำถามใหม่
- *  * - ★★ ปรับ UI ทั้งหมดให้เข้ากับธีม minimal ของ AdminPanel.tsx (white/black,
+ *  * - ★★ 
+ * - ★★ ปรับ UI ทั้งหมดให้เข้ากับธีม minimal ของ AdminPanel.tsx (white/black,
  *   border-black/[0.07], rounded-xl, ORANGE accent) แทนธีมมืดเดิมที่แยกจากกัน
  *   เพราะ component นี้ถูกเสียบอยู่ใน section ของ AdminPanel อยู่แล้ว
  * - ★★ เพิ่มปุ่ม "↑ เลื่อนขึ้นไปดูโจทย์ (Canva)" คู่กับปุ่ม "↓ เลื่อนให้ผู้ชมดูคะแนน"
  *   เดิม — ใช้ scroll_top_signal ใหม่ใน presentation_state (pattern เดียวกับ
  *   scroll_signal เดิม)
+ * - ปุ่ม ◀ / ▶ เลื่อนหน้า Canva ของ modal คำถามที่เปิดอยู่ (ไม่ปิด-เปิด modal ใหม่)
  * - Jeopardy cell จัดเป็น grid แบบเดียวกับหน้า viewer (คอลัมน์ = หมวด, แถว = เลขข้อ)
- * - ★★★ อัปเดต: หน้า viewer เพิ่มสไลด์ Canva เต็มจอเป็นสไลด์ที่ 2 ทำให้ทุกสไลด์
- *   ถัดจากนั้นเลื่อนเลขหน้าขึ้น 1 (รวมทั้งหมดเป็น 11 สไลด์) และสไลด์ Question
- *   Board (Jeopardy) ย้ายจากตำแหน่งที่ 3 ไปเป็นตำแหน่งที่ 4 — ปรับ TOTAL_SLIDES
- *   และ JEOPARDY_SLIDE ด้านล่างให้ตรงกัน
+ * - ★★★ FIX บั๊กสำคัญ: JEOPARDY_SLIDE เดิมตั้งไว้ 3 แต่หลัง ViewerDashboard.tsx
+ *   แทรกสไลด์ Canva Intro เข้ามาเป็นสไลด์ 2 ทำให้ Question Board ที่แท้จริง
+ *   เลื่อนไปอยู่ตำแหน่งสไลด์ 4 — ปุ่ม highlight/เปิด-ปิด modal เคยทำงานผิดจังหวะ
+ *   เพราะเช็คสไลด์ผิดตัว แก้เป็น JEOPARDY_SLIDE = 4, TOTAL_SLIDES = 11
+ * - ★★★ เพิ่ม CANVA_INTRO_SLIDE = 2 และขยายปุ่ม ◀/▶ ให้ใช้ได้ตอนอยู่สไลด์
+ *   Canva Intro ด้วย (ไม่ใช่แค่ตอนเปิด modal คำถาม) เพราะสไลด์นี้ใช้ไฟล์ Canva
+ *   ไฟล์เดียวกับ Question Board เลยใช้ปุ่มเดิมร่วมกันได้เลยโดยไม่ต้องเพิ่ม state
+ *   ใหม่ — เปลี่ยนชื่อ canControlOpenModal → canControlCanvaPage ให้สื่อความหมาย
+ *   ตรงขึ้น เพราะตอนนี้ครอบคลุม 2 บริบท ไม่ใช่แค่ modal อย่างเดียว
  */
 
 import { useEffect, useState } from "react";
@@ -55,6 +61,9 @@ interface Category {
 
 const TOTAL_SLIDES = 11;
 const JEOPARDY_SLIDE = 4;
+// ★ สไลด์ Canva Intro (เต็มจอ) — ใช้ไฟล์ Canva เดียวกับ Question Board
+// จึงใช้ปุ่ม ◀/▶ เลื่อนหน้าร่วมกันได้ (ดู canControlCanvaPage ด้านล่าง)
+const CANVA_INTRO_SLIDE = 2;
 const MAX_QUESTIONS_PER_CATEGORY = 6; // ต้องตรงกับ Slide3 ฝั่ง viewer
 
 const ORANGE = "#ED8240";
@@ -115,10 +124,23 @@ export default function ControlPage({
   }, []);
 
   const isOnJeopardySlide = current.slide === JEOPARDY_SLIDE;
+  const isOnCanvaIntroSlide = current.slide === CANVA_INTRO_SLIDE;
 
   const goSlide = async (n: number) => {
-    setCurrent((c) => ({ ...c, slide: n }));
-    await updatePresentationState({ current_slide: n });
+    // ★ เข้า/ออกสไลด์ Canva Intro — เคลียร์ override เลขหน้าเก่าทิ้งเสมอ
+    // เพื่อไม่ให้เลขหน้าที่เคยเลื่อนไว้ตอนอยู่บริบทหนึ่ง (เช่น modal คำถาม)
+    // ค้างมาโผล่ผิดที่ตอนสลับไปอีกบริบทหนึ่ง (เช่น Canva Intro) โดยไม่ตั้งใจ
+    const enteringOrLeavingIntro =
+      n === CANVA_INTRO_SLIDE || current.slide === CANVA_INTRO_SLIDE;
+    setCurrent((c) => ({
+      ...c,
+      slide: n,
+      canvaPage: enteringOrLeavingIntro ? null : c.canvaPage,
+    }));
+    await updatePresentationState({
+      current_slide: n,
+      ...(enteringOrLeavingIntro ? { canva_current_page: null } : {}),
+    });
   };
 
   const highlightQuestion = async (qId: number) => {
@@ -193,8 +215,12 @@ export default function ControlPage({
       ? `#${current.qId}`
       : null;
 
-  // ★ เลขหน้า Canva เริ่มต้นของคำถามที่ highlight อยู่ (parse จาก canva_url)
+  // ★ เลขหน้า Canva เริ่มต้น — สองบริบท:
+  // 1) อยู่สไลด์ Canva Intro → เริ่มที่หน้า 1 เสมอ (ไม่มี "คำถาม" มากำหนดเลขหน้า)
+  // 2) เปิด modal คำถามอยู่ → ใช้เลขหน้าเริ่มต้นที่ตั้งไว้ล่วงหน้าต่อคำถามนั้น
+  //    (parse จาก canva_url ใน CanvaLinkManager)
   const assignedPage = (() => {
+    if (isOnCanvaIntroSlide) return 1;
     if (!current.qId) return null;
     const url = canvaLinks[current.qId];
     if (!url) return null;
@@ -206,11 +232,15 @@ export default function ControlPage({
   // ★ เลขหน้าที่กำลังแสดงอยู่จริงตอนนี้ (override ถ้ามี ไม่งั้นใช้ค่าเริ่มต้น)
   const effectivePage = current.canvaPage ?? assignedPage ?? 1;
 
-  // ★ ปุ่มเลื่อนหน้าใช้ได้เฉพาะตอน modal เปิดอยู่จริงเท่านั้น
-  const canControlOpenModal = isOnJeopardySlide && current.open;
+  // ★ ปุ่มเลื่อนหน้าใช้ได้ใน 2 กรณี: (1) เปิด modal คำถามอยู่จริง หรือ
+  // (2) อยู่สไลด์ Canva Intro (ไม่ต้องมี "modal" เพราะเป็นสไลด์เต็มจอ)
+  // ทั้งสองกรณีใช้ canva_current_page ตัวเดียวกัน แต่ไม่มีทางเกิดพร้อมกัน
+  // (คนละสไลด์) จึงไม่ชนกัน — ดู FIX H ใน ViewerDashboard.tsx
+  const canControlCanvaPage =
+    (isOnJeopardySlide && current.open) || isOnCanvaIntroSlide;
 
   const changeCanvaPage = async (delta: number) => {
-    if (!canControlOpenModal) return;
+    if (!canControlCanvaPage) return;
     const nextPage = Math.max(1, effectivePage + delta);
     setCurrent((c) => ({ ...c, canvaPage: nextPage }));
     await updatePresentationState({ canva_current_page: nextPage });
@@ -234,7 +264,7 @@ export default function ControlPage({
           value={current.open ? "เปิดอยู่" : "ปิดอยู่"}
           highlight={current.open}
         />
-        {current.open && (
+        {canControlCanvaPage && (
           <StatusChip
             label="หน้า Canva ปัจจุบัน"
             value={`หน้า ${effectivePage}`}
@@ -242,10 +272,15 @@ export default function ControlPage({
           />
         )}
 
-        {!isOnJeopardySlide && (
+        {!isOnJeopardySlide && !isOnCanvaIntroSlide && (
           <span className="ml-auto text-[11px] text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-md">
             ⚠ ปุ่ม Jeopardy ใช้ได้เฉพาะตอนอยู่สไลด์ {JEOPARDY_SLIDE} — เลื่อนไป
             สไลด์ {JEOPARDY_SLIDE} ก่อน
+          </span>
+        )}
+        {isOnCanvaIntroSlide && (
+          <span className="ml-auto text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-md">
+            ℹ อยู่ในสไลด์ Canva Intro — ใช้ปุ่ม ◀/▶ เลื่อนหน้าได้เลย
           </span>
         )}
       </div>
@@ -340,7 +375,9 @@ export default function ControlPage({
                       className="rounded-md border text-[12px] font-semibold transition-all"
                       style={{
                         minHeight: 38,
-                        borderColor: isActive ? ORANGE : "rgba(0,0,0,0.08)",
+                        borderColor: isActive
+                          ? ORANGE
+                          : "rgba(0,0,0,0.08)",
                         borderWidth: isActive ? 2 : 1,
                         cursor: isOnJeopardySlide ? "pointer" : "not-allowed",
                         background: isActive
@@ -401,23 +438,23 @@ export default function ControlPage({
             <div
               className="flex items-center gap-1 px-1.5 py-1 rounded-lg border transition-opacity"
               style={{
-                borderColor: canControlOpenModal
+                borderColor: canControlCanvaPage
                   ? "rgba(37,99,235,0.3)"
                   : "rgba(0,0,0,0.08)",
-                background: canControlOpenModal
+                background: canControlCanvaPage
                   ? "rgba(37,99,235,0.06)"
                   : "transparent",
-                opacity: canControlOpenModal ? 1 : 0.4,
+                opacity: canControlCanvaPage ? 1 : 0.4,
               }}
-              title="เลื่อนหน้า Canva ของ Modal ที่เปิดอยู่ ไม่ต้องปิด-เปิดใหม่"
+              title="เลื่อนหน้า Canva — ใช้ได้ทั้งตอนเปิด Modal คำถามอยู่ และตอนอยู่สไลด์ Canva Intro"
             >
               <button
                 onClick={() => changeCanvaPage(-1)}
-                disabled={!canControlOpenModal}
+                disabled={!canControlCanvaPage}
                 className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
                 style={{
-                  background: canControlOpenModal ? BLUE : "transparent",
-                  color: canControlOpenModal ? "#fff" : "rgba(0,0,0,0.25)",
+                  background: canControlCanvaPage ? BLUE : "transparent",
+                  color: canControlCanvaPage ? "#fff" : "rgba(0,0,0,0.25)",
                 }}
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
@@ -425,18 +462,18 @@ export default function ControlPage({
               <span
                 className="text-[11px] font-medium min-w-[52px] text-center"
                 style={{
-                  color: canControlOpenModal ? BLUE : "rgba(0,0,0,0.3)",
+                  color: canControlCanvaPage ? BLUE : "rgba(0,0,0,0.3)",
                 }}
               >
                 หน้า {effectivePage}
               </span>
               <button
                 onClick={() => changeCanvaPage(1)}
-                disabled={!canControlOpenModal}
+                disabled={!canControlCanvaPage}
                 className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
                 style={{
-                  background: canControlOpenModal ? BLUE : "transparent",
-                  color: canControlOpenModal ? "#fff" : "rgba(0,0,0,0.25)",
+                  background: canControlCanvaPage ? BLUE : "transparent",
+                  color: canControlCanvaPage ? "#fff" : "rgba(0,0,0,0.25)",
                 }}
               >
                 <ChevronRight className="w-3.5 h-3.5" />
@@ -448,17 +485,17 @@ export default function ControlPage({
             {/* ── ↑ เลื่อนขึ้นไปดูโจทย์ / ↓ เลื่อนดูคะแนน ── */}
             <button
               onClick={triggerScrollToTop}
-              disabled={!canControlOpenModal}
+              disabled={!canControlCanvaPage}
               title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ขึ้นไปดูโจทย์ (Canva) ด้านบน"
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
               style={{
-                borderColor: canControlOpenModal
+                borderColor: canControlCanvaPage
                   ? "rgba(52,211,153,0.4)"
                   : "rgba(0,0,0,0.08)",
-                background: canControlOpenModal
+                background: canControlCanvaPage
                   ? "rgba(52,211,153,0.10)"
                   : "transparent",
-                color: canControlOpenModal ? "#0f9d68" : "rgba(0,0,0,0.3)",
+                color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
               }}
             >
               <ArrowUp className="w-3.5 h-3.5" />
@@ -467,17 +504,17 @@ export default function ControlPage({
 
             <button
               onClick={triggerScrollToScore}
-              disabled={!canControlOpenModal}
+              disabled={!canControlCanvaPage}
               title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปยังจุดคะแนนใต้ Canva iframe"
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
               style={{
-                borderColor: canControlOpenModal
+                borderColor: canControlCanvaPage
                   ? "rgba(52,211,153,0.4)"
                   : "rgba(0,0,0,0.08)",
-                background: canControlOpenModal
+                background: canControlCanvaPage
                   ? "rgba(52,211,153,0.10)"
                   : "transparent",
-                color: canControlOpenModal ? "#0f9d68" : "rgba(0,0,0,0.3)",
+                color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
               }}
             >
               <ArrowDown className="w-3.5 h-3.5" />
