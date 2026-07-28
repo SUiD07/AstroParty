@@ -92,26 +92,31 @@ interface Position {
 
 // ---------------------------------------------------------------------------
 // Design Tokens
+// ★ ปรับให้ตรงกับธีมจริงของ Canva — พื้นหลังโทนมารูน/น้ำตาลแดงอิฐอบอุ่น
+// (ไม่ใช่ดำ/เนวี่แบบเดิม) มีแสงทองที่มุมบน และเนบิวลาสีม่วงที่มุมล่างซ้าย
+// สีตรงนี้ประมาณจากภาพสไลด์จริง ไม่ใช่ HEX ที่แม่นยำ 100%
 // ---------------------------------------------------------------------------
 const C = {
-  navyDeep: "#0a0a0a",
-  navyMid: "#1A1A1A",
+  maroonDeep: "#170806", // พื้นหลังมืดสุด (มุมภาพ)
+  maroonMid: "#3D160C", // พื้นหลังโทนกลาง
+  maroonLight: "#6B2A12", // แสงอบอุ่นมุมบน/รอบโลโก้
+  violet: "#5B3A73", // เนบิวลาสีม่วง มุมล่างซ้าย
   blueCore: "#ED8240",
-  blueLight: "#B0B0B0",
-  gold: "#ED8240",
+  blueLight: "#C4B6AC",
+  gold: "#F0B65C", // โทนทองอุ่น แยกจากส้มหลัก ใช้กับดาว/แสงกระพริบ
   orange: "#ED8240",
   redAcc: "#AA4229",
-  slate: "#76849D",
-  bg: "#080808",
+  slate: "#9C8478",
+  bg: "#170806",
   white: "#FFFFFF",
   textHi: "#FFFFFF",
-  textMid: "#B0B0B0",
-  textLo: "#76849D",
+  textMid: "#C4B6AC",
+  textLo: "#9C8478",
 } as const;
 
 // Surface helpers
-const surface = "rgba(26,26,26,0.22)";
-const surfaceHi = "rgba(26,26,26,0.40)";
+const surface = "rgba(61,22,12,0.28)";
+const surfaceHi = "rgba(61,22,12,0.46)";
 const border = "rgba(255,255,255,0.14)";
 const borderWarm = "rgba(237,130,64,0.32)";
 
@@ -123,18 +128,18 @@ const glassCard = (warm = false): React.CSSProperties => ({
   backdropFilter: "blur(10px)",
 });
 
-// const orbitron: React.CSSProperties = { fontFamily: "'Orbitron', monospace" };
-// const orbitron: React.CSSProperties = { fontFamily: "'Cormorant Garamond', serif" };
+// ★ fontDisplay เดิมใช้ Bodoni Moda (เซอริฟ) ซึ่งขัดกับตัวอักษรบล็อกหนา
+// สไตล์ LED/dot-matrix ของ Canva จริง — เปลี่ยนมาใช้ Orbitron น้ำหนักหนาแทน
 const orbitron: React.CSSProperties = {
-  fontFamily: "'Noto Sans Thai', sans-serif",
+  fontFamily: "'Orbitron', sans-serif",
 };
 const notoTH: React.CSSProperties = {
   fontFamily: "'Noto Sans Thai', sans-serif",
 };
 
 const fontDisplay: React.CSSProperties = {
-  fontFamily: "'Bodoni Moda', serif",
-  fontWeight: 700,
+  fontFamily: "'Orbitron', sans-serif",
+  fontWeight: 900,
 };
 // const fontSans: React.CSSProperties = {
 //   fontFamily: "'Roboto', sans-serif",
@@ -444,7 +449,7 @@ function SlideHeader({
 function JeopardyCell({
   question,
   events,
-  teams,
+  // teams,
   isHighlighted,
   onClick,
 }: {
@@ -456,7 +461,7 @@ function JeopardyCell({
 }) {
   const answered = events.length > 0;
   const MAX_VISIBLE = 9;
-  const visibleEvents = events.slice(0, MAX_VISIBLE);
+  // const visibleEvents = events.slice(0, MAX_VISIBLE);
   const hiddenCount = Math.max(0, events.length - MAX_VISIBLE);
 
   return (
@@ -474,8 +479,8 @@ function JeopardyCell({
           ? `1px solid rgba(237,130,64,0.25)`
           : "1px solid rgba(255,255,255,0.07)",
         background: answered
-          ? `linear-gradient(135deg, rgba(10,10,10,0.95), rgba(26,26,26,0.28))`
-          : "#1a1a1a",
+          ? `linear-gradient(135deg, rgba(23,8,6,0.95), rgba(61,22,12,0.28))`
+          : "#20100a",
         cursor: "pointer",
         display: "flex",
         flexDirection: "column",
@@ -515,7 +520,7 @@ function JeopardyCell({
     >
       {answered ? (
         <>
-          <div
+          {/* <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
@@ -549,7 +554,7 @@ function JeopardyCell({
                 </div>
               );
             })}
-          </div>
+          </div> */}
 
           {hiddenCount > 0 && (
             <div
@@ -581,7 +586,8 @@ function JeopardyCell({
       ) : (
         <span
           style={{
-            ...orbitron,
+            // ...orbitron,
+            ...notoTH,
             fontSize: 20,
             fontWeight: 900,
             color: C.orange,
@@ -949,6 +955,48 @@ function QuestionModal({
 // ---------------------------------------------------------------------------
 // Slide Prop Types
 // ---------------------------------------------------------------------------
+// HeartPulseMotif — ลายตกแต่งหัวใจ + คลื่นไฟฟ้าหัวใจ (ECG) เลียนแบบธีมของ
+// Canva design จริง (หัวใจเส้นขาวโปร่ง + เส้นคลื่นชีพจรพาดผ่านกลาง)
+// ใช้เป็นลายพื้นหลังโปร่งแสงเบาๆ ไม่แย่งความสนใจจากเนื้อหาหลัก
+// ---------------------------------------------------------------------------
+function HeartPulseMotif({
+  opacity = 0.12,
+  width = 560,
+}: {
+  opacity?: number;
+  width?: number;
+}) {
+  return (
+    <svg
+      viewBox="0 0 400 400"
+      width={width}
+      height={width}
+      style={{
+        opacity,
+        filter: "drop-shadow(0 0 18px rgba(255,255,255,0.25))",
+      }}
+    >
+      {/* หัวใจ — เส้นขอบโปร่ง ไม่มีพื้นข้างใน */}
+      <path
+        d="M200,338 C118,258 42,190 42,122 C42,74 80,42 122,42 C158,42 186,66 200,102 C214,66 242,42 278,42 C320,42 358,74 358,122 C358,190 282,258 200,338 Z"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth={3}
+      />
+      {/* เส้นคลื่นไฟฟ้าหัวใจ (ECG) พาดผ่านกลางหัวใจ */}
+      <path
+        d="M0,206 L58,206 L78,188 L98,224 L118,140 L138,262 L158,196 L200,196 L220,166 L238,222 L258,200 L400,200"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth={4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 interface SlideCommonProps {
   data: RaceData;
   categories: Category[];
@@ -971,6 +1019,20 @@ function Slide1() {
         overflow: "hidden",
       }}
     >
+      {/* ★ ลายตกแต่งหัวใจ+ECG พื้นหลัง — วางกึ่งกลาง อยู่หลังเนื้อหาหลักทั้งหมด */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%,-50%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <HeartPulseMotif opacity={0.1} width={620} />
+      </div>
+
       <div
         style={{
           position: "absolute",
@@ -1166,6 +1228,8 @@ function Slide1() {
           padding: "0 64px 32px",
           textAlign: "center",
           minHeight: 0,
+          position: "relative",
+          zIndex: 1,
         }}
       >
         <div
@@ -1223,10 +1287,9 @@ function Slide1() {
         </div>
         <p
           style={{
-            // ...notoTH,
-            ...fontDisplay,
-            // color: C.orange,
-            fontSize: "clamp(2rem,1.4vw,1.1rem)",
+            ...notoTH,
+            color: C.orange,
+            fontSize: "clamp(1.5rem,1.4vw,1.1rem)",
             // letterSpacing: "0.25em",
             marginBottom: 24,
           }}
@@ -1390,7 +1453,7 @@ function Slide3({
             ...fontDisplay,
           }}
         >
-          Round 4{/* {data.state.round} */}
+          Round {data.state.round}
         </h1>
 
         <div className="mt-5 space-y-1.5">
@@ -1408,18 +1471,18 @@ function Slide3({
         style={{ height: 1, background: "rgba(255,255,255,0.05)" }}
       />
 
-      <div className="px-16 pb-12 flex gap-5 max-w-3xl">
-        {/* <div
+      <div className="px-16 pb-7 flex gap-5 max-w-3xl">
+        <div
           className="flex-1 rounded-2xl p-6"
           style={{
-            background: "#111",
+            background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
-              color: "rgba(255,255,255,0.25)",
-              fontSize: 10,
+              // color: "rgba(255,255,255,0.25)",
+              fontSize: 13,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               marginBottom: 12,
@@ -1433,19 +1496,19 @@ function Slide3({
           >
             {data.teams.length}
           </p>
-        </div> */}
+        </div>
 
         <div
           className="flex-1 rounded-2xl p-6"
           style={{
-            // background: "#111",
+            background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
               // color: "rgba(255,255,255,0.25)",
-              fontSize: 10,
+              fontSize: 13,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               marginBottom: 12,
@@ -1463,22 +1526,23 @@ function Slide3({
           >
             {answeredCount}
             <span className="text-white ml-1" style={{ fontSize: "1.5rem" }}>
-              / {totalQCount}
+              / 12
+              {/* {totalQCount} */}
             </span>
           </p>
         </div>
 
-        {/* <div
+        <div
           className="flex-1 rounded-2xl p-6"
           style={{
-            background: "#111",
+            background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
-              color: "rgba(255,255,255,0.25)",
-              fontSize: 10,
+              // color: "rgba(255,255,255,0.25)",
+              fontSize: 13,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               marginBottom: 12,
@@ -1495,7 +1559,7 @@ function Slide3({
           >
             {leaderName}
           </p>
-        </div> */}
+        </div>
       </div>
 
       {categories.length > 0 && (
@@ -1505,11 +1569,11 @@ function Slide3({
         >
           <p
             style={{
-              color: "rgba(255,255,255,0.2)",
-              fontSize: 10,
+              // color: "rgba(255,255,255,0.2)",
+              fontSize: 20,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              marginBottom: 20,
+              marginBottom: 10,
               ...notoTH,
             }}
           >
@@ -1747,9 +1811,7 @@ function Slide4({
               >
                 <span
                   style={{
-                    // ...notoTH,
-                    ...orbitron,
-                    // ...fontDisplay,
+                    ...notoTH,
                     fontSize: "clamp(0.72rem, 1.1vw, 0.95rem)",
                     fontWeight: 600,
                     // color: "rgba(255,255,255,0.55)",
@@ -2539,12 +2601,13 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
             color: "rgba(255,255,255,.5)",
           }}
         >
-          ✦ &nbsp; CONSOLATION AWARDS &nbsp; ✦
+          ✦ &nbsp; AMSci 2026 &nbsp; ✦
         </div>
         <div
           className="grad-blue"
           style={{
-            ...orbitron,
+            // ...orbitron,
+            ...notoTH,
             fontSize: "clamp(2.2rem,5.5vw,4.5rem)",
             fontWeight: 900,
             letterSpacing: ".1em",
@@ -2555,9 +2618,6 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
 
         <div
           style={{
-            // background: "rgba(4,12,28,.82)",
-            // border: `1px solid rgba(237,130,64,.2)`,
-            // borderRadius: 12,
             padding: "20px 24px",
             width: "100%",
             maxHeight: "56vh",
@@ -2567,16 +2627,15 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
         >
           <div
             style={{
-              ...orbitron,
-              fontSize: 10,
+              // ...orbitron,
+              ...notoTH,
+              fontSize: 20,
               letterSpacing: ".22em",
-              // color: "rgba(255,255,255,.45)",
               marginBottom: 12,
               paddingBottom: 8,
-              // borderBottom: `1px solid rgba(237,130,64,.15)`,
             }}
           >
-            🏅 รางวัลชมเชย {consolationTeams.length} ทีม
+            รางวัลชมเชย {consolationTeams.length} ทีม
           </div>
 
           {consolationTeams.length === 0 ? (
@@ -2584,7 +2643,6 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
               style={{
                 ...notoTH,
                 fontSize: 12,
-                // color: "rgba(255,255,255,.35)",
                 textAlign: "center",
                 padding: "12px 0",
               }}
@@ -2607,8 +2665,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                     justifyContent: "space-between",
                     padding: "10px 12px",
                     borderRadius: 8,
-                    background: "rgba(10,10,10,.6)",
-                    // border: `1px solid rgba(255,255,255,.04)`,
+                    background: "rgba(23,8,6,.6)",
                     marginBottom: 7,
                     position: "relative",
                     overflow: "hidden",
@@ -2621,7 +2678,6 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                       top: 0,
                       bottom: 0,
                       width: 2,
-                      // background: team.color,
                       opacity: 0.6,
                       borderRadius: "1px 0 0 1px",
                     }}
@@ -2629,11 +2685,10 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                   <span
                     style={{
                       ...orbitron,
-                      fontSize: 10,
+                      fontSize: 17,
                       fontWeight: 900,
                       width: 22,
                       textAlign: "center",
-                      // color: "rgba(255,255,255,.5)",
                     }}
                   >
                     {rank + 1}
@@ -2644,7 +2699,6 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                       height: 8,
                       borderRadius: "50%",
                       background: team.color,
-                      // boxShadow: `0 0 8px ${team.color}88`,
                       marginLeft: 6,
                     }}
                   />
@@ -2653,7 +2707,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                       ...notoTH,
                       flex: 1,
                       paddingLeft: 10,
-                      fontSize: 13,
+                      fontSize: 20,
                       fontWeight: 700,
                       color: team.color,
                       overflow: "hidden",
@@ -2666,13 +2720,20 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                   <span
                     style={{
                       ...orbitron,
-                      fontSize: 13,
+                      fontSize: 20,
                       fontWeight: 900,
-                      // color: "rgba(255,255,255,.6)",
                     }}
                   >
                     {pos.score}
-                    <span style={{ fontSize: 8, marginLeft: 3, opacity: 0.5 }}>
+                    <span
+                      style={{
+                        fontSize: 20,
+                        marginLeft: 3,
+                        opacity: 0.5,
+                        ...notoTH,
+                      }}
+                    >
+                      {" "}
                       คะแนน
                     </span>
                   </span>
@@ -2719,17 +2780,18 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
         <div
           style={{
             ...orbitron,
-            fontSize: "clamp(.55rem,.85vw,.7rem)",
-            letterSpacing: ".42em",
-            color: "rgba(255,255,255,.4)",
+            fontSize: "clamp(.55rem,.85vw,.72rem)",
+            letterSpacing: ".38em",
+            color: "rgba(255,255,255,.5)",
           }}
         >
-          — AWARD REVEAL —
+          ✦ &nbsp; AMSci 2026 &nbsp; ✦
         </div>
         <div
           className="grad-gold"
           style={{
-            ...orbitron,
+            // ...orbitron,
+            ...notoTH,
             fontSize: "clamp(2rem,5vw,3.8rem)",
             fontWeight: 900,
             letterSpacing: ".08em",
@@ -2767,20 +2829,22 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
             <div
               style={{
                 ...orbitron,
-                fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                color: "rgba(255,255,255,.5)",
+                fontSize: "clamp(1.8rem,1.5vw,1.1rem)",
+                // color: "rgba(255,255,255,.5)",
               }}
             >
               {s3}{" "}
-              <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+              <span style={{ fontSize: "1.1em", opacity: 0.6, ...notoTH }}>
+                คะแนน
+              </span>
             </div>
           </>
         )}
         <div
           style={{
             ...notoTH,
-            fontSize: "clamp(.65rem,1.1vw,.85rem)",
-            color: "rgba(255,255,255,.28)",
+            fontSize: "clamp(1.3rem,1.1vw,.85rem)",
+            // color: "rgba(255,255,255,.28)",
             letterSpacing: ".08em",
             marginTop: 8,
           }}
@@ -2825,17 +2889,18 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
         <div
           style={{
             ...orbitron,
-            fontSize: "clamp(.55rem,.85vw,.7rem)",
-            letterSpacing: ".42em",
-            color: "rgba(255,255,255,.4)",
+            fontSize: "clamp(.55rem,.85vw,.72rem)",
+            letterSpacing: ".38em",
+            color: "rgba(255,255,255,.5)",
           }}
         >
-          — AWARD REVEAL —
+          ✦ &nbsp; AMSci 2026 &nbsp; ✦
         </div>
         <div
           className="grad-blue"
           style={{
-            ...orbitron,
+            // ...orbitron,
+            ...notoTH,
             fontSize: "clamp(2rem,5vw,3.8rem)",
             fontWeight: 900,
             letterSpacing: ".08em",
@@ -2873,20 +2938,22 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
             <div
               style={{
                 ...orbitron,
-                fontSize: "clamp(.8rem,1.5vw,1.1rem)",
-                color: "rgba(255,255,255,.5)",
+                fontSize: "clamp(1.8rem,1.5vw,1.1rem)",
+                // color: "rgba(255,255,255,.5)",
               }}
             >
               {sru}{" "}
-              <span style={{ fontSize: ".65em", opacity: 0.6 }}>POINTS</span>
+              <span style={{ fontSize: "1.1em", opacity: 0.6, ...notoTH }}>
+                คะแนน
+              </span>
             </div>
           </>
         )}
         <div
           style={{
             ...notoTH,
-            fontSize: "clamp(.65rem,1.1vw,.85rem)",
-            color: "rgba(255,255,255,.28)",
+            fontSize: "clamp(1.3rem,1.1vw,.85rem)",
+            // color: "rgba(255,255,255,.28)",
             letterSpacing: ".08em",
             marginTop: 8,
           }}
@@ -2962,17 +3029,18 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
         <div
           style={{
             ...orbitron,
-            fontSize: "clamp(.5rem,.8vw,.68rem)",
-            letterSpacing: ".48em",
+            fontSize: "clamp(.55rem,.85vw,.72rem)",
+            letterSpacing: ".38em",
             color: "rgba(255,255,255,.5)",
           }}
         >
-          ✦ &nbsp; AMSci 2026 · ASTRO PARTY &nbsp; ✦
+          ✦ &nbsp; AMSci 2026 &nbsp; ✦
         </div>
         <div
           className="grad-gold"
           style={{
-            ...orbitron,
+            // ...orbitron,
+            ...notoTH,
             fontSize: "clamp(2rem,5vw,3.8rem)",
             fontWeight: 900,
             letterSpacing: ".08em",
@@ -3020,26 +3088,20 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
           }}
         >
           {sch}{" "}
-          <span
-            style={{
-              fontSize: ".4em",
-              color: "rgba(255,255,255,.4)",
-              marginLeft: 5,
-            }}
-          >
-            POINTS
+          <span style={{ fontSize: "1.1em", opacity: 0.6, ...notoTH }}>
+            คะแนน
           </span>
         </div>
         <div
           style={{
             ...notoTH,
-            fontSize: "clamp(.6rem,1vw,.82rem)",
-            color: "rgba(255,255,255,.3)",
-            letterSpacing: ".1em",
-            marginTop: 4,
+            fontSize: "clamp(1.3rem,1.1vw,.85rem)",
+            // color: "rgba(255,255,255,.28)",
+            letterSpacing: ".08em",
+            marginTop: 8,
           }}
         >
-          คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย · 9 สิงหาคม 2569
+          ขอแสดงความยินดีกับรางวัลชนะเลิศอันดับ 1
         </div>
       </div>
     </div>
@@ -3088,12 +3150,8 @@ function FooterTicker() {
         {/* &nbsp;·&nbsp;ช่วงเช้า&nbsp;
         <span style={{ color: C.orange, fontWeight: 600 }}>Elimination</span>
         &nbsp;·&nbsp;ช่วงบ่าย&nbsp;
-        <span style={{ color: C.orange, fontWeight: 600 }}>Semi-final</span>
-        &nbsp;และ&nbsp; */}
-        <span style={{ color: C.blueLight, fontWeight: 600 }}>
-          {" "}
-          การแข่งขันรอบ{" "}
-        </span>
+        <span style={{ color: C.orange, fontWeight: 600 }}>Semi-final</span> */}
+        &nbsp;การแข่งขันรอบ&nbsp;
         <span style={{ color: C.orange, fontWeight: 600 }}>Final</span>
         &nbsp;·&nbsp;รับชมการถ่ายทอดสดได้ทาง&nbsp;
         <span style={{ color: C.blueLight, fontWeight: 600 }}>
@@ -3648,8 +3706,10 @@ export default function ViewerDashboard() {
           position: "fixed",
           inset: 0,
           background: `
-            radial-gradient(ellipse 60% 45% at 50% 0%, rgba(237,130,64,0.05) 0%, transparent 60%),
-            #080808
+            radial-gradient(ellipse 70% 55% at 15% 95%, rgba(91,58,115,0.32) 0%, transparent 60%),
+            radial-gradient(ellipse 65% 50% at 65% 5%, rgba(240,182,92,0.14) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 45% at 50% 0%, rgba(237,130,64,0.10) 0%, transparent 60%),
+            linear-gradient(160deg, #3D160C 0%, #170806 55%, #0d0503 100%)
           `,
           fontFamily: "'Noto Sans Thai', sans-serif",
           color: C.textHi,
@@ -3665,9 +3725,9 @@ export default function ViewerDashboard() {
           }}
         >
           <Grainient
-            color1="#000000"
+            color1="#170806"
             color2="#6C240A"
-            color3="#000000"
+            color3="#ED8240"
             timeSpeed={0.35}
             colorBalance={0}
             warpStrength={1}
