@@ -91,6 +91,24 @@ interface Position {
 }
 
 // ---------------------------------------------------------------------------
+// getRank / getTeamsAtRank — จัดอันดับแบบ "standard competition ranking"
+// (1,1,3,4,...) ถ้าคะแนนเท่ากันได้อันดับเดียวกัน แล้วอันดับถัดไปข้ามไปตาม
+// จำนวนทีมที่เสมอกัน (เช่น 2 ทีมเสมออันดับ 1 → ทีมถัดไปเป็นอันดับ 3 ไม่ใช่ 2)
+// ---------------------------------------------------------------------------
+function getRank(sortedPositions: Position[], score: number): number {
+  return sortedPositions.filter((p) => p.score > score).length + 1;
+}
+
+function getTeamsAtRank(
+  sortedPositions: Position[],
+  rank: number,
+): Position[] {
+  return sortedPositions.filter(
+    (p) => getRank(sortedPositions, p.score) === rank,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Design Tokens
 // ★ ปรับให้ตรงกับธีมจริงของ Canva — พื้นหลังโทนมารูน/น้ำตาลแดงอิฐอบอุ่น
 // (ไม่ใช่ดำ/เนวี่แบบเดิม) มีแสงทองที่มุมบน และเนบิวลาสีม่วงที่มุมล่างซ้าย
@@ -817,13 +835,13 @@ function QuestionModal({
             </h3>
             <div
               style={{
-                transform: "scale(0.47)",
+                transform: "scale(0.43)",
               }}
             >
               <iframe
                 src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
                 // src="https://stagetimer.io/output/6a5f772898e737c7ac88e520/?v=2&signature=d65fa0d941b542ed188a72c82d07eedf235c47965388f9fd62cec850b6fe3479"
-                className="pointer-events-auto h-20 w-auto"
+                className="pointer-events-auto h-20 w-auto rounded-xl"
               ></iframe>
             </div>
           </div>
@@ -1433,11 +1451,20 @@ function Slide3({
   categories,
   sortedPositions,
   answeredCount,
-  totalQCount,
+  // totalQCount,
 }: Slide3Props) {
-  const leaderName = sortedPositions[0]
-    ? (data.teams.find((t) => t.id === sortedPositions[0].teamId)?.name ?? "—")
-    : "—";
+  const leaderScore = sortedPositions[0]?.score;
+  const leaderTeams =
+    leaderScore !== undefined
+      ? sortedPositions.filter((p) => p.score === leaderScore)
+      : [];
+  const leaderName =
+    leaderTeams.length > 0
+      ? leaderTeams
+          .map((p) => data.teams.find((t) => t.id === p.teamId)?.name)
+          .filter(Boolean)
+          .join(" · ")
+      : "—";
 
   return (
     <div
@@ -1596,8 +1623,8 @@ function Slide3({
                     flexShrink: 0,
                   }}
                 >
-                  {i + 1}
-                </span>
+          {i+1}
+        </span>
                 <span
                   style={{
                     color: "rgba(255,255,255,0.55)",
@@ -2053,8 +2080,9 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                             letterSpacing: "0.10em",
                           }}
                         >
-                          <span style={{ opacity: 0.45 }}>#{index + 1}</span>{" "}
-                          {team.name}
+<span style={{ opacity: 0.45 }}>
+                            #{topSix.filter((p) => p.score > pos.score).length + 1}
+                          </span>{" "}                          {team.name}
                         </div>
                         <div
                           style={{
@@ -2253,7 +2281,8 @@ function Slide6({ data, sortedPositions }: Slide6Props) {
     const team = data.teams.find((t) => t.id === pos.teamId);
     if (!team) return null;
 
-    const isFirst = i === 0;
+    const rank = getRank(sortedPositions, pos.score);
+    const isFirst = rank === 1; // ★ ใช้ rank แทน index กันเคสเสมออันดับ 1
 
     return (
       <div
@@ -2280,7 +2309,7 @@ function Slide6({ data, sortedPositions }: Slide6Props) {
             color: isFirst ? C.orange : "rgba(255,255,255,0.2)",
           }}
         >
-          {i + 1}
+          {rank}
         </span>
 
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -2569,7 +2598,9 @@ interface AwardSlideProps {
 }
 
 function Slide8({ data, sortedPositions }: AwardSlideProps) {
-  const consolationTeams = sortedPositions.slice(3);
+  const consolationTeams = sortedPositions.filter(
+    (p) => getRank(sortedPositions, p.score) > 3,
+  );
 
   return (
     <div
@@ -2653,9 +2684,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
             consolationTeams.map((pos) => {
               const team = data.teams.find((t) => t.id === pos.teamId);
               if (!team) return null;
-              const rank = sortedPositions.findIndex(
-                (p) => p.teamId === pos.teamId,
-              );
+              const rank = getRank(sortedPositions, pos.score);
               return (
                 <div
                   key={team.id}
@@ -2751,10 +2780,11 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
 // SLIDE 9 — รางวัลรองชนะเลิศอันดับ 2
 // ---------------------------------------------------------------------------
 function Slide9({ data, sortedPositions }: AwardSlideProps) {
-  const t3 = sortedPositions[2]
-    ? data.teams.find((t) => t.id === sortedPositions[2].teamId)
-    : null;
-  const s3 = sortedPositions[2]?.score ?? 0;
+  const rank3Positions = getTeamsAtRank(sortedPositions, 3);
+  const rank3Teams = rank3Positions
+    .map((p) => data.teams.find((t) => t.id === p.teamId))
+    .filter((t): t is NonNullable<typeof t> => !!t);
+  const s3 = rank3Positions[0]?.score ?? 0;
 
   return (
     <div
@@ -2813,24 +2843,28 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
         >
           🥉
         </div>
-        {t3 && (
+        {rank3Teams.length > 0 && (
           <>
-            <div
-              style={{
-                ...notoTH,
-                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                fontWeight: 800,
-                color: t3.color,
-                textShadow: `0 0 28px ${t3.color}99`,
-              }}
-            >
-              {t3.name}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {rank3Teams.map((t3) => (
+                <div
+                  key={t3.id}
+                  style={{
+                    ...notoTH,
+                    fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                    fontWeight: 800,
+                    color: t3.color,
+                    textShadow: `0 0 28px ${t3.color}99`,
+                  }}
+                >
+                  {t3.name}
+                </div>
+              ))}
             </div>
             <div
               style={{
                 ...orbitron,
                 fontSize: "clamp(1.8rem,1.5vw,1.1rem)",
-                // color: "rgba(255,255,255,.5)",
               }}
             >
               {s3}{" "}
@@ -2860,10 +2894,11 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
 // SLIDE 10 — รางวัลรองชนะเลิศอันดับ 1
 // ---------------------------------------------------------------------------
 function Slide10({ data, sortedPositions }: AwardSlideProps) {
-  const ru = sortedPositions[1]
-    ? data.teams.find((t) => t.id === sortedPositions[1].teamId)
-    : null;
-  const sru = sortedPositions[1]?.score ?? 0;
+  const rank2Positions = getTeamsAtRank(sortedPositions, 2);
+  const rank2Teams = rank2Positions
+    .map((p) => data.teams.find((t) => t.id === p.teamId))
+    .filter((t): t is NonNullable<typeof t> => !!t);
+  const sru = rank2Positions[0]?.score ?? 0;
 
   return (
     <div
@@ -2922,24 +2957,28 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
         >
           🥈
         </div>
-        {ru && (
+        {rank2Teams.length > 0 && (
           <>
-            <div
-              style={{
-                ...notoTH,
-                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                fontWeight: 800,
-                color: ru.color,
-                textShadow: `0 0 28px ${ru.color}99`,
-              }}
-            >
-              {ru.name}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {rank2Teams.map((ru) => (
+                <div
+                  key={ru.id}
+                  style={{
+                    ...notoTH,
+                    fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                    fontWeight: 800,
+                    color: ru.color,
+                    textShadow: `0 0 28px ${ru.color}99`,
+                  }}
+                >
+                  {ru.name}
+                </div>
+              ))}
             </div>
             <div
               style={{
                 ...orbitron,
                 fontSize: "clamp(1.8rem,1.5vw,1.1rem)",
-                // color: "rgba(255,255,255,.5)",
               }}
             >
               {sru}{" "}
@@ -2976,10 +3015,11 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
     launchConfetti();
   }, []);
 
-  const ch = sortedPositions[0]
-    ? data.teams.find((t) => t.id === sortedPositions[0].teamId)
-    : null;
-  const sch = sortedPositions[0]?.score ?? 0;
+  const rank1Positions = getTeamsAtRank(sortedPositions, 1);
+  const rank1Teams = rank1Positions
+    .map((p) => data.teams.find((t) => t.id === p.teamId))
+    .filter((t): t is NonNullable<typeof t> => !!t);
+  const sch = rank1Positions[0]?.score ?? 0;
 
   return (
     <div
@@ -3066,17 +3106,22 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
         >
           🏆
         </div>
-        {ch && (
-          <div
-            style={{
-              ...notoTH,
-              fontSize: "clamp(1.6rem,3.8vw,3rem)",
-              fontWeight: 900,
-              color: ch.color,
-              textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
-            }}
-          >
-            {ch.name}
+        {rank1Teams.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rank1Teams.map((ch) => (
+              <div
+                key={ch.id}
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(1.6rem,3.8vw,3rem)",
+                  fontWeight: 900,
+                  color: ch.color,
+                  textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+                }}
+              >
+                {ch.name}
+              </div>
+            ))}
           </div>
         )}
         <div
