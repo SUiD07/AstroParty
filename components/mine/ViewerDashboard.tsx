@@ -971,6 +971,184 @@ function QuestionModal({
 }
 
 // ---------------------------------------------------------------------------
+// GlitterBurst — กลุ่มประกายดาว 4 แฉก ฟุ้งกระจายเป็นทรงพวยพุ่ง (เลียนแบบ
+// ลาย sparkle มุมบนขวาในดีไซน์ Canva จริง) ตำแหน่ง/ขนาด/จังหวะกระพริบ
+// เป็นค่าคงที่ (ไม่ random ทุก render) กันภาพกระตุกตอน re-render
+// ---------------------------------------------------------------------------
+const SPARKLE_PATH =
+  "M50,0 C52,35 65,48 100,50 C65,52 52,65 50,100 C48,65 35,52 0,50 C35,48 48,35 50,0 Z";
+
+// { x, y, size, rotate, color, dur, delay } — x/y เป็น % ของกรอบ 0-400
+const GLITTER_STARS: {
+  x: number;
+  y: number;
+  size: number;
+  rotate: number;
+  color: string;
+  dur: number;
+  delay: number;
+}[] = [
+  { x: 330, y: 20, size: 34, rotate: 12, color: "#F0B65C", dur: 2.4, delay: 0 },
+  {
+    x: 380,
+    y: 55,
+    size: 22,
+    rotate: -8,
+    color: "#FFFFFF",
+    dur: 1.8,
+    delay: 0.3,
+  },
+  {
+    x: 300,
+    y: 70,
+    size: 16,
+    rotate: 20,
+    color: "#ED8240",
+    dur: 2.1,
+    delay: 0.6,
+  },
+  {
+    x: 355,
+    y: 100,
+    size: 28,
+    rotate: -15,
+    color: "#FFFFFF",
+    dur: 2.6,
+    delay: 0.15,
+  },
+  {
+    x: 260,
+    y: 40,
+    size: 20,
+    rotate: 5,
+    color: "#F0B65C",
+    dur: 1.9,
+    delay: 0.9,
+  },
+  {
+    x: 395,
+    y: 130,
+    size: 18,
+    rotate: 30,
+    color: "#ED8240",
+    dur: 2.3,
+    delay: 0.45,
+  },
+  {
+    x: 310,
+    y: 150,
+    size: 24,
+    rotate: -22,
+    color: "#FFFFFF",
+    dur: 2.0,
+    delay: 1.1,
+  },
+  {
+    x: 230,
+    y: 90,
+    size: 14,
+    rotate: 10,
+    color: "#F0B65C",
+    dur: 1.7,
+    delay: 0.75,
+  },
+  {
+    x: 270,
+    y: 165,
+    size: 12,
+    rotate: -5,
+    color: "#FFFFFF",
+    dur: 2.5,
+    delay: 0.2,
+  },
+  {
+    x: 200,
+    y: 130,
+    size: 16,
+    rotate: 18,
+    color: "#ED8240",
+    dur: 2.2,
+    delay: 1.3,
+  },
+  {
+    x: 340,
+    y: 185,
+    size: 10,
+    rotate: 8,
+    color: "#F0B65C",
+    dur: 1.6,
+    delay: 0.55,
+  },
+  {
+    x: 180,
+    y: 175,
+    size: 12,
+    rotate: -12,
+    color: "#FFFFFF",
+    dur: 2.0,
+    delay: 0.85,
+  },
+  {
+    x: 370,
+    y: 15,
+    size: 12,
+    rotate: 25,
+    color: "#FFFFFF",
+    dur: 1.5,
+    delay: 1.5,
+  },
+  {
+    x: 235,
+    y: 20,
+    size: 10,
+    rotate: -18,
+    color: "#ED8240",
+    dur: 2.4,
+    delay: 0.4,
+  },
+];
+
+function GlitterBurst({
+  width = 420,
+  opacity = 1,
+}: {
+  width?: number;
+  opacity?: number;
+}) {
+  return (
+    <svg
+      viewBox="0 0 400 200"
+      width={width}
+      height={width / 2}
+      style={{ opacity }}
+    >
+      <defs>
+        <path id="ap-sparkle" d={SPARKLE_PATH} />
+      </defs>
+      {GLITTER_STARS.map((s, i) => (
+        <use
+          key={i}
+          href="#ap-sparkle"
+          x={-50}
+          y={-50}
+          width={100}
+          height={100}
+          transform={`translate(${s.x} ${s.y}) rotate(${s.rotate}) scale(${
+            s.size / 100
+          })`}
+          fill={s.color}
+          style={{
+            transformOrigin: "50px 50px",
+            filter: `drop-shadow(0 0 6px ${s.color}99)`,
+            animation: `twinkle ${s.dur}s ease-in-out infinite ${s.delay}s`,
+          }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Slide Prop Types
 // ---------------------------------------------------------------------------
 // HeartPulseMotif — ลายตกแต่งหัวใจ + คลื่นไฟฟ้าหัวใจ (ECG) เลียนแบบธีมของ
@@ -1048,9 +1226,54 @@ function Slide1() {
           zIndex: 0,
         }}
       >
-        <HeartPulseMotif opacity={0.1} width={620} />
+        {/* <HeartPulseMotif opacity={0.1} width={620} /> */}
       </div>
 
+      {/* ★ ประกายดาวฟุ้งมุมบนขวา เลียนแบบลาย sparkle ในดีไซน์ Canva จริง */}
+      <div
+        style={{
+          position: "absolute",
+          top: "-4%",
+          right: "-2%",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <GlitterBurst width={460} opacity={0.85} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: "0%",
+          right: "90%",
+          pointerEvents: "none",
+          zIndex: 100,
+        }}
+      >
+        <GlitterBurst width={460} opacity={0.85} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: "70%",
+          right: "90%",
+          pointerEvents: "none",
+          zIndex: 100,
+        }}
+      >
+        <GlitterBurst width={460} opacity={0.85} />
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          top: "70%",
+          right: "0%",
+          pointerEvents: "none",
+          zIndex: 100,
+        }}
+      >
+        <GlitterBurst width={460} opacity={0.85} />
+      </div>
       <div
         style={{
           position: "absolute",
@@ -1623,8 +1846,8 @@ function Slide3({
                     flexShrink: 0,
                   }}
                 >
-          {i+1}
-        </span>
+                  {i + 1}
+                </span>
                 <span
                   style={{
                     color: "rgba(255,255,255,0.55)",
@@ -1841,7 +2064,7 @@ function Slide4({
                     ...notoTH,
                     fontSize: "clamp(0.72rem, 1.1vw, 0.95rem)",
                     fontWeight: 600,
-                    // color: "rgba(255,255,255,0.55)",
+                    color: "rgba(255,255,255,0.55)",
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
                     lineHeight: 1.3,
@@ -1905,6 +2128,12 @@ interface Slide5Props {
 }
 
 function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
+  // ★ เก็บว่าจรวดของทีมไหนเคยปรากฏบนจอ Space Race มาแล้วบ้าง (ref เพราะแค่
+  // ใช้เลือก animation ไม่ต้อง trigger re-render) — ครั้งแรกที่โผล่มาเล่น
+  // animation "เลื่อนช้าๆ แล้วพุ่งไปตำแหน่งตัวเอง" (ease-in) ส่วนครั้งต่อๆ ไป
+  // ที่แค่ขยับตำแหน่งเพราะคะแนนเปลี่ยน ใช้ spring แบบเดิมที่กระฉับกระเฉงกว่า
+  const shipEnteredRef = useRef<Set<string>>(new Set());
+
   return (
     <div
       style={{
@@ -2018,16 +2247,36 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                 const yPos = (index + 0.5) * (100 / 6);
                 const leftPct = ((pos.score - minScore) / scoreRange) * 100;
                 const isNearRight = leftPct > 78;
+
+                // ★ ทีมนี้เคยปรากฏบนจอนี้มาก่อนหรือยัง (ดูจาก ref ด้านบน)
+                const isFirstEntry = !shipEnteredRef.current.has(team.id);
+
                 return (
                   <motion.div
                     key={team.id}
                     layoutId={`ship-${team.id}`}
-                    initial={false}
+                    initial={
+                      isFirstEntry
+                        ? { left: "-16%", top: `${yPos}%`, opacity: 0 }
+                        : false
+                    }
                     animate={{
                       left: `${Math.min(100, leftPct)}%`,
                       top: `${yPos}%`,
+                      opacity: 1,
                     }}
-                    transition={{ type: "spring", stiffness: 40, damping: 15 }}
+                    transition={
+                      isFirstEntry
+                        ? // ★ เลื่อนช้าๆ ก่อนแล้วค่อยพุ่ง (ease-in — ช้าตอนเริ่ม
+                          // เร่งความเร็วขึ้นเรื่อยๆ ตอนท้าย) ใช้ตอนจรวดโผล่มาครั้งแรก
+                          { duration: 1.4, ease: [0.55, 0.06, 0.68, 0.19] }
+                        : // ครั้งต่อๆ ไปที่แค่ขยับตำแหน่งเพราะคะแนนเปลี่ยน
+                          // ใช้ spring แบบเดิมที่กระฉับกระเฉงกว่า
+                          { type: "spring", stiffness: 40, damping: 15 }
+                    }
+                    onAnimationComplete={() => {
+                      shipEnteredRef.current.add(team.id);
+                    }}
                     style={{
                       position: "absolute",
                       transform: "translate(-50%,-50%)",
@@ -2075,14 +2324,20 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                             fontSize: 20,
                             fontWeight: 900,
                             padding: "2px 8px",
-                            borderRadius: 4,
+                            borderRadius: 10,
                             color: team.color,
                             letterSpacing: "0.10em",
+                            background: "rgba(61,22,12,0.55)",
+                            border: "1px solid rgba(255,255,255,0.06)",
                           }}
+                          // className="border-2 border-slate-800"
                         >
-<span style={{ opacity: 0.45 }}>
-                            #{topSix.filter((p) => p.score > pos.score).length + 1}
-                          </span>{" "}                          {team.name}
+                          <span style={{ opacity: 0.45 }}>
+                            #
+                            {topSix.filter((p) => p.score > pos.score).length +
+                              1}
+                          </span>{" "}
+                          {team.name}
                         </div>
                         <div
                           style={{
@@ -2720,7 +2975,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                       textAlign: "center",
                     }}
                   >
-                    {rank + 1}
+                    {rank}
                   </span>
                   <div
                     style={{
