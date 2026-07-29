@@ -1721,9 +1721,9 @@ function Slide3({
         style={{ height: 1, background: "rgba(255,255,255,0.05)" }}
       />
 
-      <div className="px-16 pb-7 flex gap-5 max-w-3xl">
+      <div className="px-16 pb-7 flex gap-5">
         <div
-          className="flex-1 rounded-2xl p-6"
+          className="flex-[0.8] rounded-2xl p-6"
           style={{
             background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
@@ -1749,7 +1749,7 @@ function Slide3({
         </div>
 
         <div
-          className="flex-1 rounded-2xl p-6"
+          className="flex-[0.8] rounded-2xl p-6"
           style={{
             background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
@@ -1783,7 +1783,7 @@ function Slide3({
         </div>
 
         <div
-          className="flex-1 rounded-2xl p-6"
+          className="flex-[1.8] rounded-2xl p-6"
           style={{
             background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
@@ -1805,6 +1805,9 @@ function Slide3({
             style={{
               fontSize: "clamp(1.6rem, 3vw, 2.5rem)",
               lineHeight: 1.2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
             }}
           >
             {leaderName}
