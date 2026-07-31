@@ -59,12 +59,31 @@ interface Category {
   questions: Question[];
 }
 
-const TOTAL_SLIDES = 11;
+const TOTAL_SLIDES = 12; // ★★ [แก้ไข] เพิ่ม Slide12 (พักเบรก) ต่อท้าย
 const JEOPARDY_SLIDE = 4;
 // ★ สไลด์ Canva Intro (เต็มจอ) — ใช้ไฟล์ Canva เดียวกับ Question Board
 // จึงใช้ปุ่ม ◀/▶ เลื่อนหน้าร่วมกันได้ (ดู canControlCanvaPage ด้านล่าง)
 const CANVA_INTRO_SLIDE = 2;
 const MAX_QUESTIONS_PER_CATEGORY = 6; // ต้องตรงกับ Slide3 ฝั่ง viewer
+
+// ★★ [ใหม่] Preview สไลด์แบบข้อความล้วน — ตั้งค่าคงที่ตายตัว ไม่ดึงข้อมูลจริง
+// (คะแนน/อันดับ ฯลฯ) เลย จึงไม่กิน realtime bandwidth เพิ่มขึ้นแม้แต่นิดเดียว
+// ต้องแก้ array นี้เองถ้าลำดับ/ชื่อสไลด์ฝั่ง viewer เปลี่ยนในอนาคต (ต้องตรงกับ
+// slides record ใน ViewerDashboard.tsx)
+const SLIDE_LABELS: string[] = [
+  "หน้าไตเติ้ล",
+  "Canva Intro",
+  "ภาพรวม",
+  "Question Board",
+  "Space Race",
+  "Live Leaderboard",
+  "กำลังประมวลผล",
+  "รางวัลชมเชย",
+  "รองชนะเลิศ 2",
+  "รองชนะเลิศ 1",
+  "ชนะเลิศ",
+  "พักเบรก",
+];
 
 const ORANGE = "#ED8240";
 const GREEN = "#1a7a4c";
@@ -290,6 +309,9 @@ export default function ControlPage({
         <label className="text-[10px] uppercase tracking-[0.15em] text-black/30 block">
           Slide Control
         </label>
+        {/* ★★ [แก้ไข] เดิมเป็นปุ่มตัวเลขล้วน (w-9 h-9) เปลี่ยนเป็นการ์ดที่มีเลข +
+            ชื่อสไลด์ (จาก SLIDE_LABELS ค่าคงที่ ไม่ใช่ข้อมูลจริง) ให้กดง่ายขึ้นว่า
+            แต่ละหมายเลขคือสไลด์อะไร โดยไม่ต้องดึงข้อมูลอะไรเพิ่มเลย */}
         <div className="flex gap-1.5 flex-wrap">
           {Array.from({ length: TOTAL_SLIDES }, (_, i) => {
             const active = current.slide === i + 1;
@@ -297,14 +319,17 @@ export default function ControlPage({
               <button
                 key={i}
                 onClick={() => goSlide(i + 1)}
-                className="w-9 h-9 rounded-lg text-xs font-medium border transition-all"
+                className="flex flex-col items-center justify-center rounded-lg text-[10px] font-medium border transition-all px-2 py-1.5 min-w-[64px]"
                 style={{
                   background: active ? ORANGE : "transparent",
                   borderColor: active ? ORANGE : "rgba(0,0,0,0.1)",
                   color: active ? "#fff" : "rgba(0,0,0,0.5)",
                 }}
               >
-                {i + 1}
+                <span className="text-xs font-bold">{i + 1}</span>
+                <span className="leading-tight text-center opacity-90">
+                  {SLIDE_LABELS[i] ?? ""}
+                </span>
               </button>
             );
           })}

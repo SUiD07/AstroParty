@@ -700,10 +700,11 @@ function QuestionModal({
   visible: boolean;
   canvaPageOverride?: number | null;
 }) {
-  // ★ เลื่อนไปจุดคะแนน (ใต้ Canva iframe) เมื่อแอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน"
-  // ใน /control — เทียบค่าเดิมที่เคยเห็นตอน modal นี้ mount กับค่าที่ได้รับใหม่
-  // ถ้าไม่ตรงกัน = มีคำสั่งเลื่อนมาจริง (ไม่ใช่แค่ modal เพิ่ง mount)
-  const scoreSectionRef = useRef<HTMLDivElement>(null);
+  // ★★ [แก้ไข] เดิม layout เป็นแนวตั้ง (คะแนนอยู่ใต้ Canva) เลยต้อง scrollIntoView
+  // ตอนนี้ปรับเป็นซ้าย-ขวาแล้ว (Canva ซ้าย / คะแนนขวา) ไม่มีอะไรต้องเลื่อนอีกต่อไป
+  // เปลี่ยนเป็น "เรืองแสงกระพริบชั่วคราว" (1.6 วิ) ที่ฝั่งคะแนนแทน เพื่อดึงความสนใจ
+  // ผู้ชมไปที่พาแนลคะแนน — สัญญาณ scrollPulse ยังใช้ pattern เดิม (เทียบค่าเก่า-ใหม่)
+  const [scoreHighlight, setScoreHighlight] = useState(false);
   const prevScrollPulseRef = useRef(scrollPulse);
   useEffect(() => {
     if (
@@ -713,7 +714,6 @@ function QuestionModal({
       scoreSectionRef.current?.scrollIntoView({
         behavior: "smooth",
         block: "start",
-      });
       prevScrollPulseRef.current = scrollPulse;
     }
   }, [scrollPulse]);
