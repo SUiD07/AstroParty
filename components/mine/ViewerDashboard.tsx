@@ -478,7 +478,7 @@ function JeopardyCell({
   onClick: () => void;
 }) {
   const answered = events.length > 0;
-  const MAX_VISIBLE = 9;
+  // const MAX_VISIBLE = 9;
   // const visibleEvents = events.slice(0, MAX_VISIBLE);
   // const hiddenCount = Math.max(0, events.length - MAX_VISIBLE);
 
@@ -624,7 +624,7 @@ function JeopardyCell({
 // ของ modal ที่เปิดอยู่" จากหน้า /control (canva_current_page ใน
 // presentation_state) ถ้ามีค่า override ให้ใช้แทนเลขหน้าเริ่มต้นของคำถามนั้น
 // ---------------------------------------------------------------------------
-function computeCanvaSrc(
+export function computeCanvaSrc(
   fullUrl: string | undefined,
   pageOverride: number | null,
 ): string | undefined {
@@ -645,7 +645,7 @@ function computeCanvaSrc(
 // เพราะ React จะไม่ unmount <iframe> element นี้เลยตราบใดที่ key เดิม
 // (ไม่มี key ผูกกับ question id) แค่เปลี่ยน attribute src เฉยๆ
 // ---------------------------------------------------------------------------
-function CanvaSingleFrame({
+export function CanvaSingleFrame({
   src,
   modalVisible,
   fill,
@@ -1563,7 +1563,7 @@ function Slide1() {
 //   ทำลายตอนสลับสไลด์ไปมา (ดู persistent-mount wrapper ใน Main ด้านล่าง)
 //   แก้ปัญหาเดิมที่ Canva ต้องโหลดใหม่ทุกครั้งที่กลับมาสไลด์นี้
 // ---------------------------------------------------------------------------
-const INTRO_CANVA_URL =
+export const INTRO_CANVA_URL =
   "https://www.canva.com/design/DAHPWmXRz-8/uGmhgJxkpGvoMveLuyJr2g/view?embed";
 
 interface Slide2Props {

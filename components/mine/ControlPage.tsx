@@ -16,7 +16,7 @@
  *   ใช้ค่า canva_current_page ใน presentation_state แยกอิสระจากเลขหน้าเริ่มต้น
  *   ที่ตั้งไว้ล่วงหน้าต่อคำถามใน CanvaLinkManager — รีเซ็ตกลับเป็นค่าเริ่มต้น
  *   ทุกครั้งที่ปิด modal หรือ highlight คำถามใหม่
- *  * - ★★ 
+ *  * - ★★
  * - ★★ ปรับ UI ทั้งหมดให้เข้ากับธีม minimal ของ AdminPanel.tsx (white/black,
  *   border-black/[0.07], rounded-xl, ORANGE accent) แทนธีมมืดเดิมที่แยกจากกัน
  *   เพราะ component นี้ถูกเสียบอยู่ใน section ของ AdminPanel อยู่แล้ว
@@ -34,10 +34,38 @@
  *   ไฟล์เดียวกับ Question Board เลยใช้ปุ่มเดิมร่วมกันได้เลยโดยไม่ต้องเพิ่ม state
  *   ใหม่ — เปลี่ยนชื่อ canControlOpenModal → canControlCanvaPage ให้สื่อความหมาย
  *   ตรงขึ้น เพราะตอนนี้ครอบคลุม 2 บริบท ไม่ใช่แค่ modal อย่างเดียว
+ * - ★★★★ NEW: Canva Page Presets ("Quick Jump") — เสริมปุ่ม ◀/▶ เดิม ไม่แทนที่
+ *   ◀/▶ = เลื่อนทีละหน้า, preset = กระโดดตรงไปหน้าที่ตั้งชื่อไว้ล่วงหน้า
+ *   (เช่น "time up" หน้า 100, "buffer" หน้า 101) เก็บใน Supabase table
+ *   canva_page_presets ใหม่ ใช้ gate เดียวกับปุ่ม ◀/▶ (canControlCanvaPage)
+ *   ทั้งคู่แก้ canva_current_page ตัวเดียวกัน จึง sync กันเองเสมอ ไม่มีทาง
+ *   ไม่ตรงกัน — เรียง preset ตามเลขหน้าน้อย→มาก
+ * - ★★★★★ NEW: Canva Preview — โชว์หน้าก่อนหน้า/ปัจจุบัน/ถัดไปเป็น iframe
+ *   จริงย่อขนาด (ไม่ใช่ screenshot) mount ค้างตลอดเหมือน CanvaSingleFrame
+ *   หลักของฝั่ง viewer เพื่อไม่ให้ reload ทุกครั้งที่เลขหน้าขยับ — ใช้
+ *   computeCanvaSrc/CanvaSingleFrame/INTRO_CANVA_URL ที่ export มาจาก
+ *   ViewerDashboard.tsx ตรงๆ (ไม่แยกไฟล์ใหม่ตามที่ตกลงกันไว้) คลิก preview
+ *   = จั๊มป์ไปหน้านั้นทันที (เรียก changeCanvaPage เดิมซ้ำ ไม่เขียนใหม่)
+ * - ★★★★★★ NEW: Quick Jump return — กด preset (เช่น "time up") แล้วจำหน้าที่
+ *   ค้างไว้ก่อน jump ไว้ใน preJumpPage (บันทึกแค่ครั้งแรกที่ยังไม่อยู่ในสถานะ
+ *   jump กัน jump ซ้อน jump ทับตำแหน่งจริง) ปุ่ม "↩ กลับ" จะพาไปหน้า
+ *   preJumpPage + 1 (ข้ามไปหน้าถัดไปเลยตามที่ตกลงกัน) แล้วเคลียร์ preJumpPage
+ *   preJumpPage ถูกเคลียร์ทิ้งทุกครั้งที่มีการนำทางแบบอื่นเกิดขึ้นด้วย
+ *   (เปลี่ยนสไลด์, highlight คำถามใหม่, เคลียร์ไฮไลท์, ปิด modal, กด ◀/▶ เอง)
+ *   เพื่อไม่ให้ปุ่ม "กลับ" ค้างพาไปหน้าผิดถ้าพี่เลื่อนเองไปแล้วระหว่างทาง
  */
 
 import { useEffect, useState } from "react";
-import { ArrowUp, ArrowDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Plus,
+  Zap,
+  Undo2,
+} from "lucide-react";
 import {
   loadCategories,
   loadPresentationState,
@@ -46,8 +74,20 @@ import {
   unsubscribe,
   loadCanvaLinks,
   splitCanvaUrl,
+  loadCanvaPagePresets,
+  createCanvaPagePreset,
+  deleteCanvaPagePreset,
   type PresentationState,
+  type CanvaPagePreset,
 } from "@/lib/db";
+// ★★★★★ NEW: import ข้ามไฟล์จาก ViewerDashboard.tsx ตรงๆ (ไม่แยกไฟล์ใหม่)
+// ต้อง export computeCanvaSrc / CanvaSingleFrame / INTRO_CANVA_URL ออกมาที่
+// ต้นทางก่อน (แค่เติมคำว่า `export` หน้าของเดิม ไม่แก้ logic ข้างใน)
+import {
+  computeCanvaSrc,
+  CanvaSingleFrame,
+  INTRO_CANVA_URL,
+} from "./ViewerDashboard";
 
 interface Question {
   id: number;
@@ -114,9 +154,20 @@ export default function ControlPage({
     canvaPage: null,
   });
 
+  // ★★★★ NEW: Canva Page Presets ("Quick Jump")
+  const [presets, setPresets] = useState<CanvaPagePreset[]>([]);
+  const [showAddPreset, setShowAddPreset] = useState(false);
+  const [newPresetLabel, setNewPresetLabel] = useState("");
+  const [newPresetPage, setNewPresetPage] = useState("");
+
+  // ★★★★★★ NEW: จำหน้าที่ค้างไว้ก่อนกด Quick Jump ครั้งแรก (null = ไม่ได้
+  // อยู่ในสถานะ "jump ออกไป") ใช้คู่กับปุ่ม "↩ กลับ"
+  const [preJumpPage, setPreJumpPage] = useState<number | null>(null);
+
   useEffect(() => {
     loadCategories().then(setCategories);
     loadCanvaLinks().then(setCanvaLinks);
+    loadCanvaPagePresets().then(setPresets); // ★★★★ NEW
     loadPresentationState().then((s: PresentationState) =>
       setCurrent({
         slide: s.current_slide,
@@ -156,6 +207,7 @@ export default function ControlPage({
       slide: n,
       canvaPage: enteringOrLeavingIntro ? null : c.canvaPage,
     }));
+    if (enteringOrLeavingIntro) setPreJumpPage(null); // ★★★★★★ NEW
     await updatePresentationState({
       current_slide: n,
       ...(enteringOrLeavingIntro ? { canva_current_page: null } : {}),
@@ -166,6 +218,7 @@ export default function ControlPage({
     if (!isOnJeopardySlide) return;
     // ★ เลือกคำถามใหม่ — เคลียร์ override เลขหน้าเก่าทิ้งด้วยเสมอ
     setCurrent((c) => ({ ...c, qId, open: false, canvaPage: null }));
+    setPreJumpPage(null); // ★★★★★★ NEW
     await updatePresentationState({
       highlighted_question_id: qId,
       modal_open: false,
@@ -176,6 +229,7 @@ export default function ControlPage({
   const clearHighlight = async () => {
     if (!isOnJeopardySlide) return;
     setCurrent((c) => ({ ...c, qId: null, open: false, canvaPage: null }));
+    setPreJumpPage(null); // ★★★★★★ NEW
     await updatePresentationState({
       highlighted_question_id: null,
       modal_open: false,
@@ -195,6 +249,7 @@ export default function ControlPage({
     // ★ ปิด modal = จบคำถามนี้แล้ว เคลียร์ override เลขหน้ากลับเป็น null
     // เพื่อให้เปิดคำถามถัดไปเริ่มที่เลขหน้าเริ่มต้นเสมอ
     setCurrent((c) => ({ ...c, open: false, canvaPage: null }));
+    setPreJumpPage(null); // ★★★★★★ NEW
     await updatePresentationState({
       modal_open: false,
       canva_current_page: null,
@@ -258,11 +313,64 @@ export default function ControlPage({
   const canControlCanvaPage =
     (isOnJeopardySlide && current.open) || isOnCanvaIntroSlide;
 
+  // ★★★★★ NEW: base URL ของ Canva ที่ "กำลังคุมอยู่ตอนนี้" — ใช้คำนวณ preview
+  // (1) modal คำถาม → canvaLinks[qId]  (2) Canva Intro → INTRO_CANVA_URL คงที่
+  const activeCanvaUrl = isOnCanvaIntroSlide
+    ? INTRO_CANVA_URL
+    : current.qId
+      ? canvaLinks[current.qId]
+      : undefined;
+
   const changeCanvaPage = async (delta: number) => {
     if (!canControlCanvaPage) return;
     const nextPage = Math.max(1, effectivePage + delta);
     setCurrent((c) => ({ ...c, canvaPage: nextPage }));
+    setPreJumpPage(null); // ★★★★★★ NEW — เลื่อนเองแล้ว ไม่ใช่รอ "กลับ" อีกต่อไป
     await updatePresentationState({ canva_current_page: nextPage });
+  };
+
+  // ★★★★ NEW: Quick Jump — กระโดดตรงไปหน้าที่ตั้ง preset ไว้
+  // ใช้ gate เดียวกับปุ่ม ◀/▶ (canControlCanvaPage) เป๊ะๆ
+  const applyPreset = async (page: number) => {
+    if (!canControlCanvaPage) return;
+    // ★★★★★★ NEW: บันทึกหน้าปัจจุบันไว้ก่อน jump — เฉพาะครั้งแรกที่ยังไม่ได้
+    // อยู่ในสถานะ jump (preJumpPage === null) กัน jump ซ้อน jump ทับตำแหน่งจริง
+    setCurrent((c) => {
+      if (preJumpPage === null) {
+        setPreJumpPage(c.canvaPage ?? assignedPage ?? 1);
+      }
+      return { ...c, canvaPage: page };
+    });
+    await updatePresentationState({ canva_current_page: page });
+  };
+
+  // ★★★★★★ NEW: กลับจาก Quick Jump — 2 แบบ
+  // (1) กลับหน้าเดิมเป๊ะๆ ที่ค้างไว้ก่อน jump
+  // (2) กลับ + ข้ามไปหน้าถัดไปเลย (เผื่อกรณีเนื้อหาหน้าเดิมโชว์ไปแล้วตอน jump)
+  // ทั้งคู่เคลียร์ preJumpPage ทิ้งเหมือนกัน (จบสถานะ "jump ออกไป")
+  const returnFromJump = async (advance: boolean) => {
+    if (!canControlCanvaPage || preJumpPage === null) return;
+    const nextPage = advance ? preJumpPage + 1 : preJumpPage;
+    setCurrent((c) => ({ ...c, canvaPage: nextPage }));
+    setPreJumpPage(null);
+    await updatePresentationState({ canva_current_page: nextPage });
+  };
+
+  const addPreset = async () => {
+    const page = Number(newPresetPage);
+    if (!newPresetLabel.trim() || !newPresetPage || Number.isNaN(page)) return;
+    const created = await createCanvaPagePreset(newPresetLabel.trim(), page);
+    setPresets((p) =>
+      [...p, created].sort((a, b) => a.page_number - b.page_number),
+    );
+    setNewPresetLabel("");
+    setNewPresetPage("");
+    setShowAddPreset(false);
+  };
+
+  const removePreset = async (id: number) => {
+    await deleteCanvaPagePreset(id);
+    setPresets((p) => p.filter((preset) => preset.id !== id));
   };
 
   return (
@@ -504,6 +612,199 @@ export default function ControlPage({
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>
+
+            {/* ── ★★★★ NEW: Quick Jump preset — แยกทรง/สีจาก ◀/▶ ชัดเจน กันสับสน ── */}
+            <div
+              className="flex items-center gap-1.5 px-2 py-1 rounded-lg border flex-wrap"
+              style={{
+                borderColor: canControlCanvaPage
+                  ? "rgba(0,0,0,0.1)"
+                  : "rgba(0,0,0,0.06)",
+                background: "transparent",
+                opacity: canControlCanvaPage ? 1 : 0.4,
+              }}
+              title="กระโดดไปหน้าที่ตั้งชื่อไว้โดยตรง"
+            >
+              <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] text-black/35 px-1">
+                <Zap className="w-3 h-3" />
+                Quick Jump
+              </span>
+
+              {presets.map((preset) => (
+                <span
+                  key={preset.id}
+                  className="flex items-center rounded-md border overflow-hidden"
+                  style={{ borderColor: "rgba(0,0,0,0.1)" }}
+                >
+                  <button
+                    onClick={() => applyPreset(preset.page_number)}
+                    disabled={!canControlCanvaPage}
+                    className="px-2.5 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed"
+                    style={{
+                      color: canControlCanvaPage
+                        ? "rgba(0,0,0,0.65)"
+                        : "rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    {preset.label} · {preset.page_number}
+                  </button>
+                  <button
+                    onClick={() => removePreset(preset.id)}
+                    className="w-6 h-6 flex items-center justify-center text-black/25 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+
+              {showAddPreset ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    value={newPresetLabel}
+                    onChange={(e) => setNewPresetLabel(e.target.value)}
+                    placeholder="ชื่อ"
+                    className="w-16 px-2 py-1.5 text-[11px] rounded-md border border-black/10 outline-none"
+                  />
+                  <input
+                    value={newPresetPage}
+                    onChange={(e) => setNewPresetPage(e.target.value)}
+                    placeholder="หน้า"
+                    inputMode="numeric"
+                    className="w-14 px-2 py-1.5 text-[11px] rounded-md border border-black/10 outline-none"
+                  />
+                  <button
+                    onClick={addPreset}
+                    className="px-2.5 py-1.5 text-[11px] font-medium rounded-md text-white"
+                    style={{ background: ORANGE }}
+                  >
+                    บันทึก
+                  </button>
+                  <button
+                    onClick={() => setShowAddPreset(false)}
+                    className="px-2 py-1.5 text-[11px] text-black/40"
+                  >
+                    ยกเลิก
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowAddPreset(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-md border border-dashed border-black/15 text-black/40"
+                >
+                  <Plus className="w-3 h-3" />
+                  เพิ่ม
+                </button>
+              )}
+            </div>
+
+            {/* ── ★★★★★★ NEW: ปุ่มกลับจาก Quick Jump — 2 แบบ ── */}
+            {preJumpPage !== null && (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => returnFromJump(false)}
+                  disabled={!canControlCanvaPage}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border disabled:cursor-not-allowed"
+                  style={{
+                    borderColor: "rgba(237,130,64,0.35)",
+                    background: "rgba(237,130,64,0.08)",
+                    color: ORANGE,
+                  }}
+                  title={`กลับไปหน้า ${preJumpPage} (หน้าเดิมที่ค้างไว้ก่อน jump)`}
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  กลับหน้าเดิม · หน้า {preJumpPage}
+                </button>
+
+                <button
+                  onClick={() => returnFromJump(true)}
+                  disabled={!canControlCanvaPage}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border disabled:cursor-not-allowed"
+                  style={{
+                    borderColor: "rgba(237,130,64,0.35)",
+                    background: "rgba(237,130,64,0.08)",
+                    color: ORANGE,
+                  }}
+                  title={`กลับไปหน้า ${preJumpPage + 1} (ถัดจากหน้าที่ค้างไว้ก่อน jump)`}
+                >
+                  <Undo2 className="w-3.5 h-3.5" />
+                  กลับ+ถัดไป · หน้า {preJumpPage + 1}
+                </button>
+              </div>
+            )}
+            {/* ── ★★★★★ NEW: Canva Preview — ก่อนหน้า / ปัจจุบัน / ถัดไป ──
+              mount ค้างตลอด (ไม่ conditional-render/unmount) เหมือน
+              CanvaSingleFrame หลักของ viewer เพื่อไม่ให้ iframe reload ทุกครั้ง
+              ที่เลขหน้าขยับ — gate ด้วย canControlCanvaPage เหมือนปุ่มอื่น
+              คลิก preview = จั๊มป์ไปหน้านั้นทันที (เรียก changeCanvaPage เดิม) */}
+            {canControlCanvaPage && (
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                {[
+                  {
+                    label: "ก่อนหน้า",
+                    page: effectivePage - 1,
+                    onClick: () => changeCanvaPage(-1),
+                  },
+                  {
+                    label: "ปัจจุบัน",
+                    page: effectivePage,
+                    onClick: undefined,
+                  },
+                  {
+                    label: "ถัดไป",
+                    page: effectivePage + 1,
+                    onClick: () => changeCanvaPage(1),
+                  },
+                ].map(({ label, page, onClick }) => (
+                  <div
+                    key={label}
+                    onClick={onClick}
+                    className="rounded-lg border overflow-hidden"
+                    style={{
+                      borderColor:
+                        label === "ปัจจุบัน"
+                          ? "rgba(237,130,64,0.4)"
+                          : "rgba(0,0,0,0.08)",
+                      width: 160,
+                      cursor: onClick ? "pointer" : "default",
+                    }}
+                  >
+                    <div className="px-2 py-1 text-[10px] text-black/40 border-b border-black/[0.06]">
+                      {label} · หน้า {Math.max(1, page)}
+                    </div>
+                    {/* ★ scale ย่อทั้ง iframe แทนบีบ width/height ตรงๆ — กัน
+                      Canva re-layout เนื้อหาข้างในผิดสัดส่วน (เทคนิคเดียวกับ
+                      mini scoreboard iframe ใน QuestionModal) */}
+                    <div
+                      style={{
+                        width: 160,
+                        height: 90,
+                        overflow: "hidden",
+                        position: "relative",
+                      }}
+                    >
+                      <div
+                        style={{
+                          transform: "scale(0.167)", // 160/958 ≈ พอดีเฟรม 16:9
+                          transformOrigin: "top left",
+                          width: 958,
+                          height: 539,
+                          pointerEvents: "none", // preview ดูอย่างเดียว
+                        }}
+                      >
+                        <CanvaSingleFrame
+                          src={computeCanvaSrc(
+                            activeCanvaUrl,
+                            Math.max(1, page),
+                          )}
+                          modalVisible={true}
+                          fill
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="w-px h-6 bg-black/[0.08]" />
 
