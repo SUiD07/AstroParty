@@ -99,10 +99,7 @@ function getRank(sortedPositions: Position[], score: number): number {
   return sortedPositions.filter((p) => p.score > score).length + 1;
 }
 
-function getTeamsAtRank(
-  sortedPositions: Position[],
-  rank: number,
-): Position[] {
+function getTeamsAtRank(sortedPositions: Position[], rank: number): Position[] {
   return sortedPositions.filter(
     (p) => getRank(sortedPositions, p.score) === rank,
   );
@@ -676,6 +673,11 @@ export function CanvaSingleFrame({
 // ---------------------------------------------------------------------------
 // QuestionModal
 // ไม่ unmount ตอนปิดแล้ว — คุมด้วย prop `visible` แทน (opacity/pointer-events)
+// ★★★★★★★ NEW: viewMode 2 แบบ — 'question' = Canva เต็มหน้าเดี่ยวๆ,
+// 'score' = แบ่ง 2 คอลัมน์ (Canva ซ้าย / คะแนนขวา) ไม่ใช่ scroll ลงไปดูคะแนน
+// เหมือนเดิมอีกต่อไป — ปุ่มแอดมิน "เลื่อนให้ผู้ชมดูคะแนน"/"เลื่อนขึ้นไปดูโจทย์"
+// ใน /control ยังใช้ signal เดิม (scrollPulse/scrollTopPulse) แค่เปลี่ยน
+// ความหมายจาก scroll เป็นสลับ viewMode แทน ไม่ต้องแก้ DB/ControlPage เลย
 // ---------------------------------------------------------------------------
 function QuestionModal({
   category,
@@ -700,37 +702,35 @@ function QuestionModal({
   visible: boolean;
   canvaPageOverride?: number | null;
 }) {
-  // ★★ [แก้ไข] เดิม layout เป็นแนวตั้ง (คะแนนอยู่ใต้ Canva) เลยต้อง scrollIntoView
-  // ตอนนี้ปรับเป็นซ้าย-ขวาแล้ว (Canva ซ้าย / คะแนนขวา) ไม่มีอะไรต้องเลื่อนอีกต่อไป
-  // เปลี่ยนเป็น "เรืองแสงกระพริบชั่วคราว" (1.6 วิ) ที่ฝั่งคะแนนแทน เพื่อดึงความสนใจ
-  // ผู้ชมไปที่พาแนลคะแนน — สัญญาณ scrollPulse ยังใช้ pattern เดิม (เทียบค่าเก่า-ใหม่)
-  const [scoreHighlight, setScoreHighlight] = useState(false);
+  // ★★★★★★★ NEW: โหมดการแสดงผลใน modal — รีเซ็ตกลับ 'question' ทุกครั้งที่
+  // เปลี่ยนคำถาม (question.id เปลี่ยน) กันค้างโหมดคะแนนของคำถามก่อนหน้า
+  const [viewMode, setViewMode] = useState<"question" | "score">("question");
+  useEffect(() => {
+    setViewMode("question");
+  }, [question.id]);
+
+  // ★ แอดมินกดปุ่ม "เลื่อนให้ผู้ชมดูคะแนน" ใน /control → เทียบค่าเดิมที่เคย
+  // เห็นกับค่าที่ได้รับใหม่ ถ้าไม่ตรงกัน = มีคำสั่งมาจริง (ไม่ใช่แค่ mount ครั้งแรก)
   const prevScrollPulseRef = useRef(scrollPulse);
   useEffect(() => {
     if (
       scrollPulse !== undefined &&
       scrollPulse !== prevScrollPulseRef.current
     ) {
-      setScoreHighlight(true);
-      const t = setTimeout(() => setScoreHighlight(false), 1600);
+      setViewMode("score"); // ★★★★★★★ NEW: เปลี่ยนจาก scroll เป็นสลับโหมด
       prevScrollPulseRef.current = scrollPulse;
-      return () => clearTimeout(t);
     }
   }, [scrollPulse]);
 
-  // ★★ [แก้ไข] เหมือนกันแต่ตรงข้าม — ไฮไลท์ฝั่ง Canva (ซ้าย) แทนตอนกดปุ่ม
-  // "เลื่อนขึ้นไปดูโจทย์" ใน /control (เดิม scrollTo กลับขึ้นบนสุด)
-  const [canvaHighlight, setCanvaHighlight] = useState(false);
+  // ★ ตรงข้ามกับด้านบน — แอดมินกดปุ่ม "เลื่อนขึ้นไปดูโจทย์"
   const prevScrollTopPulseRef = useRef(scrollTopPulse);
   useEffect(() => {
     if (
       scrollTopPulse !== undefined &&
       scrollTopPulse !== prevScrollTopPulseRef.current
     ) {
-      setCanvaHighlight(true);
-      const t = setTimeout(() => setCanvaHighlight(false), 1600);
+      setViewMode("question"); // ★★★★★★★ NEW
       prevScrollTopPulseRef.current = scrollTopPulse;
-      return () => clearTimeout(t);
     }
   }, [scrollTopPulse]);
 
@@ -835,11 +835,7 @@ function QuestionModal({
             >
               ข้อ {question.number}
             </h3>
-            <div
-              style={{
-                transform: "scale(0.43)",
-              }}
-            >
+            <div style={{ transform: "scale(0.43)" }}>
               <iframe
                 src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
                 // src="https://stagetimer.io/output/6a5f772898e737c7ac88e520/?v=2&signature=d65fa0d941b542ed188a72c82d07eedf235c47965388f9fd62cec850b6fe3479"
@@ -849,34 +845,22 @@ function QuestionModal({
           </div>
         </div>
 
-        {/* ★★ [แก้ไข] เดิม div เดียว overflowY:auto วางซ้อนแนวตั้ง (Canva บน / คะแนนล่าง)
-            ตอนนี้แยกเป็น flex row 2 คอลัมน์: ซ้าย = Canva (65%), ขวา = คะแนน (35%,
-            scroll อิสระของตัวเอง) — ทั้งสองฝั่งกระพริบ outline/glow ได้เมื่อแอดมิน
-            กดปุ่มเลื่อนจาก /control (แทนการ scrollIntoView/scrollTo แบบเดิม) */}
+        {/* ★★★★★★★ NEW: 2-column area — 'question' = Canva เต็มเดี่ยวๆ,
+            'score' = แบ่ง Canva (ซ้าย) + คะแนน (ขวา) ด้วย flex animate */}
         <div
           style={{
             display: "flex",
-            gap: 20,
             flex: 1,
             minHeight: 0,
             padding: "0 20px 20px",
+            gap: viewMode === "score" ? 20 : 0,
           }}
         >
-          {/* ── ฝั่งซ้าย: Canva iframe ── */}
-          <div
-            style={{
-              flex: "0 0 65%",
-              minWidth: 0,
-              pointerEvents: visible ? "auto" : "none",
-              borderRadius: 10,
-              transition: "box-shadow .3s ease, outline-color .3s ease",
-              outline: canvaHighlight
-                ? `3px solid ${C.orange}`
-                : "3px solid transparent",
-              boxShadow: canvaHighlight
-                ? `0 0 32px rgba(237,130,64,0.55)`
-                : "none",
-            }}
+          {/* Canva panel — เต็มความกว้างตอน 'question', แคบลงเหลือคอลัมน์ซ้ายตอน 'score' */}
+          <motion.div
+            animate={{ flex: viewMode === "score" ? 1.3 : 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 26 }}
+            style={{ minWidth: 0, minHeight: 0, display: "flex" }}
           >
             <CanvaSingleFrame
               src={computeCanvaSrc(
@@ -886,23 +870,21 @@ function QuestionModal({
               modalVisible={visible}
               fill
             />
-          </div>
+          </motion.div>
 
-          {/* ── ฝั่งขวา: รายการคะแนน (scroll อิสระของตัวเอง) ── */}
-          <div
+          {/* Score panel — กว้าง 0 (ซ่อน) ตอน 'question', โผล่เป็นคอลัมน์ขวาตอน 'score' */}
+          <motion.div
+            initial={false}
+            animate={{
+              flex: viewMode === "score" ? 1 : 0,
+              opacity: viewMode === "score" ? 1 : 0,
+            }}
+            transition={{ type: "spring", stiffness: 200, damping: 26 }}
             style={{
-              flex: "1 1 35%",
               minWidth: 0,
+              minHeight: 0,
               overflowY: "auto",
-              borderRadius: 10,
-              padding: 10,
-              transition: "box-shadow .3s ease, outline-color .3s ease",
-              outline: scoreHighlight
-                ? `3px solid ${C.orange}`
-                : "3px solid transparent",
-              boxShadow: scoreHighlight
-                ? `0 0 32px rgba(237,130,64,0.55)`
-                : "none",
+              pointerEvents: viewMode === "score" ? "auto" : "none",
             }}
           >
             {events.length === 0 ? (
@@ -931,13 +913,13 @@ function QuestionModal({
                 <p
                   style={{
                     ...orbitron,
-                    fontSize: 8,
+                    fontSize: 20,
                     letterSpacing: "0.22em",
-                    color: C.textLo,
+                    // color: C.textLo,
                     marginBottom: 4,
                   }}
                 >
-                  ผลคะแนนที่บันทึกไว้
+                  Score Reveal
                 </p>
                 {events.map((ev, i) => {
                   const team = teams.find((t) => t.id === ev.team_id);
@@ -960,7 +942,11 @@ function QuestionModal({
                       }}
                     >
                       <div
-                        style={{ display: "flex", alignItems: "center", gap: 10 }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
                       >
                         <div
                           style={{
@@ -991,7 +977,11 @@ function QuestionModal({
                       >
                         {isPos ? `+${ev.delta}` : ev.delta}
                         <span
-                          style={{ fontSize: 9, color: C.textLo, marginLeft: 4 }}
+                          style={{
+                            fontSize: 9,
+                            color: C.textLo,
+                            marginLeft: 4,
+                          }}
                         >
                           PTS
                         </span>
@@ -1001,8 +991,44 @@ function QuestionModal({
                 })}
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
+
+        {/* ปุ่มสลับโหมด — มุมล่างซ้าย สไตล์เดียวกับปุ่มปิด (X) มุมบนขวา ไม่เตะตา */}
+        <button
+          onClick={() =>
+            setViewMode(viewMode === "question" ? "score" : "question")
+          }
+          style={{
+            position: "absolute",
+            bottom: 14,
+            left: 16,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "6px 10px",
+            borderRadius: 8,
+            background: "transparent",
+            border: `1px solid ${border}`,
+            color: C.textLo,
+            cursor: "pointer",
+            fontSize: 11,
+            ...notoTH,
+            transition: "color .2s, border-color .2s",
+          }}
+          onMouseEnter={(e) => {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.color = C.textHi;
+            el.style.borderColor = borderWarm;
+          }}
+          onMouseLeave={(e) => {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.color = C.textLo;
+            el.style.borderColor = border;
+          }}
+        >
+          {viewMode === "question" ? "▾" : "▴"}
+        </button>
       </motion.div>
     </div>
   );
@@ -1027,19 +1053,123 @@ const GLITTER_STARS: {
   delay: number;
 }[] = [
   { x: 330, y: 20, size: 34, rotate: 12, color: "#F0B65C", dur: 2.4, delay: 0 },
-  { x: 380, y: 55, size: 22, rotate: -8, color: "#FFFFFF", dur: 1.8, delay: 0.3 },
-  { x: 300, y: 70, size: 16, rotate: 20, color: "#ED8240", dur: 2.1, delay: 0.6 },
-  { x: 355, y: 100, size: 28, rotate: -15, color: "#FFFFFF", dur: 2.6, delay: 0.15 },
-  { x: 260, y: 40, size: 20, rotate: 5, color: "#F0B65C", dur: 1.9, delay: 0.9 },
-  { x: 395, y: 130, size: 18, rotate: 30, color: "#ED8240", dur: 2.3, delay: 0.45 },
-  { x: 310, y: 150, size: 24, rotate: -22, color: "#FFFFFF", dur: 2.0, delay: 1.1 },
-  { x: 230, y: 90, size: 14, rotate: 10, color: "#F0B65C", dur: 1.7, delay: 0.75 },
-  { x: 270, y: 165, size: 12, rotate: -5, color: "#FFFFFF", dur: 2.5, delay: 0.2 },
-  { x: 200, y: 130, size: 16, rotate: 18, color: "#ED8240", dur: 2.2, delay: 1.3 },
-  { x: 340, y: 185, size: 10, rotate: 8, color: "#F0B65C", dur: 1.6, delay: 0.55 },
-  { x: 180, y: 175, size: 12, rotate: -12, color: "#FFFFFF", dur: 2.0, delay: 0.85 },
-  { x: 370, y: 15, size: 12, rotate: 25, color: "#FFFFFF", dur: 1.5, delay: 1.5 },
-  { x: 235, y: 20, size: 10, rotate: -18, color: "#ED8240", dur: 2.4, delay: 0.4 },
+  {
+    x: 380,
+    y: 55,
+    size: 22,
+    rotate: -8,
+    color: "#FFFFFF",
+    dur: 1.8,
+    delay: 0.3,
+  },
+  {
+    x: 300,
+    y: 70,
+    size: 16,
+    rotate: 20,
+    color: "#ED8240",
+    dur: 2.1,
+    delay: 0.6,
+  },
+  {
+    x: 355,
+    y: 100,
+    size: 28,
+    rotate: -15,
+    color: "#FFFFFF",
+    dur: 2.6,
+    delay: 0.15,
+  },
+  {
+    x: 260,
+    y: 40,
+    size: 20,
+    rotate: 5,
+    color: "#F0B65C",
+    dur: 1.9,
+    delay: 0.9,
+  },
+  {
+    x: 395,
+    y: 130,
+    size: 18,
+    rotate: 30,
+    color: "#ED8240",
+    dur: 2.3,
+    delay: 0.45,
+  },
+  {
+    x: 310,
+    y: 150,
+    size: 24,
+    rotate: -22,
+    color: "#FFFFFF",
+    dur: 2.0,
+    delay: 1.1,
+  },
+  {
+    x: 230,
+    y: 90,
+    size: 14,
+    rotate: 10,
+    color: "#F0B65C",
+    dur: 1.7,
+    delay: 0.75,
+  },
+  {
+    x: 270,
+    y: 165,
+    size: 12,
+    rotate: -5,
+    color: "#FFFFFF",
+    dur: 2.5,
+    delay: 0.2,
+  },
+  {
+    x: 200,
+    y: 130,
+    size: 16,
+    rotate: 18,
+    color: "#ED8240",
+    dur: 2.2,
+    delay: 1.3,
+  },
+  {
+    x: 340,
+    y: 185,
+    size: 10,
+    rotate: 8,
+    color: "#F0B65C",
+    dur: 1.6,
+    delay: 0.55,
+  },
+  {
+    x: 180,
+    y: 175,
+    size: 12,
+    rotate: -12,
+    color: "#FFFFFF",
+    dur: 2.0,
+    delay: 0.85,
+  },
+  {
+    x: 370,
+    y: 15,
+    size: 12,
+    rotate: 25,
+    color: "#FFFFFF",
+    dur: 1.5,
+    delay: 1.5,
+  },
+  {
+    x: 235,
+    y: 20,
+    size: 10,
+    rotate: -18,
+    color: "#ED8240",
+    dur: 2.4,
+    delay: 0.4,
+  },
 ];
 
 function GlitterBurst({
@@ -1427,7 +1557,7 @@ function Slide1() {
               // opacity: 0.85,
             }}
           />
-  
+
           <div
             style={{
               width: 1,
@@ -1435,13 +1565,13 @@ function Slide1() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-  
+
           <img
             src="/logo.png"
             alt="AMSci 2026"
             style={{ width: "clamp(25rem,17vw,20rem)", height: "auto" }}
           />
-  
+
           <div
             style={{
               width: 1,
@@ -1449,7 +1579,7 @@ function Slide1() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-  
+
           <img
             src="/MD_Chula.png"
             alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
@@ -1621,7 +1751,7 @@ function Slide3({
           .map((p) => data.teams.find((t) => t.id === p.teamId)?.name)
           .filter(Boolean)
           .join(" · ")
-    : "—";
+      : "—";
 
   return (
     <div
@@ -3039,17 +3169,17 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {rank3Teams.map((t3) => (
-            <div
+                <div
                   key={t3.id}
-              style={{
-                ...notoTH,
-                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                fontWeight: 800,
-                color: t3.color,
-                textShadow: `0 0 28px ${t3.color}99`,
-              }}
-            >
-              {t3.name}
+                  style={{
+                    ...notoTH,
+                    fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                    fontWeight: 800,
+                    color: t3.color,
+                    textShadow: `0 0 28px ${t3.color}99`,
+                  }}
+                >
+                  {t3.name}
                 </div>
               ))}
             </div>
@@ -3153,17 +3283,17 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {rank2Teams.map((ru) => (
-            <div
+                <div
                   key={ru.id}
-              style={{
-                ...notoTH,
-                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                fontWeight: 800,
-                color: ru.color,
-                textShadow: `0 0 28px ${ru.color}99`,
-              }}
-            >
-              {ru.name}
+                  style={{
+                    ...notoTH,
+                    fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                    fontWeight: 800,
+                    color: ru.color,
+                    textShadow: `0 0 28px ${ru.color}99`,
+                  }}
+                >
+                  {ru.name}
                 </div>
               ))}
             </div>
@@ -3301,17 +3431,17 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
         {rank1Teams.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {rank1Teams.map((ch) => (
-          <div
+              <div
                 key={ch.id}
-            style={{
-              ...notoTH,
-              fontSize: "clamp(1.6rem,3.8vw,3rem)",
-              fontWeight: 900,
-              color: ch.color,
-              textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
-            }}
-          >
-            {ch.name}
+                style={{
+                  ...notoTH,
+                  fontSize: "clamp(1.6rem,3.8vw,3rem)",
+                  fontWeight: 900,
+                  color: ch.color,
+                  textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+                }}
+              >
+                {ch.name}
               </div>
             ))}
           </div>
@@ -3753,7 +3883,20 @@ function NavBar({
             }}
           >
             {(
-              ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const
+              [
+                "1",
+                "2",
+                "3",
+                "4",
+                "5",
+                "6",
+                "7",
+                "8",
+                "9",
+                "10",
+                "11",
+                "12",
+              ] as const
             ).map((icon, i) => (
               <button
                 key={i}
