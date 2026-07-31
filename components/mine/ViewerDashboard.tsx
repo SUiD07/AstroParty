@@ -480,7 +480,7 @@ function JeopardyCell({
   const answered = events.length > 0;
   const MAX_VISIBLE = 9;
   // const visibleEvents = events.slice(0, MAX_VISIBLE);
-  const hiddenCount = Math.max(0, events.length - MAX_VISIBLE);
+  // const hiddenCount = Math.max(0, events.length - MAX_VISIBLE);
 
   return (
     <div
@@ -574,7 +574,7 @@ function JeopardyCell({
             })}
           </div> */}
 
-          {hiddenCount > 0 && (
+          {/* {hiddenCount > 0 && (
             <div
               style={{
                 marginTop: 4,
@@ -586,7 +586,7 @@ function JeopardyCell({
             >
               +{hiddenCount} more
             </div>
-          )}
+          )} */}
 
           <div
             style={{
@@ -711,24 +711,26 @@ function QuestionModal({
       scrollPulse !== undefined &&
       scrollPulse !== prevScrollPulseRef.current
     ) {
-      scoreSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
+      setScoreHighlight(true);
+      const t = setTimeout(() => setScoreHighlight(false), 1600);
       prevScrollPulseRef.current = scrollPulse;
+      return () => clearTimeout(t);
     }
   }, [scrollPulse]);
 
-  // ★ เลื่อนกลับขึ้นไปดูโจทย์ (Canva) เมื่อแอดมินกดปุ่ม "เลื่อนขึ้นไปดูโจทย์"
-  // ใน /control — ตรงข้ามกับ scrollPulse ด้านบน ใช้ pattern เทียบค่าเดิมเหมือนกัน
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // ★★ [แก้ไข] เหมือนกันแต่ตรงข้าม — ไฮไลท์ฝั่ง Canva (ซ้าย) แทนตอนกดปุ่ม
+  // "เลื่อนขึ้นไปดูโจทย์" ใน /control (เดิม scrollTo กลับขึ้นบนสุด)
+  const [canvaHighlight, setCanvaHighlight] = useState(false);
   const prevScrollTopPulseRef = useRef(scrollTopPulse);
   useEffect(() => {
     if (
       scrollTopPulse !== undefined &&
       scrollTopPulse !== prevScrollTopPulseRef.current
     ) {
-      scrollContainerRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      setCanvaHighlight(true);
+      const t = setTimeout(() => setCanvaHighlight(false), 1600);
       prevScrollTopPulseRef.current = scrollTopPulse;
+      return () => clearTimeout(t);
     }
   }, [scrollTopPulse]);
 
@@ -847,16 +849,34 @@ function QuestionModal({
           </div>
         </div>
 
+        {/* ★★ [แก้ไข] เดิม div เดียว overflowY:auto วางซ้อนแนวตั้ง (Canva บน / คะแนนล่าง)
+            ตอนนี้แยกเป็น flex row 2 คอลัมน์: ซ้าย = Canva (65%), ขวา = คะแนน (35%,
+            scroll อิสระของตัวเอง) — ทั้งสองฝั่งกระพริบ outline/glow ได้เมื่อแอดมิน
+            กดปุ่มเลื่อนจาก /control (แทนการ scrollIntoView/scrollTo แบบเดิม) */}
         <div
-          ref={scrollContainerRef}
           style={{
-            overflowY: "auto",
-            padding: "0 20px 50px",
+            display: "flex",
+            gap: 20,
             flex: 1,
+            minHeight: 0,
+            padding: "0 20px 20px",
           }}
         >
+          {/* ── ฝั่งซ้าย: Canva iframe ── */}
           <div
-            style={{ marginTop: 0, pointerEvents: visible ? "auto" : "none" }}
+            style={{
+              flex: "0 0 65%",
+              minWidth: 0,
+              pointerEvents: visible ? "auto" : "none",
+              borderRadius: 10,
+              transition: "box-shadow .3s ease, outline-color .3s ease",
+              outline: canvaHighlight
+                ? `3px solid ${C.orange}`
+                : "3px solid transparent",
+              boxShadow: canvaHighlight
+                ? `0 0 32px rgba(237,130,64,0.55)`
+                : "none",
+            }}
           >
             <CanvaSingleFrame
               src={computeCanvaSrc(
@@ -864,106 +884,124 @@ function QuestionModal({
                 canvaPageOverride ?? null,
               )}
               modalVisible={visible}
+              fill
             />
           </div>
-          {/* ★ marker สำหรับเลื่อนมาจากปุ่ม "เลื่อนให้ผู้ชมดูคะแนน" ในหน้า /control */}
-          <div ref={scoreSectionRef} />
-          {events.length === 0 ? (
-            <div
-              style={{
-                padding: "36px 0",
-                textAlign: "center",
-                borderRadius: 8,
-                border: "1px dashed rgba(237,130,64,0.2)",
-              }}
-            >
-              <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
-              <p
+
+          {/* ── ฝั่งขวา: รายการคะแนน (scroll อิสระของตัวเอง) ── */}
+          <div
+            style={{
+              flex: "1 1 35%",
+              minWidth: 0,
+              overflowY: "auto",
+              borderRadius: 10,
+              padding: 10,
+              transition: "box-shadow .3s ease, outline-color .3s ease",
+              outline: scoreHighlight
+                ? `3px solid ${C.orange}`
+                : "3px solid transparent",
+              boxShadow: scoreHighlight
+                ? `0 0 32px rgba(237,130,64,0.55)`
+                : "none",
+            }}
+          >
+            {events.length === 0 ? (
+              <div
                 style={{
-                  ...notoTH,
-                  fontSize: 12,
-                  color: C.textLo,
-                  letterSpacing: "0.1em",
+                  padding: "36px 0",
+                  textAlign: "center",
+                  borderRadius: 8,
+                  border: "1px dashed rgba(237,130,64,0.2)",
                 }}
               >
-                ยังไม่มีการให้คะแนนในข้อนี้
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <p
-                style={{
-                  ...orbitron,
-                  fontSize: 8,
-                  letterSpacing: "0.22em",
-                  color: C.textLo,
-                  marginBottom: 4,
-                }}
-              >
-                ผลคะแนนที่บันทึกไว้
-              </p>
-              {events.map((ev, i) => {
-                const team = teams.find((t) => t.id === ev.team_id);
-                if (!team) return null;
-                const isPos = ev.delta > 0;
-                return (
-                  <motion.div
-                    key={String(ev.id)}
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      padding: "12px 16px",
-                      borderRadius: 9,
-                      background: `${team.color}0F`,
-                      border: `1px solid ${team.color}40`,
-                    }}
-                  >
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 10 }}
-                    >
-                      <div
-                        style={{
-                          width: 10,
-                          height: 10,
-                          borderRadius: "50%",
-                          background: team.color,
-                        }}
-                      />
-                      <span
-                        style={{
-                          ...notoTH,
-                          fontSize: 14,
-                          fontWeight: 700,
-                          color: team.color,
-                        }}
-                      >
-                        {team.name}
-                      </span>
-                    </div>
-                    <span
+                <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
+                <p
+                  style={{
+                    ...notoTH,
+                    fontSize: 12,
+                    color: C.textLo,
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  ยังไม่มีการให้คะแนนในข้อนี้
+                </p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p
+                  style={{
+                    ...orbitron,
+                    fontSize: 8,
+                    letterSpacing: "0.22em",
+                    color: C.textLo,
+                    marginBottom: 4,
+                  }}
+                >
+                  ผลคะแนนที่บันทึกไว้
+                </p>
+                {events.map((ev, i) => {
+                  const team = teams.find((t) => t.id === ev.team_id);
+                  if (!team) return null;
+                  const isPos = ev.delta > 0;
+                  return (
+                    <motion.div
+                      key={String(ev.id)}
+                      initial={{ x: -10, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: i * 0.05 }}
                       style={{
-                        ...orbitron,
-                        fontSize: 22,
-                        fontWeight: 900,
-                        color: isPos ? "#4ade80" : "#f87171",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "12px 16px",
+                        borderRadius: 9,
+                        background: `${team.color}0F`,
+                        border: `1px solid ${team.color}40`,
                       }}
                     >
-                      {isPos ? `+${ev.delta}` : ev.delta}
-                      <span
-                        style={{ fontSize: 9, color: C.textLo, marginLeft: 4 }}
+                      <div
+                        style={{ display: "flex", alignItems: "center", gap: 10 }}
                       >
-                        PTS
+                        <div
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: "50%",
+                            background: team.color,
+                          }}
+                        />
+                        <span
+                          style={{
+                            ...notoTH,
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: team.color,
+                          }}
+                        >
+                          {team.name}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          ...orbitron,
+                          fontSize: 22,
+                          fontWeight: 900,
+                          color: isPos ? "#4ade80" : "#f87171",
+                        }}
+                      >
+                        {isPos ? `+${ev.delta}` : ev.delta}
+                        <span
+                          style={{ fontSize: 9, color: C.textLo, marginLeft: 4 }}
+                        >
+                          PTS
+                        </span>
                       </span>
-                    </span>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </motion.div>
     </div>
@@ -989,123 +1027,19 @@ const GLITTER_STARS: {
   delay: number;
 }[] = [
   { x: 330, y: 20, size: 34, rotate: 12, color: "#F0B65C", dur: 2.4, delay: 0 },
-  {
-    x: 380,
-    y: 55,
-    size: 22,
-    rotate: -8,
-    color: "#FFFFFF",
-    dur: 1.8,
-    delay: 0.3,
-  },
-  {
-    x: 300,
-    y: 70,
-    size: 16,
-    rotate: 20,
-    color: "#ED8240",
-    dur: 2.1,
-    delay: 0.6,
-  },
-  {
-    x: 355,
-    y: 100,
-    size: 28,
-    rotate: -15,
-    color: "#FFFFFF",
-    dur: 2.6,
-    delay: 0.15,
-  },
-  {
-    x: 260,
-    y: 40,
-    size: 20,
-    rotate: 5,
-    color: "#F0B65C",
-    dur: 1.9,
-    delay: 0.9,
-  },
-  {
-    x: 395,
-    y: 130,
-    size: 18,
-    rotate: 30,
-    color: "#ED8240",
-    dur: 2.3,
-    delay: 0.45,
-  },
-  {
-    x: 310,
-    y: 150,
-    size: 24,
-    rotate: -22,
-    color: "#FFFFFF",
-    dur: 2.0,
-    delay: 1.1,
-  },
-  {
-    x: 230,
-    y: 90,
-    size: 14,
-    rotate: 10,
-    color: "#F0B65C",
-    dur: 1.7,
-    delay: 0.75,
-  },
-  {
-    x: 270,
-    y: 165,
-    size: 12,
-    rotate: -5,
-    color: "#FFFFFF",
-    dur: 2.5,
-    delay: 0.2,
-  },
-  {
-    x: 200,
-    y: 130,
-    size: 16,
-    rotate: 18,
-    color: "#ED8240",
-    dur: 2.2,
-    delay: 1.3,
-  },
-  {
-    x: 340,
-    y: 185,
-    size: 10,
-    rotate: 8,
-    color: "#F0B65C",
-    dur: 1.6,
-    delay: 0.55,
-  },
-  {
-    x: 180,
-    y: 175,
-    size: 12,
-    rotate: -12,
-    color: "#FFFFFF",
-    dur: 2.0,
-    delay: 0.85,
-  },
-  {
-    x: 370,
-    y: 15,
-    size: 12,
-    rotate: 25,
-    color: "#FFFFFF",
-    dur: 1.5,
-    delay: 1.5,
-  },
-  {
-    x: 235,
-    y: 20,
-    size: 10,
-    rotate: -18,
-    color: "#ED8240",
-    dur: 2.4,
-    delay: 0.4,
-  },
+  { x: 380, y: 55, size: 22, rotate: -8, color: "#FFFFFF", dur: 1.8, delay: 0.3 },
+  { x: 300, y: 70, size: 16, rotate: 20, color: "#ED8240", dur: 2.1, delay: 0.6 },
+  { x: 355, y: 100, size: 28, rotate: -15, color: "#FFFFFF", dur: 2.6, delay: 0.15 },
+  { x: 260, y: 40, size: 20, rotate: 5, color: "#F0B65C", dur: 1.9, delay: 0.9 },
+  { x: 395, y: 130, size: 18, rotate: 30, color: "#ED8240", dur: 2.3, delay: 0.45 },
+  { x: 310, y: 150, size: 24, rotate: -22, color: "#FFFFFF", dur: 2.0, delay: 1.1 },
+  { x: 230, y: 90, size: 14, rotate: 10, color: "#F0B65C", dur: 1.7, delay: 0.75 },
+  { x: 270, y: 165, size: 12, rotate: -5, color: "#FFFFFF", dur: 2.5, delay: 0.2 },
+  { x: 200, y: 130, size: 16, rotate: 18, color: "#ED8240", dur: 2.2, delay: 1.3 },
+  { x: 340, y: 185, size: 10, rotate: 8, color: "#F0B65C", dur: 1.6, delay: 0.55 },
+  { x: 180, y: 175, size: 12, rotate: -12, color: "#FFFFFF", dur: 2.0, delay: 0.85 },
+  { x: 370, y: 15, size: 12, rotate: 25, color: "#FFFFFF", dur: 1.5, delay: 1.5 },
+  { x: 235, y: 20, size: 10, rotate: -18, color: "#ED8240", dur: 2.4, delay: 0.4 },
 ];
 
 function GlitterBurst({
@@ -1493,7 +1427,7 @@ function Slide1() {
               // opacity: 0.85,
             }}
           />
-
+  
           <div
             style={{
               width: 1,
@@ -1501,13 +1435,13 @@ function Slide1() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-
+  
           <img
             src="/logo.png"
             alt="AMSci 2026"
             style={{ width: "clamp(25rem,17vw,20rem)", height: "auto" }}
           />
-
+  
           <div
             style={{
               width: 1,
@@ -1515,7 +1449,7 @@ function Slide1() {
               background: "rgba(255,255,255,0.08)",
             }}
           />
-
+  
           <img
             src="/MD_Chula.png"
             alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
@@ -1687,7 +1621,7 @@ function Slide3({
           .map((p) => data.teams.find((t) => t.id === p.teamId)?.name)
           .filter(Boolean)
           .join(" · ")
-      : "—";
+    : "—";
 
   return (
     <div
@@ -3105,17 +3039,17 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {rank3Teams.map((t3) => (
-                <div
+            <div
                   key={t3.id}
-                  style={{
-                    ...notoTH,
-                    fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                    fontWeight: 800,
-                    color: t3.color,
-                    textShadow: `0 0 28px ${t3.color}99`,
-                  }}
-                >
-                  {t3.name}
+              style={{
+                ...notoTH,
+                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                fontWeight: 800,
+                color: t3.color,
+                textShadow: `0 0 28px ${t3.color}99`,
+              }}
+            >
+              {t3.name}
                 </div>
               ))}
             </div>
@@ -3219,17 +3153,17 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {rank2Teams.map((ru) => (
-                <div
+            <div
                   key={ru.id}
-                  style={{
-                    ...notoTH,
-                    fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
-                    fontWeight: 800,
-                    color: ru.color,
-                    textShadow: `0 0 28px ${ru.color}99`,
-                  }}
-                >
-                  {ru.name}
+              style={{
+                ...notoTH,
+                fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
+                fontWeight: 800,
+                color: ru.color,
+                textShadow: `0 0 28px ${ru.color}99`,
+              }}
+            >
+              {ru.name}
                 </div>
               ))}
             </div>
@@ -3367,17 +3301,17 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
         {rank1Teams.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {rank1Teams.map((ch) => (
-              <div
+          <div
                 key={ch.id}
-                style={{
-                  ...notoTH,
-                  fontSize: "clamp(1.6rem,3.8vw,3rem)",
-                  fontWeight: 900,
-                  color: ch.color,
-                  textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
-                }}
-              >
-                {ch.name}
+            style={{
+              ...notoTH,
+              fontSize: "clamp(1.6rem,3.8vw,3rem)",
+              fontWeight: 900,
+              color: ch.color,
+              textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+            }}
+          >
+            {ch.name}
               </div>
             ))}
           </div>
@@ -3405,6 +3339,112 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
           }}
         >
           ขอแสดงความยินดีกับรางวัลชนะเลิศอันดับ 1
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SLIDE 12 — BREAK / PAUSE (ต่อท้ายเป็นสไลด์สุดท้าย ไม่แทรกกลาง กัน renumber
+// สไลด์อื่นทั้งหมดที่เคยพลาดมาก่อน) ★★ [ใหม่] แอดมินกดมาที่สไลด์นี้ได้ทุกเมื่อ
+// ตอนระบบมีปัญหา/ติดขัด โดยไม่กระทบตำแหน่งสไลด์อื่นเลย
+// ---------------------------------------------------------------------------
+function Slide12() {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        height: "100%",
+        padding: "0 24px 56px",
+        position: "relative",
+      }}
+    >
+      {/* ★ ใช้ลายตกแต่งชุดเดียวกับ Slide1 ให้ธีมสม่ำเสมอ */}
+      <div
+        style={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%,-50%)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      >
+        <HeartPulseMotif opacity={0.08} width={560} />
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 18,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            ...orbitron,
+            fontSize: "clamp(.55rem,.85vw,.72rem)",
+            letterSpacing: ".38em",
+            color: "rgba(255,255,255,.5)",
+          }}
+        >
+          ✦ &nbsp; กรุณารอสักครู่ &nbsp; ✦
+        </div>
+        <div
+          style={{
+            ...fontDisplay,
+            fontSize: "clamp(2.4rem,6vw,4.8rem)",
+            color: "#fff",
+            letterSpacing: "0.04em",
+          }}
+        >
+          พักการถ่ายทอดชั่วคราว
+        </div>
+        <div
+          style={{
+            width: 200,
+            height: 1.5,
+            background: `linear-gradient(90deg,transparent,${C.orange},transparent)`,
+            borderRadius: 1,
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: C.orange,
+                animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
+              }}
+            />
+          ))}
+        </div>
+        <div
+          style={{
+            ...notoTH,
+            fontSize: "clamp(.75rem,1.3vw,1rem)",
+            color: "rgba(255,255,255,.5)",
+            letterSpacing: ".05em",
+            marginTop: 8,
+            maxWidth: 560,
+            lineHeight: 1.8,
+          }}
+        >
+          ขออภัยในความไม่สะดวก ทีมงานกำลังดำเนินการแก้ไข
+          <br />
+          การถ่ายทอดสดจะกลับมาโดยเร็วที่สุด
         </div>
       </div>
     </div>
@@ -3450,11 +3490,11 @@ function FooterTicker() {
         <span style={{ color: C.gold, fontWeight: 600 }}>
           วันที่ 9 สิงหาคม 2569
         </span>
-        {/* &nbsp;·&nbsp;ช่วงเช้า&nbsp;
+        &nbsp;·&nbsp;ช่วงเช้า&nbsp;
         <span style={{ color: C.orange, fontWeight: 600 }}>Elimination</span>
         &nbsp;·&nbsp;ช่วงบ่าย&nbsp;
-        <span style={{ color: C.orange, fontWeight: 600 }}>Semi-final</span> */}
-        &nbsp;การแข่งขันรอบ&nbsp;
+        <span style={{ color: C.orange, fontWeight: 600 }}>Semi-final</span>
+        &nbsp;และ&nbsp;
         <span style={{ color: C.orange, fontWeight: 600 }}>Final</span>
         &nbsp;·&nbsp;รับชมการถ่ายทอดสดได้ทาง&nbsp;
         <span style={{ color: C.blueLight, fontWeight: 600 }}>
@@ -3713,7 +3753,7 @@ function NavBar({
             }}
           >
             {(
-              ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"] as const
+              ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"] as const
             ).map((icon, i) => (
               <button
                 key={i}
@@ -3741,7 +3781,7 @@ function NavBar({
 // Main
 // ---------------------------------------------------------------------------
 export default function ViewerDashboard() {
-  const totalSlides = 11;
+  const totalSlides = 12; // ★★ [แก้ไข] เพิ่ม Slide12 (พักเบรก) ต่อท้าย ไม่กระทบสไลด์เดิม
   const [currentSlide, setCurrentSlide] = useState(1);
 
   const [data, setData] = useState<RaceData>({
@@ -3998,6 +4038,7 @@ export default function ViewerDashboard() {
     9: <Slide9 data={data} sortedPositions={sortedPositions} />,
     10: <Slide10 data={data} sortedPositions={sortedPositions} />,
     11: <Slide11 data={data} sortedPositions={sortedPositions} />,
+    12: <Slide12 />, // ★★ [ใหม่] หน้าพักเบรก ไม่ต้องรับ props
   };
 
   return (
