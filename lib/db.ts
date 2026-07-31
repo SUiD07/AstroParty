@@ -308,3 +308,46 @@ export async function updateScoreEvent(
     .eq("id", id);
   if (error) throw error;
 }
+
+// ---- Canva Page Presets ----
+// ★ preset เลขหน้า Canva ที่ใช้บ่อย (เช่น "time up" หน้า 100, "buffer" หน้า 101)
+// แยกจาก canva_current_page ใน presentation_state เพราะนี่คือ "รายการชื่อ+เลขหน้า"
+// ที่ผู้ใช้ตั้งเองไว้ล่วงหน้า ไม่ใช่ state ของการนำเสนอ ณ ขณะนั้น
+// ปุ่ม Quick Jump ที่ยิงจาก preset นี้ จะไปเขียนทับ canva_current_page ตัวเดิม
+// (ดู applyPreset ใน ControlPage.tsx) จึงทำงานสอดคล้องกับปุ่ม ◀/▶ เดิมเป๊ะๆ
+export interface CanvaPagePreset {
+  id: number;
+  label: string;
+  page_number: number;
+}
+ 
+export async function loadCanvaPagePresets(): Promise<CanvaPagePreset[]> {
+  const { data, error } = await supabase
+    .from("canva_page_presets")
+    .select("*")
+    .order("page_number", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+ 
+export async function createCanvaPagePreset(
+  label: string,
+  pageNumber: number,
+): Promise<CanvaPagePreset> {
+  const { data, error } = await supabase
+    .from("canva_page_presets")
+    .insert({ label, page_number: pageNumber })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as CanvaPagePreset;
+}
+ 
+export async function deleteCanvaPagePreset(id: number) {
+  const { error } = await supabase
+    .from("canva_page_presets")
+    .delete()
+    .eq("id", id);
+  if (error) throw error;
+}
+ 
