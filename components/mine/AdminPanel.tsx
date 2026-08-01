@@ -1373,7 +1373,7 @@ function ScoreEntryAndLog({
                 >
                   กติกา A · % ตอบถูก
                 </button>
-                <button
+                {/* <button
                   onClick={() => setScoringMode("B")}
                   className="flex-1 py-1.5 rounded-md text-xs font-medium transition-all"
                   style={{
@@ -1386,7 +1386,7 @@ function ScoreEntryAndLog({
                   }}
                 >
                   กติกา B · % สุทธิ
-                </button>
+                </button> */}
               </div>
               <button
                 onClick={toggleEnableModeB}

@@ -42,7 +42,7 @@
  *        "เปิด modal คำถามอยู่" เพื่อคำนวณเลขหน้าเริ่มต้นให้ถูก context
  */
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw,
@@ -69,6 +69,7 @@ import {
 import Particles from "../Particles";
 import Grainient from "../Grainient";
 // import { a } from "framer-motion/client";
+import { Slide5Ship } from "./SpaceRaceShip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -112,7 +113,7 @@ function getTeamsAtRank(sortedPositions: Position[], rank: number): Position[] {
 // (ไม่ใช่ดำ/เนวี่แบบเดิม) มีแสงทองที่มุมบน และเนบิวลาสีม่วงที่มุมล่างซ้าย
 // สีตรงนี้ประมาณจากภาพสไลด์จริง ไม่ใช่ HEX ที่แม่นยำ 100%
 // ---------------------------------------------------------------------------
-const C = {
+export const C = {
   maroonDeep: "#170806", // พื้นหลังมืดสุด (มุมภาพ)
   maroonMid: "#3D160C", // พื้นหลังโทนกลาง
   maroonLight: "#6B2A12", // แสงอบอุ่นมุมบน/รอบโลโก้
@@ -149,11 +150,11 @@ const borderWarm = "rgba(237,130,64,0.32)";
 const orbitron: React.CSSProperties = {
   fontFamily: "'Orbitron', sans-serif",
 };
-const notoTH: React.CSSProperties = {
+export const notoTH: React.CSSProperties = {
   fontFamily: "'Noto Sans Thai', sans-serif",
 };
 
-const fontDisplay: React.CSSProperties = {
+export const fontDisplay: React.CSSProperties = {
   fontFamily: "'Orbitron', sans-serif",
   fontWeight: 900,
 };
@@ -204,6 +205,12 @@ const GLOBAL_CSS = `
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+@keyframes dustTrail {
+  0%   { transform: translateX(0) scaleX(1); opacity: .6; }
+  100% { transform: translateX(-14px) scaleX(0.4); opacity: 0; }
+}
+
 .grad-blue {
   background: linear-gradient(135deg, #FFFFFF, #fff, #FFFFFF);
   -webkit-background-clip: text;
@@ -786,6 +793,36 @@ function QuestionModal({
     }
   }, [scrollBoardPulse]);
 
+  // ★★★★★★★ NEW: รวมคะแนนของทีมเดียวกันในข้อนี้เข้าด้วยกัน — กันกรณีแอดมิน
+  // กดให้คะแนนทีมเดิมหลายครั้งในข้อเดียวกัน (เช่น +5 แล้ว +3 ทีหลัง)
+  // แสดงเป็นแถวเดียวรวมยอด แทนที่จะขึ้นซ้ำหลายแถว
+const groupedEvents = useMemo(() => {
+    type GroupedEvent = {
+      team_id: string; // ★ CHANGED: string ไม่ใช่ number
+      delta: number;
+      firstId: string;
+      count: number;
+    };
+    const map = new Map<string, GroupedEvent>(); // ★ CHANGED: key เป็น string
+
+    for (const ev of events) {
+      const existing = map.get(ev.team_id);
+      if (existing) {
+        existing.delta += ev.delta;
+        existing.count += 1;
+      } else {
+        map.set(ev.team_id, {
+          team_id: ev.team_id,
+          delta: ev.delta,
+          firstId: String(ev.id),
+          count: 1,
+        });
+      }
+    }
+
+    return Array.from(map.values());
+  }, [events]);
+
   return (
     <div
       style={{
@@ -1142,112 +1179,123 @@ function QuestionModal({
                   pointerEvents: viewMode === "board" ? "none" : "auto",
                 }}
               >
-                {events.length === 0 ? (
-                  <div
-                    style={{
-                      padding: "36px 0",
-                      textAlign: "center",
-                      borderRadius: 8,
-                      border: "1px dashed rgba(237,130,64,0.2)",
-                    }}
-                  >
-                    <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
-                    <p
-                      style={{
-                        ...notoTH,
-                        fontSize: 12,
-                        color: C.textLo,
-                        letterSpacing: "0.1em",
-                      }}
-                    >
-                      ยังไม่มีการให้คะแนนในข้อนี้
-                    </p>
-                  </div>
-                ) : (
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
-                    <p
-                      style={{
-                        ...orbitron,
-                        fontSize: 20,
-                        letterSpacing: "0.22em",
-                        // color: C.textLo,
-                        marginBottom: 4,
-                      }}
-                    >
-                      Score Reveal
-                    </p>
-                    {events.map((ev, i) => {
-                      const team = teams.find((t) => t.id === ev.team_id);
-                      if (!team) return null;
-                      const isPos = ev.delta > 0;
-                      return (
-                        <motion.div
-                          key={String(ev.id)}
-                          initial={{ x: -10, opacity: 0 }}
-                          animate={{ x: 0, opacity: 1 }}
-                          transition={{ delay: i * 0.05 }}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            padding: "12px 16px",
-                            borderRadius: 9,
-                            background: `${team.color}0F`,
-                            border: `1px solid ${team.color}40`,
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 10,
-                            }}
-                          >
-                            <div
-                              style={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: "50%",
-                                background: team.color,
-                              }}
-                            />
-                            <span
-                              style={{
-                                ...notoTH,
-                                fontSize: 14,
-                                fontWeight: 700,
-                                color: team.color,
-                              }}
-                            >
-                              {team.name}
-                            </span>
-                          </div>
-                          <span
-                            style={{
-                              ...orbitron,
-                              fontSize: 22,
-                              fontWeight: 900,
-                              color: isPos ? "#4ade80" : "#f87171",
-                            }}
-                          >
-                            {isPos ? `+${ev.delta}` : ev.delta}
-                            <span
-                              style={{
-                                fontSize: 9,
-                                color: C.textLo,
-                                marginLeft: 4,
-                              }}
-                            >
-                              PTS
-                            </span>
-                          </span>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                )}
+{events.length === 0 ? (
+  <div
+    style={{
+      padding: "36px 0",
+      textAlign: "center",
+      borderRadius: 8,
+      border: "1px dashed rgba(237,130,64,0.2)",
+    }}
+  >
+    <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
+    <p
+      style={{
+        ...notoTH,
+        fontSize: 12,
+        color: C.textLo,
+        letterSpacing: "0.1em",
+      }}
+    >
+      ยังไม่มีการให้คะแนนในข้อนี้
+    </p>
+  </div>
+) : (
+  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <p
+      style={{
+        ...orbitron,
+        fontSize: 20,
+        letterSpacing: "0.22em",
+        marginBottom: 4,
+      }}
+    >
+      Score Reveal
+    </p>
+    {groupedEvents.map((ev, i) => { {/* ★ CHANGED: จาก events.map → groupedEvents.map */}
+      const team = teams.find((t) => t.id === ev.team_id);
+      if (!team) return null;
+      const isPos = ev.delta > 0;
+      return (
+        <motion.div
+          key={ev.firstId}
+          initial={{ x: -10, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: i * 0.05 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "12px 16px",
+            borderRadius: 9,
+            background: `${team.color}0F`,
+            border: `1px solid ${team.color}40`,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: team.color,
+              }}
+            />
+            <span
+              style={{
+                ...notoTH,
+                fontSize: 14,
+                fontWeight: 700,
+                color: team.color,
+              }}
+            >
+              {team.name}
+            </span>
+            {/* {ev.count > 1 && ( // ★ NEW: badge บอกว่าทีมนี้ถูกให้คะแนนกี่ครั้ง (เผื่ออยากรู้ที่มาของยอดรวม)
+              <span
+                style={{
+                  ...orbitron,
+                  fontSize: 9,
+                  color: C.textLo,
+                  padding: "1px 6px",
+                  borderRadius: 999,
+                  border: `1px solid ${border}`,
+                }}
+              >
+                x{ev.count}
+              </span>
+            )} */}
+          </div>
+          <span
+            style={{
+              ...orbitron,
+              fontSize: 22,
+              fontWeight: 900,
+              color: isPos ? "#4ade80" : "#f87171",
+            }}
+          >
+            {isPos ? `+${ev.delta}` : ev.delta}
+            <span
+              style={{
+                fontSize: 9,
+                color: C.textLo,
+                marginLeft: 4,
+              }}
+            >
+              PTS
+            </span>
+          </span>
+        </motion.div>
+      );
+    })}
+  </div>
+)}
               </div>
             </motion.div>
           </div>
@@ -2455,68 +2503,6 @@ function Slide4({
     </div>
   );
 }
-// ---------------------------------------------------------------------------
-// PixelShip — จรวดพิกเซล หัวชี้ขวา (ทิศทางที่ทีมวิ่งจากซ้ายไปขวาบนแทร็ก)
-// เปลวไฟ (ไอเสีย) อยู่ด้านซ้าย ตรงข้ามหัว — ใช้สีทีมเดิม (team.color) เป๊ะๆ
-// เปลวไฟแค่ opacity ต่ำกว่าลำตัว เพื่อแยกให้ดูออกว่าเป็นไอเสียไม่ใช่ตัวเรือ
-// ---------------------------------------------------------------------------
-const SHIP_GRID: number[][] = [
-  [0, 0, 1, 0, 0, 0],
-  [1, 1, 1, 1, 0, 0],
-  [0, 0, 1, 1, 1, 0],
-  [0, 1, 1, 1, 1, 1], // ← แถวกลาง หัวจรวด (col ขวาสุด) อยู่แถวนี้
-  [0, 1, 1, 1, 1, 1], // ← แถวกลาง
-  [0, 0, 1, 1, 1, 0],
-  [1, 1, 1, 1, 0, 0],
-  [0, 0, 1, 0, 0, 0],
-];
-const FLAME_ROWS = [3, 4]; // ★ ตรงกับแถวกลางลำตัวด้านบน
-
-function PixelShip({ color }: { color: string }) {
-  const cell = 5;
-  const cols = SHIP_GRID[0].length;
-  const rows = SHIP_GRID.length;
-  const flameCols = 2;
-
-  return (
-    <svg
-      width={cell * (cols + flameCols)}
-      height={cell * rows}
-      shapeRendering="crispEdges"
-      style={{ display: "block" }}
-    >
-      {/* เปลวไฟ — ซ้ายสุด (ตรงข้ามหัวจรวด) */}
-      {FLAME_ROWS.map((y) =>
-        Array.from({ length: flameCols }, (_, fx) => (
-          <rect
-            key={`flame-${fx}-${y}`}
-            x={fx * cell}
-            y={y * cell}
-            width={cell}
-            height={cell}
-            fill={color}
-            opacity={0.45}
-          />
-        )),
-      )}
-      {/* ลำตัวจรวด — หัวชี้ขวา (คอลัมน์ขวาสุดของ SHIP_GRID) */}
-      {SHIP_GRID.map((row, y) =>
-        row.map((v, x) =>
-          v ? (
-            <rect
-              key={`${x}-${y}`}
-              x={(x + flameCols) * cell}
-              y={y * cell}
-              width={cell}
-              height={cell}
-              fill={color}
-            />
-          ) : null,
-        ),
-      )}
-    </svg>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // SLIDE 5 — SPACE RACE
@@ -2650,111 +2636,25 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                 const yPos = (index + 0.5) * (100 / 6);
                 const leftPct = ((pos.score - minScore) / scoreRange) * 100;
                 const isNearRight = leftPct > 78;
-
-                // ★ ทีมนี้เคยปรากฏบนจอนี้มาก่อนหรือยัง (ดูจาก ref ด้านบน)
                 const isFirstEntry = !shipEnteredRef.current.has(team.id);
+                const rank =
+                  topSix.filter((p) => p.score > pos.score).length + 1;
 
+                // ★ แทนที่ motion.div เดิมทั้งก้อนด้วยบรรทัดเดียวนี้
                 return (
-                  <motion.div
+                  <Slide5Ship
                     key={team.id}
-                    layoutId={`ship-${team.id}`}
-                    initial={
-                      isFirstEntry
-                        ? { left: "-16%", top: `${yPos}%`, opacity: 0 }
-                        : false
+                    team={team}
+                    pos={pos}
+                    leftPct={leftPct}
+                    yPos={yPos}
+                    isNearRight={isNearRight}
+                    rank={rank}
+                    isFirstEntry={isFirstEntry}
+                    onAnimationComplete={() =>
+                      shipEnteredRef.current.add(team.id)
                     }
-                    animate={{
-                      left: `${Math.min(100, leftPct)}%`,
-                      top: `${yPos}%`,
-                      opacity: 1,
-                    }}
-                    transition={
-                      isFirstEntry
-                        ? // ★ เลื่อนช้าๆ ก่อนแล้วค่อยพุ่ง (ease-in — ช้าตอนเริ่ม
-                          // เร่งความเร็วขึ้นเรื่อยๆ ตอนท้าย) ใช้ตอนจรวดโผล่มาครั้งแรก
-                          { duration: 1.4, ease: [0.55, 0.06, 0.68, 0.19] }
-                        : // ครั้งต่อๆ ไปที่แค่ขยับตำแหน่งเพราะคะแนนเปลี่ยน
-                          // ใช้ spring แบบเดิมที่กระฉับกระเฉงกว่า
-                          { type: "spring", stiffness: 40, damping: 15 }
-                    }
-                    onAnimationComplete={() => {
-                      shipEnteredRef.current.add(team.id);
-                    }}
-                    style={{
-                      position: "absolute",
-                      transform: "translate(-50%,-50%)",
-                      zIndex: 10,
-                    }}
-                  >
-                    <div
-                      style={{
-                        position: "relative",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          flexShrink: 0,
-                          animation: "pixelFlicker 0.6s steps(2) infinite",
-                        }}
-                      >
-                        <PixelShip color={team.color} />
-                      </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          ...(isNearRight
-                            ? { right: "calc(100% + 10px)" }
-                            : { left: "calc(100% + 10px)" }),
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 3,
-                          alignItems: isNearRight ? "flex-end" : "flex-start",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        <div
-                          style={{
-                            ...notoTH,
-                            fontSize: 20,
-                            fontWeight: 900,
-                            padding: "2px 8px",
-                            borderRadius: 0, // เดิม 10
-                            color: team.color,
-                            letterSpacing: "0.10em",
-                            background: "rgba(61,22,12,0.55)", // สีเดิม
-                            border: `2px solid ${team.color}`, // เดิมใช้ rgba(255,255,255,0.06) ขาวจาง
-                          }}
-                          // className="border-2 border-slate-800"
-                        >
-                          <span style={{ opacity: 0.45 }}>
-                            #
-                            {topSix.filter((p) => p.score > pos.score).length +
-                              1}
-                          </span>{" "}
-                          {team.name}
-                        </div>
-                        <div
-                          style={{
-                            ...notoTH,
-                            fontSize: 20,
-                            fontWeight: 900,
-                            padding: "1px 6px",
-                            borderRadius: 3,
-                            color: C.textHi,
-                          }}
-                        >
-                          {pos.score}{" "}
-                          <span style={{ fontSize: 15, color: C.textLo }}>
-                            P
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
+                  />
                 );
               })}
             </AnimatePresence>
