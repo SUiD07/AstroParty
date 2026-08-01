@@ -1393,7 +1393,7 @@ function ScoreEntryAndLog({
                 className="text-[10px] text-black/30 hover:text-red-500 underline whitespace-nowrap"
                 title="ซ่อนกติกา B ทั้งฟอร์มเพิ่มคะแนนและ Edit Modal"
               >
-                <div className="text-red-700 text-9xl">กดทำไม</div>
+                {/* <div className="text-red-700 text-9xl">กดทำไม</div> */}
                 ปิดกติกา B
               </button>
             </>
@@ -2514,10 +2514,19 @@ export default function AdminPanel() {
             </div>
             <div className="border border-black/[0.07] rounded-xl p-6">
               <Link href="https://keepthescore.com/board/jbmyjghsmkjbe">
-                Timer
+                จับเวลาทำข้อสอบ <ExternalLink className="w-3 h-3 inline-block" />
               </Link>
               <iframe
                 src="https://keepthescore.com/board/jbmyjghsmkjbe"
+                className="w-full h-96"
+              />
+            </div>
+             <div className="border border-black/[0.07] rounded-xl p-6">
+              <Link href="https://keepthescore.com/board/tkwnddmqfmcwe">
+                ประมูล <ExternalLink className="w-3 h-3 inline-block" />
+              </Link>
+              <iframe
+                src="https://keepthescore.com/board/tkwnddmqfmcwe"
                 className="w-full h-96"
               />
             </div>

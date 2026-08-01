@@ -828,110 +828,178 @@ function QuestionModal({
             ทั้งสองอยู่ใน flex row เดียวกันตอนปกติ */}
         <div
           style={{
+            position: "relative",
             display: "flex",
             alignItems: "center",
             gap: 20,
             marginBottom: 14,
             flexShrink: 0,
+            minHeight: 84,
           }}
         >
-          {/* ★★★★★★★ NEW (v4): กลุ่มหมวด+เลขข้อ — เฉพาะกลุ่มนี้เล่น
-              intro animation ขยายใหญ่กลางจอ แก้ล้นขอบด้วย padding,
-              wrap, maxWidth และ clamp() font-size ตามความกว้างจอ */}
-          <motion.div
-            layout
-            transition={{ type: "spring", stiffness: 140, damping: 20 }}
-            style={
-              introBig
-                ? {
-                    position: "fixed",
-                    inset: 0,
-                    zIndex: 300,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexWrap: "wrap",
-                    gap: "clamp(8px, 2vw, 24px)",
-                    padding: "0 6vw", // ★ กันล้นขอบซ้าย-ขวา
-                    boxSizing: "border-box",
-                    width: "100%",
-                    pointerEvents: "none",
-                    textAlign: "center",
-                  }
-                : {
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 20,
-                    flexWrap: "nowrap",
-                    minWidth: 0,
-                  }
-            }
-          >
-            <motion.p
-              layout
-              animate={{
-                // ★ clamp() แทนค่าคงที่ — โตได้สูงสุดตามจอจริง ไม่ล้น
-                fontSize: introBig ? "clamp(40px, 9vw, 130px)" : 40,
-              }}
-              transition={{ type: "spring", stiffness: 140, damping: 20 }}
-              style={{
-                ...fontDisplay,
-                color: C.blueLight,
-                margin: 0,
-                maxWidth: introBig ? "90vw" : "none",
-                whiteSpace: introBig ? "normal" : "nowrap",
-                overflowWrap: "break-word",
-                wordBreak: "break-word",
-                textAlign: "center",
-              }}
-            >
-              {category.name}
-            </motion.p>
+          {/* ★★★★★★★  แยกเป็น header version (เล็ก, อยู่ในแถว) — 
+      fade out เฉยๆ ตอน introBig ไม่มี layout FLIP */}
+          <AnimatePresence>
+            {!introBig && (
+              <motion.div
+                key="header-small"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{
+                  display: "flex",
+                  alignItems: "baseline", // ★ CHANGED: จาก center → baseline แก้ปัญหาตัวอักษรคนละฟอนต์คนละไซส์ไม่อยู่บรรทัดเดียวกัน
+                  gap: 12,
+                  minWidth: 0,
+                }}
+              >
+                <p
+                  style={{
+                    ...fontDisplay,
+                    fontSize: 40,
+                    color: C.blueLight,
+                    margin: 0,
+                    whiteSpace: "nowrap",
+                    lineHeight: 1, // ★ NEW: ล็อก line-height ให้ baseline คำนวณตรง ไม่ลอยเพราะ font metric ต่างกัน
+                  }}
+                >
+                  {category.name}
+                </p>
+                <h3
+                  style={{
+                    ...notoTH,
+                    fontSize: 30,
+                    fontWeight: 900,
+                    margin: 0,
+                    whiteSpace: "nowrap",
+                    lineHeight: 1, // ★ NEW: เช่นกัน กันฟอนต์ไทย/อังกฤษดันบรรทัดไม่เท่ากัน
+                    background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  ข้อ {question.number}
+                </h3>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            <motion.h3
-              layout
-              animate={{
-                fontSize: introBig ? "clamp(28px, 7vw, 96px)" : 30,
-              }}
-              transition={{ type: "spring", stiffness: 140, damping: 20 }}
-              style={{
-                ...notoTH,
-                fontWeight: 900,
-                lineHeight: 1.1,
-                margin: 0,
-                maxWidth: introBig ? "90vw" : "none",
-                whiteSpace: introBig ? "normal" : "nowrap",
-                overflowWrap: "break-word",
-                wordBreak: "break-word",
-                textAlign: "center",
-                background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              ข้อ {question.number}
-            </motion.h3>
-          </motion.div>
+          {/* ★★★★★★★ CHANGED: overlay ใหญ่ — fixed กลางจอ "ตายตัว" ตั้งแต่เฟรมแรก
+      ไม่มี layout FLIP เลย ขยับแค่ opacity/scale เข้าที่เดิม ไม่เคลื่อนจากมุม
+      + มี backdrop กันเห็นเนื้อหาข้างหลังก่อน animation จบ (แก้ปัญหา modal โผล่ก่อน) */}
+          <AnimatePresence>
+            {introBig && (
+              <motion.div
+                key="header-big-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 299, // ★ NEW: ต่ำกว่า content 1 ชั้น กันเนื้อหาอื่นเห็นทะลุระหว่าง fade
+                  background: "rgba(0,0,0,0.001)", // ★ NEW: เกือบโปร่งใสแต่กัน pointer/แสงลอด ปรับสีทึบได้ถ้าต้องการ dim ฉาก
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {introBig && (
+              <motion.div
+                key="header-big"
+                initial={{ opacity: 0, scale: 0.9 }} // ★ CHANGED: ไม่มี position เริ่มต้นจากมุมแล้ว เริ่มที่ scale เล็กน้อย+opacity 0 ตรงตำแหน่งเดิม (กลางจอ)
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.35, ease: "easeOut" }}
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 300,
+                  display: "flex",
+                  flexDirection: "column", // ★ CHANGED: บังคับ column เสมอ
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "clamp(8px, 2vw, 24px)",
+                  padding: "0 6vw",
+                  boxSizing: "border-box",
+                  width: "100%",
+                  pointerEvents: "none",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    ...fontDisplay,
+                    fontSize: "clamp(32px, 7vw, 110px)",
+                    color: C.blueLight,
+                    margin: 0,
+                    maxWidth: "90vw",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {category.name}
+                </p>
+                <h3
+                  style={{
+                    ...notoTH,
+                    fontWeight: 900,
+                    fontSize: "clamp(24px, 5.5vw, 84px)",
+                    lineHeight: 1.1,
+                    margin: 0,
+                    maxWidth: "90vw",
+                    whiteSpace: "nowrap", // ★ ข้อความ "ข้อ N" เองยังไม่ตัดคำ (สั้นอยู่แล้ว) แต่จะอยู่คนละบรรทัดกับ category เพราะ flexDirection: column ด้านบน
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  ข้อ {question.number}
+                </h3>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* ★★★★★★★ NEW (v4): keepthescore iframe — ไม่เล่น animation ใดๆ
               เลย อยู่ตำแหน่งปกตินอกกรอบตลอดเวลา (ไม่ขยาย ไม่ขยับตอน intro) */}
           {/* ★★★★★★★ NEW: ซ่อน iframe คะแนนนี้ไว้ก่อนตอน introBig เล่นอยู่
               (ไม่ใช่ส่วนที่กำลัง animate แต่ก็ไม่อยากให้เห็นค้างระหว่างนั้น) */}
+
+          {/* ★★★★★★★ NEW (v4): keepthescore iframe มุมขวาบน — ไม่เล่น animation ใดๆ
+    ซ่อนตอน introBig เล่นอยู่ และซ่อนตอนแคนวาแบ่ง 2 คอลัมน์ (viewMode
+    "score"/"board") กันซ้ำกับ scoreboard/score panel คอลัมน์ขวาด้านใน */}
           <div
             style={{
+              position: "fixed",
+              right: 0,
+              top: -10,
+              overflow: "hidden",
               transform: "scale(0.43)",
               flexShrink: 0,
-              opacity: introBig ? 0 : 1,
-              pointerEvents: visible && !introBig ? "auto" : "none",
+              opacity: introBig || viewMode !== "question" ? 0 : 1, // ★ CHANGED: เพิ่มเงื่อนไข viewMode
+              pointerEvents:
+                visible && !introBig && viewMode === "question"
+                  ? "auto"
+                  : "none", // ★ CHANGED
               transition: "opacity 0.3s ease",
             }}
           >
             <iframe
               src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
-              // src="https://stagetimer.io/output/6a5f772898e737c7ac88e520/?v=2&signature=d65fa0d941b542ed188a72c82d07eedf235c47965388f9fd62cec850b6fe3479"
-              className="pointer-events-auto h-20 w-auto rounded-xl"
+              scrolling="no"
+              className="pointer-events-auto h-32 w-auto rounded-xl"
+              style={{
+                overflow: "hidden",
+              }}
             ></iframe>
           </div>
         </div>
@@ -1031,26 +1099,37 @@ function QuestionModal({
               {/* ★ Scoreboard iframe — mount ค้างตลอด session ไม่ผูกกับ
                   viewMode เลย ต่างจากเดิมที่เพิ่งสร้างตอน viewMode === "board"
                   เท่านั้น (ทำให้ reload ทุกครั้งที่กลับมาโหมดนี้) */}
-              <div
+              {/* ★ Scoreboard iframe — mount ค้างตลอด session, เพิ่ม animation ตอนโผล่
+    (scale+opacity) ให้รู้สึกมี "เข้าฉาก" ชัดกว่าการ fade เฉยๆ */}
+              <motion.div
+                initial={false}
+                animate={{
+                  opacity: viewMode === "board" ? 1 : 0,
+                  scale: viewMode === "board" ? 1 : 0.96,
+                }}
+                transition={{ type: "spring", stiffness: 260, damping: 24 }}
                 style={{
                   position: "absolute",
                   inset: 0,
-                  opacity: viewMode === "board" ? 1 : 0,
+                  display: "flex", // ★ NEW: เปิด flex เพื่อจัดกึ่งกลาง
+                  alignItems: "center", // ★ NEW: กึ่งกลางแนวตั้ง
+                  justifyContent: "center", // ★ NEW: กึ่งกลางแนวนอน
                   visibility: viewMode === "board" ? "visible" : "hidden",
                   pointerEvents: viewMode === "board" ? "auto" : "none",
-                  transition: "opacity 0.2s ease",
+                  transformOrigin: "center",
                 }}
               >
                 <iframe
-                  src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
+                  src="https://keepthescore.com/scoreboard/nqfzldxmfqhfr/"
                   style={{
-                    width: "100%",
-                    height: "100%",
+                    width: "80%",
+                    height: "80%",
                     border: "none",
                     borderRadius: 8,
                   }}
+                  className="overflow-x-auto"
                 />
-              </div>
+              </motion.div>
 
               {/* ★ Score list (events) — ซ่อนตอน viewMode === "board" ด้วย
                   opacity/visibility เหมือนกัน ไม่ใช้ conditional render */}
@@ -2485,7 +2564,7 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
             background: surface,
             border: `3px solid ${border}`,
             borderRadius: 0,
-            boxShadow: "6px 6px 0 rgba(0,0,0,0.35)", 
+            boxShadow: "6px 6px 0 rgba(0,0,0,0.35)",
             overflow: "hidden",
           }}
         >
@@ -2614,14 +2693,14 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                         alignItems: "center",
                       }}
                     >
-                       <div
-        style={{
-          flexShrink: 0,
-          animation: "pixelFlicker 0.6s steps(2) infinite",
-        }}
-      >
-        <PixelShip color={team.color} />
-      </div>
+                      <div
+                        style={{
+                          flexShrink: 0,
+                          animation: "pixelFlicker 0.6s steps(2) infinite",
+                        }}
+                      >
+                        <PixelShip color={team.color} />
+                      </div>
                       <div
                         style={{
                           position: "absolute",

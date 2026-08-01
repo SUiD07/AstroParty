@@ -57,8 +57,8 @@
 
 import { useEffect, useState } from "react";
 import {
-  ArrowUp,
-  ArrowDown,
+  // ArrowUp,
+  // ArrowDown,
   ChevronLeft,
   ChevronRight,
   X,
@@ -66,6 +66,7 @@ import {
   Zap,
   Undo2,
   LayoutGrid,
+  Clock,
 } from "lucide-react";
 import {
   loadCategories,
@@ -839,10 +840,11 @@ const [current, setCurrent] = useState<{
                 color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
               }}
             >
-              <ArrowUp className="w-3.5 h-3.5" />
-              เลื่อนขึ้นไปดูโจทย์
+              {/* <ArrowUp className="w-3.5 h-3.5" /> */}
+              {/* <ChevronLeft className="w-3.5 h-3.5" /> */}
+              ขยายโจทย์เต็มจอ
             </button>
-            
+
             <button
               onClick={triggerScrollToScore}
               disabled={!canControlCanvaPage}
@@ -858,8 +860,8 @@ const [current, setCurrent] = useState<{
                 color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
               }}
             >
-              <ArrowDown className="w-3.5 h-3.5" />
-              เลื่อนให้ผู้ชมดูคะแนน
+              <LayoutGrid className="w-3.5 h-3.5" />
+              เปิดคะแนนข้อนี้
             </button>
 
             {/* ── ★★★★★★★★ NEW: เลื่อนให้ผู้ชมดู Scoreboard (keepthescore) ── */}
@@ -878,8 +880,8 @@ const [current, setCurrent] = useState<{
                 color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
               }}
             >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              เลื่อนให้ผู้ชมดู Scoreboard
+              <Clock className="w-3.5 h-3.5" />
+              จับเวลา
             </button>
 
             <div className="w-px h-6 bg-black/[0.08]" />
