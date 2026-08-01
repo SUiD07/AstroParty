@@ -68,6 +68,7 @@ import {
 // import Image from "next/image";
 import Particles from "../Particles";
 import Grainient from "../Grainient";
+// import { a } from "framer-motion/client";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -136,12 +137,12 @@ const border = "rgba(255,255,255,0.14)";
 const borderWarm = "rgba(237,130,64,0.32)";
 
 // Reusable style objects
-const glassCard = (warm = false): React.CSSProperties => ({
-  background: surface,
-  border: `1px solid ${warm ? borderWarm : border}`,
-  borderRadius: 10,
-  backdropFilter: "blur(10px)",
-});
+// const glassCard = (warm = false): React.CSSProperties => ({
+//   background: surface,
+//   border: `1px solid ${warm ? borderWarm : border}`,
+//   borderRadius: 10,
+//   backdropFilter: "blur(10px)",
+// });
 
 // ★ fontDisplay เดิมใช้ Bodoni Moda (เซอริฟ) ซึ่งขัดกับตัวอักษรบล็อกหนา
 // สไตล์ LED/dot-matrix ของ Canva จริง — เปลี่ยนมาใช้ Orbitron น้ำหนักหนาแทน
@@ -196,6 +197,7 @@ const GLOBAL_CSS = `
   0%,100% { transform:scale(1); opacity:.7; }
   50%     { transform:scale(1.4); opacity:1; }
 }
+@keyframes pixelFlicker { 0%,100%{opacity:1} 50%{opacity:.7} }
   .grad-gold {
   background: linear-gradient(135deg, #ED8240 0%, #ED8240 45%, #fffbe8 80%, #ED8240 100%);
   -webkit-background-clip: text;
@@ -689,7 +691,7 @@ export function CanvaSingleFrame({
 // ที่เล่น animation ทั้งหมด ให้อยู่ตำแหน่งปกตินอกกรอบเฉยๆ ไม่ขยับ ไม่ขยาย
 // ---------------------------------------------------------------------------
 
-const INTRO_HOLD_MS = 1500; // ระยะเวลาที่ค้างไว้ตัวใหญ่กลางจอ ก่อนหดกลับ
+const INTRO_HOLD_MS = 2000; // ระยะเวลาที่ค้างไว้ตัวใหญ่กลางจอ ก่อนหดกลับ
 
 function QuestionModal({
   category,
@@ -700,6 +702,7 @@ function QuestionModal({
   onClose,
   scrollPulse,
   scrollTopPulse,
+  scrollBoardPulse,
   visible,
   canvaPageOverride,
 }: {
@@ -711,12 +714,15 @@ function QuestionModal({
   onClose: () => void;
   scrollPulse?: number;
   scrollTopPulse?: number;
+  scrollBoardPulse?: number;
   visible: boolean;
   canvaPageOverride?: number | null;
 }) {
   // ★★★★★★★ NEW: โหมดการแสดงผลใน modal — รีเซ็ตกลับ 'question' ทุกครั้งที่
   // เปลี่ยนคำถาม (question.id เปลี่ยน) กันค้างโหมดคะแนนของคำถามก่อนหน้า
-  const [viewMode, setViewMode] = useState<"question" | "score">("question");
+  const [viewMode, setViewMode] = useState<"question" | "score" | "board">(
+    "question",
+  );
   useEffect(() => {
     setViewMode("question");
   }, [question.id]);
@@ -766,6 +772,19 @@ function QuestionModal({
       prevScrollTopPulseRef.current = scrollTopPulse;
     }
   }, [scrollTopPulse]);
+
+  // ★★★★★ แอดมินกดปุ่ม "เลื่อนให้ผู้ชมดู Scoreboard" — โชว์
+  // iframe keepthescore เต็มคอลัมน์ขวาแทนที่ list คะแนน (viewMode "board")
+  const prevScrollBoardPulseRef = useRef(scrollBoardPulse);
+  useEffect(() => {
+    if (
+      scrollBoardPulse !== undefined &&
+      scrollBoardPulse !== prevScrollBoardPulseRef.current
+    ) {
+      setViewMode("board");
+      prevScrollBoardPulseRef.current = scrollBoardPulse;
+    }
+  }, [scrollBoardPulse]);
 
   return (
     <div
@@ -905,7 +924,7 @@ function QuestionModal({
               transform: "scale(0.43)",
               flexShrink: 0,
               opacity: introBig ? 0 : 1,
-              pointerEvents: introBig ? "none" : "auto",
+              pointerEvents: visible && !introBig ? "auto" : "none",
               transition: "opacity 0.3s ease",
             }}
           >
@@ -933,7 +952,7 @@ function QuestionModal({
             // ไว้ก่อนตอน introBig เล่นอยู่ ให้เห็นแค่ตัวอักษรหมวด+เลขข้อใหญ่ๆ
             // เด่นๆ อย่างเดียวก่อน แล้วค่อย fade กลับมาตอน introBig หดตัวเสร็จ
             opacity: introBig ? 0 : 1,
-            pointerEvents: introBig ? "none" : "auto",
+            pointerEvents: visible && !introBig ? "auto" : "none",
             transition: "opacity 0.3s ease",
           }}
         >
@@ -974,7 +993,7 @@ function QuestionModal({
           >
             {/* Canva panel — เต็มความกว้างตอน 'question', แคบลงเหลือคอลัมน์ซ้ายตอน 'score' */}
             <motion.div
-              animate={{ flex: viewMode === "score" ? 1.3 : 1 }}
+              animate={{ flex: viewMode !== "question" ? 1.3 : 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 26 }}
               style={{ minWidth: 0, minHeight: 0, display: "flex" }}
             >
@@ -988,134 +1007,184 @@ function QuestionModal({
               />
             </motion.div>
 
-            {/* Score panel — กว้าง 0 (ซ่อน) ตอน 'question', โผล่เป็นคอลัมน์ขวาตอน 'score' */}
+            {/* Score panel — กว้าง 0 (ซ่อน) ตอน 'question', โผล่เป็นคอลัมน์ขวา
+                ตอน 'score' (list คะแนน) หรือ 'board' (iframe keepthescore)
+                ★★★★★★★★ NEW: iframe scoreboard mount ค้างตลอด (ไม่ conditional
+                render ตาม viewMode อีกต่อไป) เหมือน CanvaSingleFrame หลักของ
+                viewer เพื่อไม่ให้ reload ทุกครั้งที่สลับโหมดไป-กลับ — ซ้อน
+                absolute กับ list คะแนน แล้วคุมด้วย opacity/pointerEvents แทน */}
             <motion.div
               initial={false}
               animate={{
-                flex: viewMode === "score" ? 1 : 0,
-                opacity: viewMode === "score" ? 1 : 0,
+                flex: viewMode !== "question" ? 1 : 0,
+                opacity: viewMode !== "question" ? 1 : 0,
               }}
               transition={{ type: "spring", stiffness: 200, damping: 26 }}
               style={{
+                position: "relative",
                 minWidth: 0,
                 minHeight: 0,
-                overflowY: "auto",
-                pointerEvents: viewMode === "score" ? "auto" : "none",
+                overflowY: viewMode === "board" ? "hidden" : "auto",
+                pointerEvents: viewMode !== "question" ? "auto" : "none",
               }}
             >
-              {events.length === 0 ? (
-                <div
+              {/* ★ Scoreboard iframe — mount ค้างตลอด session ไม่ผูกกับ
+                  viewMode เลย ต่างจากเดิมที่เพิ่งสร้างตอน viewMode === "board"
+                  เท่านั้น (ทำให้ reload ทุกครั้งที่กลับมาโหมดนี้) */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: viewMode === "board" ? 1 : 0,
+                  visibility: viewMode === "board" ? "visible" : "hidden",
+                  pointerEvents: viewMode === "board" ? "auto" : "none",
+                  transition: "opacity 0.2s ease",
+                }}
+              >
+                <iframe
+                  src="https://keepthescore.com/scoreboard/ymzywzmyfjzpr/"
                   style={{
-                    padding: "36px 0",
-                    textAlign: "center",
+                    width: "100%",
+                    height: "100%",
+                    border: "none",
                     borderRadius: 8,
-                    border: "1px dashed rgba(237,130,64,0.2)",
                   }}
-                >
-                  <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
-                  <p
+                />
+              </div>
+
+              {/* ★ Score list (events) — ซ่อนตอน viewMode === "board" ด้วย
+                  opacity/visibility เหมือนกัน ไม่ใช้ conditional render */}
+              <div
+                style={{
+                  position: viewMode === "board" ? "absolute" : "relative",
+                  inset: viewMode === "board" ? 0 : undefined,
+                  opacity: viewMode === "board" ? 0 : 1,
+                  visibility: viewMode === "board" ? "hidden" : "visible",
+                  pointerEvents: viewMode === "board" ? "none" : "auto",
+                }}
+              >
+                {events.length === 0 ? (
+                  <div
                     style={{
-                      ...notoTH,
-                      fontSize: 12,
-                      color: C.textLo,
-                      letterSpacing: "0.1em",
+                      padding: "36px 0",
+                      textAlign: "center",
+                      borderRadius: 8,
+                      border: "1px dashed rgba(237,130,64,0.2)",
                     }}
                   >
-                    ยังไม่มีการให้คะแนนในข้อนี้
-                  </p>
-                </div>
-              ) : (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                >
-                  <p
-                    style={{
-                      ...orbitron,
-                      fontSize: 20,
-                      letterSpacing: "0.22em",
-                      // color: C.textLo,
-                      marginBottom: 4,
-                    }}
+                    <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
+                    <p
+                      style={{
+                        ...notoTH,
+                        fontSize: 12,
+                        color: C.textLo,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      ยังไม่มีการให้คะแนนในข้อนี้
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
                   >
-                    Score Reveal
-                  </p>
-                  {events.map((ev, i) => {
-                    const team = teams.find((t) => t.id === ev.team_id);
-                    if (!team) return null;
-                    const isPos = ev.delta > 0;
-                    return (
-                      <motion.div
-                        key={String(ev.id)}
-                        initial={{ x: -10, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ delay: i * 0.05 }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "12px 16px",
-                          borderRadius: 9,
-                          background: `${team.color}0F`,
-                          border: `1px solid ${team.color}40`,
-                        }}
-                      >
-                        <div
+                    <p
+                      style={{
+                        ...orbitron,
+                        fontSize: 20,
+                        letterSpacing: "0.22em",
+                        // color: C.textLo,
+                        marginBottom: 4,
+                      }}
+                    >
+                      Score Reveal
+                    </p>
+                    {events.map((ev, i) => {
+                      const team = teams.find((t) => t.id === ev.team_id);
+                      if (!team) return null;
+                      const isPos = ev.delta > 0;
+                      return (
+                        <motion.div
+                          key={String(ev.id)}
+                          initial={{ x: -10, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: i * 0.05 }}
                           style={{
                             display: "flex",
                             alignItems: "center",
-                            gap: 10,
+                            justifyContent: "space-between",
+                            padding: "12px 16px",
+                            borderRadius: 9,
+                            background: `${team.color}0F`,
+                            border: `1px solid ${team.color}40`,
                           }}
                         >
                           <div
                             style={{
-                              width: 10,
-                              height: 10,
-                              borderRadius: "50%",
-                              background: team.color,
-                            }}
-                          />
-                          <span
-                            style={{
-                              ...notoTH,
-                              fontSize: 14,
-                              fontWeight: 700,
-                              color: team.color,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
                             }}
                           >
-                            {team.name}
-                          </span>
-                        </div>
-                        <span
-                          style={{
-                            ...orbitron,
-                            fontSize: 22,
-                            fontWeight: 900,
-                            color: isPos ? "#4ade80" : "#f87171",
-                          }}
-                        >
-                          {isPos ? `+${ev.delta}` : ev.delta}
+                            <div
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                background: team.color,
+                              }}
+                            />
+                            <span
+                              style={{
+                                ...notoTH,
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: team.color,
+                              }}
+                            >
+                              {team.name}
+                            </span>
+                          </div>
                           <span
                             style={{
-                              fontSize: 9,
-                              color: C.textLo,
-                              marginLeft: 4,
+                              ...orbitron,
+                              fontSize: 22,
+                              fontWeight: 900,
+                              color: isPos ? "#4ade80" : "#f87171",
                             }}
                           >
-                            PTS
+                            {isPos ? `+${ev.delta}` : ev.delta}
+                            <span
+                              style={{
+                                fontSize: 9,
+                                color: C.textLo,
+                                marginLeft: 4,
+                              }}
+                            >
+                              PTS
+                            </span>
                           </span>
-                        </span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </div>
 
-          {/* ปุ่มสลับโหมด — มุมล่างซ้าย สไตล์เดียวกับปุ่มปิด (X) มุมบนขวา ไม่เตะตา */}
+          {/* ปุ่มสลับโหมด — มุมล่างซ้าย สไตล์เดียวกับปุ่มปิด (X) มุมบนขวา ไม่เตะตา
+              ★★★★★★★★ NEW: วนครบ 3 โหมด question → score → board → question
+              label เปลี่ยนตามโหมดปัจจุบัน บอกชัดว่ากดแล้วจะไปโหมดไหนต่อ */}
           <button
             onClick={() =>
-              setViewMode(viewMode === "question" ? "score" : "question")
+              setViewMode(
+                viewMode === "question"
+                  ? "score"
+                  : viewMode === "score"
+                    ? "board"
+                    : "question",
+              )
             }
             style={{
               position: "absolute",
@@ -1145,7 +1214,9 @@ function QuestionModal({
               el.style.borderColor = border;
             }}
           >
-            {viewMode === "question" ? "▾" : "▴"}
+            {viewMode === "question" && "▾ คะแนน"}
+            {viewMode === "score" && "▾ Scoreboard"}
+            {viewMode === "board" && "▴ โจทย์"}
           </button>
         </div>
       </motion.div>
@@ -1829,7 +1900,7 @@ function Slide2({ canvaPageOverride, isActive }: Slide2Props) {
         justifyContent: "center",
         width: "100%",
         height: "100%",
-        padding: 12,
+        // padding: 12,
       }}
     >
       <CanvaSingleFrame
@@ -2067,6 +2138,7 @@ interface Slide4Props extends SlideCommonProps {
   onBackgroundClick: () => void;
   scrollPulse: number;
   scrollTopPulse: number;
+  scrollBoardPulse: number;
   canvaPageOverride: number | null;
 }
 
@@ -2084,6 +2156,7 @@ function Slide4({
   onBackgroundClick,
   scrollPulse,
   scrollTopPulse,
+  scrollBoardPulse,
   canvaPageOverride,
 }: Slide4Props) {
   const getEvents = (qId: number) =>
@@ -2295,11 +2368,74 @@ function Slide4({
           onClose={onCloseModal}
           scrollPulse={scrollPulse}
           scrollTopPulse={scrollTopPulse}
+          scrollBoardPulse={scrollBoardPulse}
           visible={!!selectedCell}
           canvaPageOverride={canvaPageOverride}
         />
       )}
     </div>
+  );
+}
+// ---------------------------------------------------------------------------
+// PixelShip — จรวดพิกเซล หัวชี้ขวา (ทิศทางที่ทีมวิ่งจากซ้ายไปขวาบนแทร็ก)
+// เปลวไฟ (ไอเสีย) อยู่ด้านซ้าย ตรงข้ามหัว — ใช้สีทีมเดิม (team.color) เป๊ะๆ
+// เปลวไฟแค่ opacity ต่ำกว่าลำตัว เพื่อแยกให้ดูออกว่าเป็นไอเสียไม่ใช่ตัวเรือ
+// ---------------------------------------------------------------------------
+const SHIP_GRID: number[][] = [
+  [0, 0, 1, 0, 0, 0],
+  [1, 1, 1, 1, 0, 0],
+  [0, 0, 1, 1, 1, 0],
+  [0, 1, 1, 1, 1, 1], // ← แถวกลาง หัวจรวด (col ขวาสุด) อยู่แถวนี้
+  [0, 1, 1, 1, 1, 1], // ← แถวกลาง
+  [0, 0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 0, 0],
+  [0, 0, 1, 0, 0, 0],
+];
+const FLAME_ROWS = [3, 4]; // ★ ตรงกับแถวกลางลำตัวด้านบน
+
+function PixelShip({ color }: { color: string }) {
+  const cell = 5;
+  const cols = SHIP_GRID[0].length;
+  const rows = SHIP_GRID.length;
+  const flameCols = 2;
+
+  return (
+    <svg
+      width={cell * (cols + flameCols)}
+      height={cell * rows}
+      shapeRendering="crispEdges"
+      style={{ display: "block" }}
+    >
+      {/* เปลวไฟ — ซ้ายสุด (ตรงข้ามหัวจรวด) */}
+      {FLAME_ROWS.map((y) =>
+        Array.from({ length: flameCols }, (_, fx) => (
+          <rect
+            key={`flame-${fx}-${y}`}
+            x={fx * cell}
+            y={y * cell}
+            width={cell}
+            height={cell}
+            fill={color}
+            opacity={0.45}
+          />
+        )),
+      )}
+      {/* ลำตัวจรวด — หัวชี้ขวา (คอลัมน์ขวาสุดของ SHIP_GRID) */}
+      {SHIP_GRID.map((row, y) =>
+        row.map((v, x) =>
+          v ? (
+            <rect
+              key={`${x}-${y}`}
+              x={(x + flameCols) * cell}
+              y={y * cell}
+              width={cell}
+              height={cell}
+              fill={color}
+            />
+          ) : null,
+        ),
+      )}
+    </svg>
   );
 }
 
@@ -2346,17 +2482,19 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
           style={{
             flex: 3,
             position: "relative",
-            ...glassCard(),
+            background: surface,
+            border: `3px solid ${border}`,
+            borderRadius: 0,
+            boxShadow: "6px 6px 0 rgba(0,0,0,0.35)", 
             overflow: "hidden",
-            borderRadius: 10,
           }}
         >
           <div
             style={{
               position: "absolute",
               inset: 0,
-              opacity: 0.06,
-              backgroundImage: `linear-gradient(${C.blueLight} 1px, transparent 1px), linear-gradient(90deg, ${C.blueLight} 1px, transparent 1px)`,
+              opacity: 0.1,
+              backgroundImage: `repeating-linear-gradient(${C.blueLight} 0 2px, transparent 2px 40px), repeating-linear-gradient(90deg, ${C.blueLight} 0 2px, transparent 2px 40px)`,
               backgroundSize: "44px 44px",
             }}
           />
@@ -2476,19 +2614,14 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                         alignItems: "center",
                       }}
                     >
-                      <div
-                        style={{
-                          width: 40,
-                          height: 28,
-                          flexShrink: 0,
-                          clipPath:
-                            "polygon(0% 0%, 100% 50%, 0% 100%, 25% 50%)",
-                          backgroundColor: team.color,
-                          color: team.color,
-                          animation:
-                            "shipGlow 2s ease-in-out infinite alternate",
-                        }}
-                      />
+                       <div
+        style={{
+          flexShrink: 0,
+          animation: "pixelFlicker 0.6s steps(2) infinite",
+        }}
+      >
+        <PixelShip color={team.color} />
+      </div>
                       <div
                         style={{
                           position: "absolute",
@@ -2510,11 +2643,11 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
                             fontSize: 20,
                             fontWeight: 900,
                             padding: "2px 8px",
-                            borderRadius: 10,
+                            borderRadius: 0, // เดิม 10
                             color: team.color,
                             letterSpacing: "0.10em",
-                            background: "rgba(61,22,12,0.55)",
-                            border: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(61,22,12,0.55)", // สีเดิม
+                            border: `2px solid ${team.color}`, // เดิมใช้ rgba(255,255,255,0.06) ขาวจาง
                           }}
                           // className="border-2 border-slate-800"
                         >
@@ -3125,7 +3258,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
             consolationTeams.map((pos) => {
               const team = data.teams.find((t) => t.id === pos.teamId);
               if (!team) return null;
-              const rank = getRank(sortedPositions, pos.score);
+              // const rank = getRank(sortedPositions, pos.score);
               return (
                 <div
                   key={team.id}
@@ -3152,7 +3285,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                       borderRadius: "1px 0 0 1px",
                     }}
                   />
-                  <span
+                  {/* <span
                     style={{
                       ...orbitron,
                       fontSize: 17,
@@ -3162,7 +3295,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                     }}
                   >
                     {rank}
-                  </span>
+                  </span> */}
                   <div
                     style={{
                       width: 8,
@@ -4079,6 +4212,12 @@ export default function ViewerDashboard() {
   const [scrollTopPulse, setScrollTopPulse] = useState(0);
   const lastScrollTopSignalRef = useRef<number | null>(null);
 
+  // ★★★★★★★★ NEW: scrollBoardPulse — ใช้ตอนแอดมินกดปุ่ม "เลื่อนให้ผู้ชมดู
+  // Scoreboard" ใน /control ส่งลง QuestionModal ให้สลับไปโชว์ iframe
+  // keepthescore เต็มคอลัมน์ขวา
+  const [scrollBoardPulse, setScrollBoardPulse] = useState(0);
+  const lastScrollBoardSignalRef = useRef<number | null>(null);
+
   // ★ canvaPageOverride — ค่าเลขหน้า Canva ที่แอดมิน override ไว้จาก /control
   // (ปุ่ม ◀/▶ เลื่อนหน้าของ modal ที่เปิดอยู่) null = ยังไม่ override ให้ใช้
   // เลขหน้าเริ่มต้นของคำถามนั้นตามที่ตั้งไว้ใน CanvaLinkManager ตามปกติ
@@ -4170,6 +4309,7 @@ export default function ViewerDashboard() {
       // เก็บค่า scroll_signal เริ่มต้นไว้เฉยๆ ไม่ trigger การเลื่อน (แค่ sync ครั้งแรก)
       lastScrollSignalRef.current = s.scroll_signal;
       lastScrollTopSignalRef.current = s.scroll_top_signal;
+      lastScrollBoardSignalRef.current = s.scroll_board_signal;
       setCanvaPageOverride(s.canva_current_page);
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
@@ -4202,6 +4342,16 @@ export default function ViewerDashboard() {
         setScrollTopPulse((p) => p + 1);
       }
       lastScrollTopSignalRef.current = s.scroll_top_signal;
+
+      // ★★★★★★★★ NEW: scroll_board_signal เปลี่ยน = แอดมินกดปุ่ม
+      // "เลื่อนให้ผู้ชมดู Scoreboard" → bump scrollBoardPulse
+      if (
+        lastScrollBoardSignalRef.current !== null &&
+        s.scroll_board_signal !== lastScrollBoardSignalRef.current
+      ) {
+        setScrollBoardPulse((p) => p + 1);
+      }
+      lastScrollBoardSignalRef.current = s.scroll_board_signal;
 
       if (s.modal_open && s.highlighted_question_id) {
         const found = findCellByQuestionId(s.highlighted_question_id);
@@ -4333,7 +4483,7 @@ export default function ViewerDashboard() {
           <Grainient
             color1="#170806"
             color2="#6C240A"
-            color3="#ED8240"
+            color3="#170806"
             timeSpeed={0.35}
             colorBalance={0}
             warpStrength={1}
@@ -4429,6 +4579,7 @@ export default function ViewerDashboard() {
               onBackgroundClick={handleBackgroundClick}
               scrollPulse={scrollPulse}
               scrollTopPulse={scrollTopPulse}
+              scrollBoardPulse={scrollBoardPulse}
               canvaPageOverride={canvaPageOverride}
             />
           </motion.div>

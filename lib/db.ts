@@ -240,6 +240,7 @@ export interface PresentationState {
   modal_open: boolean;
   scroll_signal: number;
   scroll_top_signal: number;
+  scroll_board_signal: number;
   canva_current_page: number | null;
   updated_at: string;
 }
@@ -263,6 +264,7 @@ export async function updatePresentationState(
       | "modal_open"
       | "scroll_signal"
       | "scroll_top_signal"
+      | "scroll_board_signal"
       | "canva_current_page"
     >
   >,

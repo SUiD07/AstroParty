@@ -65,6 +65,7 @@ import {
   Plus,
   Zap,
   Undo2,
+  LayoutGrid,
 } from "lucide-react";
 import {
   loadCategories,
@@ -131,19 +132,20 @@ const NEGATIVE = "#d4183d";
 const BLUE = "#2563eb";
 
 export default function ControlPage({
-  onJumpToScore,
+  // onJumpToScore,
 }: {
   onJumpToScore?: (categoryId: number, questionNumber: number) => void;
 }) {
   const [categories, setCategories] = useState<Category[]>([]);
   // ★ เลขหน้า Canva เริ่มต้นของแต่ละคำถาม (ตั้งไว้ล่วงหน้าใน CanvaLinkManager)
   const [canvaLinks, setCanvaLinks] = useState<Record<number, string>>({});
-  const [current, setCurrent] = useState<{
+const [current, setCurrent] = useState<{
     slide: number;
     qId: number | null;
     open: boolean;
     scrollSignal: number;
     scrollTopSignal: number;
+    scrollBoardSignal: number;
     canvaPage: number | null; // ★ override เลขหน้าปัจจุบัน (null = ยังไม่ override)
   }>({
     slide: 1,
@@ -151,6 +153,7 @@ export default function ControlPage({
     open: false,
     scrollSignal: 0,
     scrollTopSignal: 0,
+    scrollBoardSignal: 0,
     canvaPage: null,
   });
 
@@ -175,6 +178,7 @@ export default function ControlPage({
         open: s.modal_open,
         scrollSignal: s.scroll_signal,
         scrollTopSignal: s.scroll_top_signal,
+        scrollBoardSignal: s.scroll_board_signal,
         canvaPage: s.canva_current_page,
       }),
     );
@@ -186,6 +190,7 @@ export default function ControlPage({
         open: s.modal_open,
         scrollSignal: s.scroll_signal,
         scrollTopSignal: s.scroll_top_signal,
+        scrollBoardSignal: s.scroll_board_signal,
         canvaPage: s.canva_current_page,
       });
     });
@@ -271,6 +276,15 @@ export default function ControlPage({
     const next = current.scrollTopSignal + 1;
     setCurrent((c) => ({ ...c, scrollTopSignal: next }));
     await updatePresentationState({ scroll_top_signal: next });
+  };
+
+  // ★★★★★★★★ NEW: ส่งสัญญาณให้จอ viewer ที่เปิด modal ค้างอยู่ สลับไปโชว์
+  // iframe keepthescore เต็มคอลัมน์ขวาแทนที่ list คะแนน
+  const triggerScrollToBoard = async () => {
+    if (!isOnJeopardySlide || !current.open) return;
+    const next = current.scrollBoardSignal + 1;
+    setCurrent((c) => ({ ...c, scrollBoardSignal: next }));
+    await updatePresentationState({ scroll_board_signal: next });
   };
 
   // หา category ของคำถามที่ถูกไฮไลท์อยู่ (ใช้ทั้งแสดง label และปุ่ม jump-to-score)
@@ -526,6 +540,7 @@ export default function ControlPage({
               )}
             </div>
           )}
+          </div>
 
           {/* ── Action buttons ── */}
           <div className="mt-6 flex items-center gap-2 flex-wrap">
@@ -827,7 +842,7 @@ export default function ControlPage({
               <ArrowUp className="w-3.5 h-3.5" />
               เลื่อนขึ้นไปดูโจทย์
             </button>
-
+            
             <button
               onClick={triggerScrollToScore}
               disabled={!canControlCanvaPage}
@@ -845,6 +860,26 @@ export default function ControlPage({
             >
               <ArrowDown className="w-3.5 h-3.5" />
               เลื่อนให้ผู้ชมดูคะแนน
+            </button>
+
+            {/* ── ★★★★★★★★ NEW: เลื่อนให้ผู้ชมดู Scoreboard (keepthescore) ── */}
+            <button
+              onClick={triggerScrollToBoard}
+              disabled={!canControlCanvaPage}
+              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปโชว์ iframe scoreboard เต็มคอลัมน์ขวา"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
+              style={{
+                borderColor: canControlCanvaPage
+                  ? "rgba(52,211,153,0.4)"
+                  : "rgba(0,0,0,0.08)",
+                background: canControlCanvaPage
+                  ? "rgba(52,211,153,0.10)"
+                  : "transparent",
+                color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
+              }}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              เลื่อนให้ผู้ชมดู Scoreboard
             </button>
 
             <div className="w-px h-6 bg-black/[0.08]" />
@@ -867,7 +902,6 @@ export default function ControlPage({
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
