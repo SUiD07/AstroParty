@@ -70,6 +70,8 @@ import Particles from "../Particles";
 import Grainient from "../Grainient";
 // import { a } from "framer-motion/client";
 import { Slide5Ship } from "./SpaceRaceShip";
+import { PlanetGround } from "./PlanetGround";
+import { ShipLandingRow } from "./PlanetGround";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -3071,6 +3073,7 @@ function Slide7() {
         width: "100%",
         height: "100%",
         padding: "0 24px 56px",
+        position: "relative", //ให้ PlanetGround วางอิงสไลด์นี้
       }}
     >
       <div
@@ -3119,7 +3122,7 @@ function Slide7() {
               style={{
                 width: 6,
                 height: 6,
-                borderRadius: "50%",
+                // borderRadius: "50%", // ★★★★★★★★★ NEW: ตัดออก — จุดเหลี่ยม
                 background: C.blueCore,
                 animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
               }}
@@ -3138,6 +3141,9 @@ function Slide7() {
           กำลังประมวลผลคะแนนรอบสุดท้าย…
         </div>
       </div>
+
+      {/* ★★★★★★★★★ NEW: พื้นดาว — สไลด์นี้ไม่มีทีมให้ลงจอด (ยังไม่รู้อันดับ) */}
+      <PlanetGround />
     </div>
   );
 }
@@ -3165,6 +3171,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
         width: "100%",
         height: "100%",
         padding: "0 24px 56px",
+        position: "relative",
       }}
     >
       <div
@@ -3206,7 +3213,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
             width: "100%",
             maxHeight: "56vh",
             overflowY: "auto",
-            backdropFilter: "blur(16px)",
+            background: "rgba(23,8,6,0.85)", // ★★★★★★★★★ NEW: แทน backdropFilter blur เดิม
           }}
         >
           <div
@@ -3246,7 +3253,7 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
                     alignItems: "center",
                     justifyContent: "space-between",
                     padding: "10px 12px",
-                    borderRadius: 8,
+                    borderRadius: 0, // ★★★★★★★★★ NEW: เดิม 8
                     background: "rgba(23,8,6,.6)",
                     marginBottom: 7,
                     position: "relative",
@@ -3325,6 +3332,15 @@ function Slide8({ data, sortedPositions }: AwardSlideProps) {
           )}
         </div>
       </div>
+
+      {/* ★★★★★★★★★ NEW: พื้นดาว + จรวดชมเชยทุกทีมลงจอดเรียงกัน */}
+      <PlanetGround />
+      <ShipLandingRow
+        teams={consolationTeams
+          .map((pos) => data.teams.find((t) => t.id === pos.teamId))
+          .filter((t): t is NonNullable<typeof t> => !!t)
+          .map((t) => ({ id: t.id, color: t.color }))}
+      />
     </div>
   );
 }
@@ -3349,6 +3365,7 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
         width: "100%",
         height: "100%",
         padding: "0 24px 56px",
+        position: "relative", // ★★★★★★★★★ NEW
       }}
     >
       <div
@@ -3407,7 +3424,7 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
                     fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
                     fontWeight: 800,
                     color: t3.color,
-                    textShadow: `0 0 28px ${t3.color}99`,
+                    textShadow: `3px 3px 0 #000`, // ★★★★★★★★★ NEW: เดิม 0 0 28px ${t3.color}99 (blur glow)
                   }}
                 >
                   {t3.name}
@@ -3439,6 +3456,12 @@ function Slide9({ data, sortedPositions }: AwardSlideProps) {
           ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 2
         </div>
       </div>
+
+      {/* ★★★★★★★★★ NEW: พื้นดาว + จรวดทีมอันดับนี้ลงจอด (รองรับกรณีเสมอ) */}
+      <PlanetGround />
+      <ShipLandingRow
+        teams={rank3Teams.map((t) => ({ id: t.id, color: t.color }))}
+      />
     </div>
   );
 }
@@ -3463,6 +3486,7 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
         width: "100%",
         height: "100%",
         padding: "0 24px 56px",
+        position: "relative", // ★★★★★★★★★ NEW
       }}
     >
       <div
@@ -3521,7 +3545,7 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
                     fontSize: "clamp(1.4rem,3.2vw,2.6rem)",
                     fontWeight: 800,
                     color: ru.color,
-                    textShadow: `0 0 28px ${ru.color}99`,
+                    textShadow: `3px 3px 0 #000`, // ★★★★★★★★★ NEW
                   }}
                 >
                   {ru.name}
@@ -3553,6 +3577,12 @@ function Slide10({ data, sortedPositions }: AwardSlideProps) {
           ขอแสดงความยินดีกับรางวัลรองชนะเลิศอันดับ 1
         </div>
       </div>
+
+      {/* ★★★★★★★★★ NEW */}
+      <PlanetGround />
+      <ShipLandingRow
+        teams={rank2Teams.map((t) => ({ id: t.id, color: t.color }))}
+      />
     </div>
   );
 }
@@ -3669,7 +3699,7 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
                   fontSize: "clamp(1.6rem,3.8vw,3rem)",
                   fontWeight: 900,
                   color: ch.color,
-                  textShadow: `0 0 35px ${ch.color}cc, 0 0 70px ${ch.color}55`,
+                  textShadow: `3px 3px 0 #000, 6px 6px 0 rgba(0,0,0,0.4)`, // ★★★★★★★★★ NEW: เดิม blur glow คู่
                 }}
               >
                 {ch.name}
@@ -3702,6 +3732,12 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
           ขอแสดงความยินดีกับรางวัลชนะเลิศอันดับ 1
         </div>
       </div>
+
+      {/* ★★★★★★★★★ NEW */}
+      <PlanetGround />
+      <ShipLandingRow
+        teams={rank1Teams.map((t) => ({ id: t.id, color: t.color }))}
+      />
     </div>
   );
 }

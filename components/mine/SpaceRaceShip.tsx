@@ -51,8 +51,14 @@ const SHIP_GRID: number[][] = [
 ];
 const FLAME_ROWS = [3, 4];
 
-export function PixelShip({ color }: { color: string }) {
-  const cell = 5;
+export function PixelShip({
+  color,
+  size = 5,
+}: {
+  color: string;
+  size?: number;
+}) {
+  const cell = size;
   const cols = SHIP_GRID[0].length;
   const rows = SHIP_GRID.length;
   const flameCols = 2;
