@@ -59,39 +59,38 @@ interface Category {
 }
 
 // ===========================================================================
-// Sidebar
+// Sidebar — เปลี่ยนจาก 7 nav items (scroll-spy, mount รวมกันหมด) เป็น 3 "tabs"
+// ที่ mount แยกกันจริง ๆ ตาม role ของคนใช้งาน เพื่อไม่ให้เปิด realtime channel
+// (teams / score_events) เกินความจำเป็นสำหรับคนที่ไม่ได้ใช้ส่วนนั้น
+// - scoring   : คนกรอกคะแนน   → เพิ่มคะแนน + Score Event Log + Score Audit Matrix
+// - slides    : คนเปิดสไลด์   → Presentation State + Timer
+// - emergency : staff สำรอง   → Fleet Management + Canva Embed Links (ปกติไม่แตะ)
 // ===========================================================================
-interface NavItem {
+interface TabItem {
   id: string;
   label: string;
+  description: string;
   icon: React.ElementType;
 }
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
 
-const NAV_GROUPS: NavGroup[] = [
+const TABS: TabItem[] = [
   {
-    label: "Control Center",
-    items: [
-      { id: "fleet-management", label: "Fleet Management", icon: Rocket },
-      {
-        id: "presentation-state",
-        label: "Presentation State",
-        icon: ClipboardList,
-      },
-      { id: "timer", label: "Timer", icon: Timer },
-      { id: "canva-links", label: "Canva Embed Links", icon: Link2 },
-    ],
+    id: "scoring",
+    label: "เพิ่มคะแนน",
+    description: "กรอกคะแนน · Event Log · Audit Matrix",
+    icon: CheckCircle,
   },
   {
-    label: "Admin",
-    items: [
-      { id: "score-entry", label: "เพิ่มคะแนน", icon: CheckCircle },
-      { id: "event-log", label: "Score Event Log", icon: Clock },
-      { id: "audit-matrix", label: "Score Audit Matrix", icon: Grid3x3 },
-    ],
+    id: "slides",
+    label: "ควบคุมสไลด์",
+    description: "Presentation State · Timer",
+    icon: ClipboardList,
+  },
+  {
+    id: "emergency",
+    label: "ฉุกเฉิน",
+    description: "Fleet Management · Canva Links",
+    icon: Rocket,
   },
 ];
 
@@ -132,37 +131,43 @@ function Sidebar({
         </button>
       </div>
 
-      {/* Nav groups */}
+      {/* Tabs */}
       <nav className="flex-1 px-3 py-4">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label} className="mb-6">
-            <p className="text-[10px] text-white/25 uppercase tracking-[0.15em] px-2 mb-2">
-              {group.label}
-            </p>
-            <div className="space-y-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = active === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onNavigate(item.id)}
-                    className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left text-sm transition-all"
-                    style={{
-                      background: isActive
-                        ? "rgba(237,130,64,0.12)"
-                        : "transparent",
-                      color: isActive ? ORANGE : "rgba(255,255,255,0.4)",
-                    }}
-                  >
-                    <Icon className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        <p className="text-[10px] text-white/25 uppercase tracking-[0.15em] px-2 mb-2">
+          เมนู
+        </p>
+        <div className="space-y-1">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = active === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onNavigate(tab.id)}
+                className="w-full flex flex-col items-start gap-0.5 px-2.5 py-2.5 rounded-md text-left transition-all"
+                style={{
+                  background: isActive
+                    ? "rgba(237,130,64,0.12)"
+                    : "transparent",
+                }}
+              >
+                <span
+                  className="flex items-center gap-2.5 text-sm"
+                  style={{ color: isActive ? ORANGE : "rgba(255,255,255,0.6)" }}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  {tab.label}
+                </span>
+                <span
+                  className="text-[10px] pl-6"
+                  style={{ color: "rgba(255,255,255,0.25)" }}
+                >
+                  {tab.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </nav>
 
       {/* Footer link */}
@@ -2213,10 +2218,12 @@ export default function AdminPanel() {
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editingTeamName, setEditingTeamName] = useState("");
 
-  const [activeSection, setActiveSection] = useState("fleet-management");
+  // default = "scoring" เพราะคนกรอกคะแนนเป็นกลุ่มที่เปิดหน้านี้บ่อยสุด
+  const [activeTab, setActiveTab] = useState("scoring");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // ส่งต่อคำสั่ง "jump มาดูคะแนนข้อนี้" จาก ControlPage ไปยัง ScoreEntryAndLog
+  // ส่งต่อคำสั่ง "jump มาดูคะแนนข้อนี้" จาก ControlPage (tab slides) ไปยัง
+  // ScoreEntryAndLog (tab scoring) — ต้องสลับ tab ให้ด้วยตอนสั่ง jump ข้าม tab
   const [jumpTarget, setJumpTarget] = useState<{
     categoryId: number;
     questionNumber: number;
@@ -2227,11 +2234,24 @@ export default function AdminPanel() {
     setData(fresh);
   }, []);
 
+  // โหลดข้อมูลครั้งแรกเสมอ (แค่ REST fetch ครั้งเดียว ไม่ใช่ realtime channel
+  // ราคาถูก ไม่มีปัญหาเรื่อง realtime quota) เพื่อให้ทุก tab มีข้อมูล teams พร้อมใช้
+  // ทันทีที่สลับมา โดยไม่ต้องรอ fetch ใหม่
   useEffect(() => {
     loadData().then((d) => {
       setData(d);
       setLoading(false);
     });
+  }, []);
+
+  // Subscribe realtime เฉพาะ tab ที่ "ต้องใช้ teams/score_events จริง ๆ" เท่านั้น:
+  // - scoring   : ต้องเห็นคะแนนเข้าใหม่แบบ real-time (ทีมอื่นกรอกพร้อมกัน)
+  // - emergency : fleet management ต้อง sync รายชื่อทีมถ้ามีคนแก้พร้อมกัน
+  // - slides    : ไม่ต้องใช้ข้อมูลนี้เลย → ไม่เปิด channel ใด ๆ เพิ่ม
+  // สลับ tab แล้ว channel เก่าจะถูกปิดอัตโนมัติผ่าน cleanup ก่อน effect รอบใหม่รัน
+  useEffect(() => {
+    const needsTeamsAndScore = activeTab === "scoring" || activeTab === "emergency";
+    if (!needsTeamsAndScore) return;
 
     const scoreChannel = subscribeToScoreEvents(async () => {
       const fresh = await loadData();
@@ -2253,40 +2273,10 @@ export default function AdminPanel() {
       unsubscribe(scoreChannel);
       unsubscribe(teamChannel);
     };
-  }, []);
-
-  // FIX F: เพิ่ม "presentation-state" และ "timer" เข้าไปใน observer list
-  // เดิมไม่มี 2 id นี้ ทำให้เลื่อนไปหน้านั้นแล้ว sidebar ไม่ highlight เมนูให้ตรง
-  useEffect(() => {
-    const ids = [
-      "fleet-management",
-      "presentation-state",
-      "timer",
-      "canva-links",
-      "score-entry",
-      "event-log",
-      "audit-matrix",
-    ];
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        });
-      },
-      { rootMargin: "-20% 0px -70% 0px" },
-    );
-    ids.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, [loading]);
+  }, [activeTab]);
 
   const handleNavigate = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-    setActiveSection(id);
+    setActiveTab(id);
   };
 
   const addTeam = async () => {
@@ -2340,7 +2330,7 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen flex font-sans bg-white text-black">
       <Sidebar
-        active={activeSection}
+        active={activeTab}
         onNavigate={handleNavigate}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -2363,6 +2353,8 @@ export default function AdminPanel() {
         }`}
       >
         <div className="max-w-3xl mx-auto px-8 py-10 space-y-10">
+          {activeTab === "emergency" && (
+          <>
           {/* Fleet Management */}
           <section id="fleet-management" className="scroll-mt-6">
             <div className="mb-7">
@@ -2488,6 +2480,23 @@ export default function AdminPanel() {
             </div>
           </section>
 
+          {/* Canva Embed Links */}
+          <section id="canva-links" className="scroll-mt-6">
+            <div className="mb-7">
+              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                <Link2 className="w-4 h-4" style={{ color: ORANGE }} />
+                Canva Embed Links
+              </h1>
+            </div>
+            <div className="border border-black/[0.07] rounded-xl p-6">
+              <CanvaLinkManager />
+            </div>
+          </section>
+          </>
+          )}
+
+          {activeTab === "slides" && (
+          <>
           {/* Presentation State */}
           <section id="presentation-state" className="scroll-mt-6">
             <div className="mb-7">
@@ -2498,9 +2507,11 @@ export default function AdminPanel() {
             </div>
             <div className="border border-black/[0.07] rounded-xl p-6">
               <ControlPage
-                onJumpToScore={(categoryId, questionNumber) =>
-                  setJumpTarget({ categoryId, questionNumber })
-                }
+                onJumpToScore={(categoryId, questionNumber) => {
+                  // jump ข้าม tab: presentation-state (slides) → scoring
+                  setActiveTab("scoring");
+                  setJumpTarget({ categoryId, questionNumber });
+                }}
               />
             </div>
           </section>
@@ -2531,20 +2542,11 @@ export default function AdminPanel() {
               />
             </div>
           </section>
+          </>
+          )}
 
-          {/* Canva Embed Links */}
-          <section id="canva-links" className="scroll-mt-6">
-            <div className="mb-7">
-              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
-                <Link2 className="w-4 h-4" style={{ color: ORANGE }} />
-                Canva Embed Links
-              </h1>
-            </div>
-            <div className="border border-black/[0.07] rounded-xl p-6">
-              <CanvaLinkManager />
-            </div>
-          </section>
-
+          {activeTab === "scoring" && (
+          <>
           {/* Score Entry + Log */}
           <ScoreEntryAndLog
             teams={data.teams}
@@ -2566,6 +2568,8 @@ export default function AdminPanel() {
               <AuditMatrix teams={data.teams} refreshVersion={refreshVersion} />
             </div>
           </section>
+          </>
+          )}
         </div>
       </main>
     </div>
