@@ -1159,12 +1159,12 @@ const groupedEvents = useMemo(() => {
               >
                 <iframe
                   src="https://keepthescore.com/scoreboard/nqfzldxmfqhfr/"
+                  scrolling="no"
                   style={{
                     width: "80%",
                     height: "80%",
                     border: "none",
                     borderRadius: 8,
-                    scrolling: "no",
                   }}
                   // className="overflow-x-auto"
                 />
