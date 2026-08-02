@@ -1154,6 +1154,7 @@ const groupedEvents = useMemo(() => {
                   visibility: viewMode === "board" ? "visible" : "hidden",
                   pointerEvents: viewMode === "board" ? "auto" : "none",
                   transformOrigin: "center",
+                  overflow: "hidden"
                 }}
               >
                 <iframe
@@ -1163,8 +1164,9 @@ const groupedEvents = useMemo(() => {
                     height: "80%",
                     border: "none",
                     borderRadius: 8,
+                    scrolling: "no",
                   }}
-                  className="overflow-x-auto"
+                  // className="overflow-x-auto"
                 />
               </motion.div>
 
