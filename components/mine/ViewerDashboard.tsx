@@ -3715,102 +3715,15 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
 // ---------------------------------------------------------------------------
 function Slide12() {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        width: "100%",
-        height: "100%",
-        padding: "0 24px 56px",
-        position: "relative",
-      }}
-    >
-      {/* ★ ใช้ลายตกแต่งชุดเดียวกับ Slide1 ให้ธีมสม่ำเสมอ */}
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%,-50%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      >
-        <HeartPulseMotif opacity={0.08} width={560} />
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 18,
-          textAlign: "center",
-        }}
-      >
-        <div
-          style={{
-            ...orbitron,
-            fontSize: "clamp(.55rem,.85vw,.72rem)",
-            letterSpacing: ".38em",
-            color: "rgba(255,255,255,.5)",
-          }}
-        >
-          ✦ &nbsp; กรุณารอสักครู่ &nbsp; ✦
-        </div>
-        <div
-          style={{
-            ...fontDisplay,
-            fontSize: "clamp(2.4rem,6vw,4.8rem)",
-            color: "#fff",
-            letterSpacing: "0.04em",
-          }}
-        >
-          พักการถ่ายทอดชั่วคราว
-        </div>
-        <div
-          style={{
-            width: 200,
-            height: 1.5,
-            background: `linear-gradient(90deg,transparent,${C.orange},transparent)`,
-            borderRadius: 1,
-          }}
-        />
-        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: C.orange,
-                animation: `dotPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
-              }}
-            />
-          ))}
-        </div>
-        <div
-          style={{
-            ...notoTH,
-            fontSize: "clamp(.75rem,1.3vw,1rem)",
-            color: "rgba(255,255,255,.5)",
-            letterSpacing: ".05em",
-            marginTop: 8,
-            maxWidth: 560,
-            lineHeight: 1.8,
-          }}
-        >
-          ขออภัยในความไม่สะดวก ทีมงานกำลังดำเนินการแก้ไข
-          <br />
-          การถ่ายทอดสดจะกลับมาโดยเร็วที่สุด
-        </div>
-      </div>
-    </div>
+<img
+            src="/qr.jpg"
+            alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
+            style={{
+              // width: "clamp(9rem,4.5vw,4.5rem)",
+              height: "auto",
+              // opacity: 0.85,
+            }}
+          />
   );
 }
 
