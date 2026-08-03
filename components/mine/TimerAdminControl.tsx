@@ -16,6 +16,7 @@ import { useCountdown } from '@/hooks/useCountdown';
 interface TimerAdminControlProps {
   table: TimerTable;
   title: string; // เช่น "นาฬิกาประมูล" / "นาฬิกาทำข้อสอบ"
+  defaultSeconds?: number; // ค่าเริ่มต้นที่แสดงในช่องกรอก (ถ้า DB ยังไม่มีค่า)
 }
 
 function toMMSS(totalSeconds: number) {
