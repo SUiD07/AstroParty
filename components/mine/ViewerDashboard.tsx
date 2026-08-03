@@ -72,6 +72,8 @@ import Grainient from "../Grainient";
 import { Slide5Ship } from "./SpaceRaceShip";
 import { PlanetGround } from "./PlanetGround";
 import { ShipLandingRow } from "./PlanetGround";
+import { TimerTopRight } from "./TimerDisplays";
+import { TimerCircular } from "./TimerDisplays";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -798,7 +800,7 @@ function QuestionModal({
   // ★★★★★★★ NEW: รวมคะแนนของทีมเดียวกันในข้อนี้เข้าด้วยกัน — กันกรณีแอดมิน
   // กดให้คะแนนทีมเดิมหลายครั้งในข้อเดียวกัน (เช่น +5 แล้ว +3 ทีหลัง)
   // แสดงเป็นแถวเดียวรวมยอด แทนที่จะขึ้นซ้ำหลายแถว
-const groupedEvents = useMemo(() => {
+  const groupedEvents = useMemo(() => {
     type GroupedEvent = {
       team_id: string; // ★ CHANGED: string ไม่ใช่ number
       delta: number;
@@ -1016,7 +1018,7 @@ const groupedEvents = useMemo(() => {
           {/* ★★★★★★★ NEW (v4): keepthescore iframe มุมขวาบน — ไม่เล่น animation ใดๆ
     ซ่อนตอน introBig เล่นอยู่ และซ่อนตอนแคนวาแบ่ง 2 คอลัมน์ (viewMode
     "score"/"board") กันซ้ำกับ scoreboard/score panel คอลัมน์ขวาด้านใน */}
-          <div
+          {/* <div
             style={{
               position: "fixed",
               right: 0,
@@ -1040,6 +1042,18 @@ const groupedEvents = useMemo(() => {
                 overflow: "hidden",
               }}
             ></iframe>
+          </div> */}
+          <div
+            style={{
+              opacity: introBig || viewMode !== "question" ? 0 : 1,
+              pointerEvents:
+                visible && !introBig && viewMode === "question"
+                  ? "auto"
+                  : "none",
+              transition: "opacity 0.3s ease",
+            }}
+          >
+            <TimerTopRight />
           </div>
         </div>
 
@@ -1156,10 +1170,16 @@ const groupedEvents = useMemo(() => {
                   visibility: viewMode === "board" ? "visible" : "hidden",
                   pointerEvents: viewMode === "board" ? "auto" : "none",
                   transformOrigin: "center",
-                  overflow: "hidden"
+                  overflow: "hidden",
                 }}
               >
-                <iframe
+                <div
+                  style={{ position: "absolute", top:30, left: 20, zIndex: 5, width: "80%",
+                    height: "80%", }}
+                >
+                  <TimerCircular />
+                </div>
+                {/* <iframe
                   src="https://keepthescore.com/scoreboard/nqfzldxmfqhfr/"
                   scrolling="no"
                   style={{
@@ -1169,7 +1189,7 @@ const groupedEvents = useMemo(() => {
                     borderRadius: 8,
                   }}
                   // className="overflow-x-auto"
-                />
+                /> */}
               </motion.div>
 
               {/* ★ Score list (events) — ซ่อนตอน viewMode === "board" ด้วย
@@ -1183,85 +1203,90 @@ const groupedEvents = useMemo(() => {
                   pointerEvents: viewMode === "board" ? "none" : "auto",
                 }}
               >
-{events.length === 0 ? (
-  <div
-    style={{
-      padding: "36px 0",
-      textAlign: "center",
-      borderRadius: 8,
-      border: "1px dashed rgba(237,130,64,0.2)",
-    }}
-  >
-    <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
-    <p
-      style={{
-        ...notoTH,
-        fontSize: 12,
-        color: C.textLo,
-        letterSpacing: "0.1em",
-      }}
-    >
-      ยังไม่มีการให้คะแนนในข้อนี้
-    </p>
-  </div>
-) : (
-  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-    <p
-      style={{
-        ...orbitron,
-        fontSize: 20,
-        letterSpacing: "0.22em",
-        marginBottom: 4,
-      }}
-    >
-      Score Reveal
-    </p>
-    {groupedEvents.map((ev, i) => { {/* ★ CHANGED: จาก events.map → groupedEvents.map */}
-      const team = teams.find((t) => t.id === ev.team_id);
-      if (!team) return null;
-      const isPos = ev.delta > 0;
-      return (
-        <motion.div
-          key={ev.firstId}
-          initial={{ x: -10, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: i * 0.05 }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "12px 16px",
-            borderRadius: 9,
-            background: `${team.color}0F`,
-            border: `1px solid ${team.color}40`,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: team.color,
-              }}
-            />
-            <span
-              style={{
-                ...notoTH,
-                fontSize: 14,
-                fontWeight: 700,
-                color: team.color,
-              }}
-            >
-              {team.name}
-            </span>
-            {/* {ev.count > 1 && ( // ★ NEW: badge บอกว่าทีมนี้ถูกให้คะแนนกี่ครั้ง (เผื่ออยากรู้ที่มาของยอดรวม)
+                {events.length === 0 ? (
+                  <div
+                    style={{
+                      padding: "36px 0",
+                      textAlign: "center",
+                      borderRadius: 8,
+                      border: "1px dashed rgba(237,130,64,0.2)",
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 8 }}>🔭</div>
+                    <p
+                      style={{
+                        ...notoTH,
+                        fontSize: 12,
+                        color: C.textLo,
+                        letterSpacing: "0.1em",
+                      }}
+                    >
+                      ยังไม่มีการให้คะแนนในข้อนี้
+                    </p>
+                  </div>
+                ) : (
+                  <div
+                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                  >
+                    <p
+                      style={{
+                        ...orbitron,
+                        fontSize: 20,
+                        letterSpacing: "0.22em",
+                        marginBottom: 4,
+                      }}
+                    >
+                      Score Reveal
+                    </p>
+                    {groupedEvents.map((ev, i) => {
+                      {
+                        /* ★ CHANGED: จาก events.map → groupedEvents.map */
+                      }
+                      const team = teams.find((t) => t.id === ev.team_id);
+                      if (!team) return null;
+                      const isPos = ev.delta > 0;
+                      return (
+                        <motion.div
+                          key={ev.firstId}
+                          initial={{ x: -10, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: i * 0.05 }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            padding: "12px 16px",
+                            borderRadius: 9,
+                            background: `${team.color}0F`,
+                            border: `1px solid ${team.color}40`,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 10,
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                background: team.color,
+                              }}
+                            />
+                            <span
+                              style={{
+                                ...notoTH,
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: team.color,
+                              }}
+                            >
+                              {team.name}
+                            </span>
+                            {/* {ev.count > 1 && ( // ★ NEW: badge บอกว่าทีมนี้ถูกให้คะแนนกี่ครั้ง (เผื่ออยากรู้ที่มาของยอดรวม)
               <span
                 style={{
                   ...orbitron,
@@ -1275,31 +1300,31 @@ const groupedEvents = useMemo(() => {
                 x{ev.count}
               </span>
             )} */}
-          </div>
-          <span
-            style={{
-              ...orbitron,
-              fontSize: 22,
-              fontWeight: 900,
-              color: isPos ? "#4ade80" : "#f87171",
-            }}
-          >
-            {isPos ? `+${ev.delta}` : ev.delta}
-            <span
-              style={{
-                fontSize: 9,
-                color: C.textLo,
-                marginLeft: 4,
-              }}
-            >
-              PTS
-            </span>
-          </span>
-        </motion.div>
-      );
-    })}
-  </div>
-)}
+                          </div>
+                          <span
+                            style={{
+                              ...orbitron,
+                              fontSize: 22,
+                              fontWeight: 900,
+                              color: isPos ? "#4ade80" : "#f87171",
+                            }}
+                          >
+                            {isPos ? `+${ev.delta}` : ev.delta}
+                            <span
+                              style={{
+                                fontSize: 9,
+                                color: C.textLo,
+                                marginLeft: 4,
+                              }}
+                            >
+                              PTS
+                            </span>
+                          </span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
@@ -1540,42 +1565,42 @@ function GlitterBurst({
 // Canva design จริง (หัวใจเส้นขาวโปร่ง + เส้นคลื่นชีพจรพาดผ่านกลาง)
 // ใช้เป็นลายพื้นหลังโปร่งแสงเบาๆ ไม่แย่งความสนใจจากเนื้อหาหลัก
 // ---------------------------------------------------------------------------
-function HeartPulseMotif({
-  opacity = 0.12,
-  width = 560,
-}: {
-  opacity?: number;
-  width?: number;
-}) {
-  return (
-    <svg
-      viewBox="0 0 400 400"
-      width={width}
-      height={width}
-      style={{
-        opacity,
-        filter: "drop-shadow(0 0 18px rgba(255,255,255,0.25))",
-      }}
-    >
-      {/* หัวใจ — เส้นขอบโปร่ง ไม่มีพื้นข้างใน */}
-      <path
-        d="M200,338 C118,258 42,190 42,122 C42,74 80,42 122,42 C158,42 186,66 200,102 C214,66 242,42 278,42 C320,42 358,74 358,122 C358,190 282,258 200,338 Z"
-        fill="none"
-        stroke="#FFFFFF"
-        strokeWidth={3}
-      />
-      {/* เส้นคลื่นไฟฟ้าหัวใจ (ECG) พาดผ่านกลางหัวใจ */}
-      <path
-        d="M0,206 L58,206 L78,188 L98,224 L118,140 L138,262 L158,196 L200,196 L220,166 L238,222 L258,200 L400,200"
-        fill="none"
-        stroke="#FFFFFF"
-        strokeWidth={4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+// function HeartPulseMotif({
+//   opacity = 0.12,
+//   width = 560,
+// }: {
+//   opacity?: number;
+//   width?: number;
+// }) {
+//   return (
+//     <svg
+//       viewBox="0 0 400 400"
+//       width={width}
+//       height={width}
+//       style={{
+//         opacity,
+//         filter: "drop-shadow(0 0 18px rgba(255,255,255,0.25))",
+//       }}
+//     >
+//       {/* หัวใจ — เส้นขอบโปร่ง ไม่มีพื้นข้างใน */}
+//       <path
+//         d="M200,338 C118,258 42,190 42,122 C42,74 80,42 122,42 C158,42 186,66 200,102 C214,66 242,42 278,42 C320,42 358,74 358,122 C358,190 282,258 200,338 Z"
+//         fill="none"
+//         stroke="#FFFFFF"
+//         strokeWidth={3}
+//       />
+//       {/* เส้นคลื่นไฟฟ้าหัวใจ (ECG) พาดผ่านกลางหัวใจ */}
+//       <path
+//         d="M0,206 L58,206 L78,188 L98,224 L118,140 L138,262 L158,196 L200,196 L220,166 L238,222 L258,200 L400,200"
+//         fill="none"
+//         stroke="#FFFFFF"
+//         strokeWidth={4}
+//         strokeLinecap="round"
+//         strokeLinejoin="round"
+//       />
+//     </svg>
+//   );
+// }
 
 // ---------------------------------------------------------------------------
 interface SlideCommonProps {
@@ -3751,15 +3776,15 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
 // ---------------------------------------------------------------------------
 function Slide12() {
   return (
-<img
-            src="/qr.jpg"
-            alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
-            style={{
-              // width: "clamp(9rem,4.5vw,4.5rem)",
-              height: "auto",
-              // opacity: 0.85,
-            }}
-          />
+    <img
+      src="/qr.jpg"
+      alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
+      style={{
+        // width: "clamp(9rem,4.5vw,4.5rem)",
+        height: "auto",
+        // opacity: 0.85,
+      }}
+    />
   );
 }
 

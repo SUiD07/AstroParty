@@ -14,7 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ExternalLink,
-  Timer,
+  // Timer,
   Pencil,
   Check,
   X,
@@ -40,6 +40,7 @@ import { AuditMatrix } from "./AuditMatrix";
 import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 import { CanvaLinkManager } from "./CanvaLinkManager";
 import ControlPage from "./ControlPage";
+import { TimerAdminControl } from "./TimerAdminControl";
 
 const ORANGE = "#ED8240";
 const NEGATIVE = "#d4183d";
@@ -2250,7 +2251,8 @@ export default function AdminPanel() {
   // - slides    : ไม่ต้องใช้ข้อมูลนี้เลย → ไม่เปิด channel ใด ๆ เพิ่ม
   // สลับ tab แล้ว channel เก่าจะถูกปิดอัตโนมัติผ่าน cleanup ก่อน effect รอบใหม่รัน
   useEffect(() => {
-    const needsTeamsAndScore = activeTab === "scoring" || activeTab === "emergency";
+    const needsTeamsAndScore =
+      activeTab === "scoring" || activeTab === "emergency";
     if (!needsTeamsAndScore) return;
 
     const scoreChannel = subscribeToScoreEvents(async () => {
@@ -2354,169 +2356,186 @@ export default function AdminPanel() {
       >
         <div className="max-w-3xl mx-auto px-8 py-10 space-y-10">
           {activeTab === "emergency" && (
-          <>
-          {/* Fleet Management */}
-          <section id="fleet-management" className="scroll-mt-6">
-            <div className="mb-7">
-              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
-                <Users className="w-4 h-4" style={{ color: ORANGE }} />
-                Fleet Management
-              </h1>
-              <p className="text-black/35 text-sm mt-0.5">
-                {data.teams.length} teams registered
-              </p>
-            </div>
+            <>
+              {/* Fleet Management */}
+              <section id="fleet-management" className="scroll-mt-6">
+                <div className="mb-7">
+                  <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                    <Users className="w-4 h-4" style={{ color: ORANGE }} />
+                    Fleet Management
+                  </h1>
+                  <p className="text-black/35 text-sm mt-0.5">
+                    {data.teams.length} teams registered
+                  </p>
+                </div>
 
-            <div className="border border-black/[0.07] rounded-xl p-6 space-y-4">
-              <div className="flex gap-3 items-end flex-wrap">
-                <input
-                  type="text"
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && addTeam()}
-                  placeholder="TEAM CALLSIGN EX: NEON-1"
-                  className="flex-1 min-w-48 rounded-lg px-3 py-2.5 text-xs outline-none border border-black/[0.08] focus:border-black/20 placeholder:text-black/25"
-                />
-                <div className="flex flex-wrap gap-2">
-                  {COLORS.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => setNewTeamColor(c)}
-                      className={`w-7 h-7 rounded-full border-2 transition-all ${
-                        newTeamColor === c
-                          ? "border-black scale-110"
-                          : "border-transparent"
-                      }`}
-                      style={{ backgroundColor: c }}
+                <div className="border border-black/[0.07] rounded-xl p-6 space-y-4">
+                  <div className="flex gap-3 items-end flex-wrap">
+                    <input
+                      type="text"
+                      value={newTeamName}
+                      onChange={(e) => setNewTeamName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && addTeam()}
+                      placeholder="TEAM CALLSIGN EX: NEON-1"
+                      className="flex-1 min-w-48 rounded-lg px-3 py-2.5 text-xs outline-none border border-black/[0.08] focus:border-black/20 placeholder:text-black/25"
                     />
-                  ))}
-                </div>
-                <button
-                  onClick={addTeam}
-                  className="px-5 py-2.5 rounded-lg font-medium text-xs text-white transition-all hover:opacity-90"
-                  style={{ background: ORANGE }}
-                >
-                  + Register
-                </button>
-              </div>
-
-              {data.teams.length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {data.teams.map((team) => {
-                    const pos = data.positions.find(
-                      (p) => p.teamId === team.id,
-                    );
-                    const isEditing = editingTeamId === team.id;
-                    return (
-                      <div
-                        key={team.id}
-                        className="flex items-center gap-3 px-3.5 py-2 rounded-lg border border-black/[0.07] text-xs"
-                      >
-                        <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: team.color }}
+                    <div className="flex flex-wrap gap-2">
+                      {COLORS.map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => setNewTeamColor(c)}
+                          className={`w-7 h-7 rounded-full border-2 transition-all ${
+                            newTeamColor === c
+                              ? "border-black scale-110"
+                              : "border-transparent"
+                          }`}
+                          style={{ backgroundColor: c }}
                         />
-                        {isEditing ? (
-                          <input
-                            type="text"
-                            autoFocus
-                            value={editingTeamName}
-                            onChange={(e) => setEditingTeamName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") saveEditTeam(team);
-                              if (e.key === "Escape") cancelEditTeam();
-                            }}
-                            className="w-28 rounded-md px-2 py-1 text-xs outline-none border border-black/[0.15] focus:border-black/30"
-                          />
-                        ) : (
-                          <span className="font-medium">{team.name}</span>
-                        )}
-                        <span
-                          className="font-medium"
-                          style={{ color: "#1a7a4c" }}
-                        >
-                          {pos?.score ?? 0} pts
-                        </span>
-                        {isEditing ? (
-                          <>
-                            <button
-                              onClick={() => saveEditTeam(team)}
-                              className="text-black/25 hover:text-green-600 ml-1"
-                              title="บันทึก"
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={cancelEditTeam}
-                              className="text-black/25 hover:text-black/60"
-                              title="ยกเลิก"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startEditTeam(team)}
-                              className="text-black/25 hover:text-blue-500 ml-1"
-                              title="แก้ไขชื่อทีม"
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => removeTeam(team.id)}
-                              className="text-black/25 hover:text-red-500"
-                              title="ลบทีม"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </section>
+                      ))}
+                    </div>
+                    <button
+                      onClick={addTeam}
+                      className="px-5 py-2.5 rounded-lg font-medium text-xs text-white transition-all hover:opacity-90"
+                      style={{ background: ORANGE }}
+                    >
+                      + Register
+                    </button>
+                  </div>
 
-          {/* Canva Embed Links */}
-          <section id="canva-links" className="scroll-mt-6">
-            <div className="mb-7">
-              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
-                <Link2 className="w-4 h-4" style={{ color: ORANGE }} />
-                Canva Embed Links
-              </h1>
-            </div>
-            <div className="border border-black/[0.07] rounded-xl p-6">
-              <CanvaLinkManager />
-            </div>
-          </section>
-          </>
+                  {data.teams.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {data.teams.map((team) => {
+                        const pos = data.positions.find(
+                          (p) => p.teamId === team.id,
+                        );
+                        const isEditing = editingTeamId === team.id;
+                        return (
+                          <div
+                            key={team.id}
+                            className="flex items-center gap-3 px-3.5 py-2 rounded-lg border border-black/[0.07] text-xs"
+                          >
+                            <div
+                              className="w-2.5 h-2.5 rounded-full shrink-0"
+                              style={{ backgroundColor: team.color }}
+                            />
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                autoFocus
+                                value={editingTeamName}
+                                onChange={(e) =>
+                                  setEditingTeamName(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") saveEditTeam(team);
+                                  if (e.key === "Escape") cancelEditTeam();
+                                }}
+                                className="w-28 rounded-md px-2 py-1 text-xs outline-none border border-black/[0.15] focus:border-black/30"
+                              />
+                            ) : (
+                              <span className="font-medium">{team.name}</span>
+                            )}
+                            <span
+                              className="font-medium"
+                              style={{ color: "#1a7a4c" }}
+                            >
+                              {pos?.score ?? 0} pts
+                            </span>
+                            {isEditing ? (
+                              <>
+                                <button
+                                  onClick={() => saveEditTeam(team)}
+                                  className="text-black/25 hover:text-green-600 ml-1"
+                                  title="บันทึก"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={cancelEditTeam}
+                                  className="text-black/25 hover:text-black/60"
+                                  title="ยกเลิก"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => startEditTeam(team)}
+                                  className="text-black/25 hover:text-blue-500 ml-1"
+                                  title="แก้ไขชื่อทีม"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => removeTeam(team.id)}
+                                  className="text-black/25 hover:text-red-500"
+                                  title="ลบทีม"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              {/* Canva Embed Links */}
+              <section id="canva-links" className="scroll-mt-6">
+                <div className="mb-7">
+                  <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                    <Link2 className="w-4 h-4" style={{ color: ORANGE }} />
+                    Canva Embed Links
+                  </h1>
+                </div>
+                <div className="border border-black/[0.07] rounded-xl p-6">
+                  <CanvaLinkManager />
+                </div>
+              </section>
+            </>
           )}
 
           {activeTab === "slides" && (
-          <>
-          {/* Presentation State */}
-          <section id="presentation-state" className="scroll-mt-6">
-            <div className="mb-7">
-              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" style={{ color: ORANGE }} />
-                Presentation State
-              </h1>
-            </div>
-            <div className="border border-black/[0.07] rounded-xl p-6">
-              <ControlPage
-                onJumpToScore={(categoryId, questionNumber) => {
-                  // jump ข้าม tab: presentation-state (slides) → scoring
-                  setActiveTab("scoring");
-                  setJumpTarget({ categoryId, questionNumber });
-                }}
-              />
-            </div>
-          </section>
-          {/* Timer */}
-          <section id="timer" className="scroll-mt-6">
+            <>
+              {/* Presentation State */}
+              <section id="presentation-state" className="scroll-mt-6">
+                <div className="mb-7">
+                  <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                    <ClipboardList
+                      className="w-4 h-4"
+                      style={{ color: ORANGE }}
+                    />
+                    Presentation State
+                  </h1>
+                </div>
+                <div className="border border-black/[0.07] rounded-xl p-6">
+                  <ControlPage
+                    onJumpToScore={(categoryId, questionNumber) => {
+                      // jump ข้าม tab: presentation-state (slides) → scoring
+                      setActiveTab("scoring");
+                      setJumpTarget({ categoryId, questionNumber });
+                    }}
+                  />
+                </div>
+              </section>
+              {/* Timer */}
+              <section id="timer" className="scroll-mt-6">
+                <TimerAdminControl
+                  table="bidding_timer"
+                  title="นาฬิกาประมูล"
+                  defaultSeconds={45}
+                />
+                <TimerAdminControl
+                  table="answer_timer"
+                  title="นาฬิกาทำข้อสอบ"
+                  defaultSeconds={60}
+                />
+              </section>
+              {/* <section id="timer" className="scroll-mt-6">
             <div className="mb-7">
               <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
                 <Timer className="w-4 h-4" style={{ color: ORANGE }} />
@@ -2541,34 +2560,40 @@ export default function AdminPanel() {
                 className="w-full h-96"
               />
             </div>
-          </section>
-          </>
+          </section> */}
+            </>
           )}
 
           {activeTab === "scoring" && (
-          <>
-          {/* Score Entry + Log */}
-          <ScoreEntryAndLog
-            teams={data.teams}
-            onRefreshScores={refresh}
-            refreshVersion={refreshVersion}
-            jumpTarget={jumpTarget}
-            onJumpHandled={() => setJumpTarget(null)}
-          />
+            <>
+              {/* Score Entry + Log */}
+              <ScoreEntryAndLog
+                teams={data.teams}
+                onRefreshScores={refresh}
+                refreshVersion={refreshVersion}
+                jumpTarget={jumpTarget}
+                onJumpHandled={() => setJumpTarget(null)}
+              />
 
-          {/* Score Audit Matrix */}
-          <section id="audit-matrix" className="scroll-mt-6">
-            <div className="mb-7">
-              <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" style={{ color: ORANGE }} />
-                Score Audit Matrix
-              </h1>
-            </div>
-            <div className="border border-black/[0.07] rounded-xl p-6">
-              <AuditMatrix teams={data.teams} refreshVersion={refreshVersion} />
-            </div>
-          </section>
-          </>
+              {/* Score Audit Matrix */}
+              <section id="audit-matrix" className="scroll-mt-6">
+                <div className="mb-7">
+                  <h1 className="text-xl font-medium tracking-tight flex items-center gap-2">
+                    <ClipboardList
+                      className="w-4 h-4"
+                      style={{ color: ORANGE }}
+                    />
+                    Score Audit Matrix
+                  </h1>
+                </div>
+                <div className="border border-black/[0.07] rounded-xl p-6">
+                  <AuditMatrix
+                    teams={data.teams}
+                    refreshVersion={refreshVersion}
+                  />
+                </div>
+              </section>
+            </>
           )}
         </div>
       </main>
