@@ -29,9 +29,11 @@ export function TimerTopRight() {
   const timerState = useTimerState("answer_timer");
   const { remaining, progress, status } = useCountdown(timerState);
 
+  // ★ เดิม: เช็คแค่ 'idle' — ตอนนี้ 'paused' ก็ต้องยังโชว์ต่อ ไม่ early-return
   if (!timerState || status === "idle") return null;
 
   const isTimeUp = status === "running" && remaining <= 0;
+  const isPaused = status === "paused"; // ★ เพิ่ม
   const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
   const ss = String(remaining % 60).padStart(2, "0");
 
@@ -54,7 +56,7 @@ export function TimerTopRight() {
           fontFamily: "'Orbitron', sans-serif",
           fontWeight: 900,
           fontSize: isTimeUp ? 24 : 32,
-          color: isTimeUp ? "#f87171" : "#ED8240",
+          color: isTimeUp ? "#f87171" : isPaused ? "#F0B65C" : "#ED8240", // ★ เพิ่มสีเหลืองตอน paused
           textShadow: "0 2px 8px rgba(0,0,0,0.5)",
         }}
       >
@@ -74,11 +76,26 @@ export function TimerTopRight() {
             style={{
               height: "100%",
               width: `${progress * 100}%`,
-              background: "linear-gradient(90deg, #ED8240, #F0B65C)",
+              background: isPaused // ★ progress bar สีเหลืองตอน paused ด้วย
+                ? "linear-gradient(90deg, #F0B65C, #F0B65C)"
+                : "linear-gradient(90deg, #ED8240, #F0B65C)",
               transition: "width 0.1s linear",
             }}
           />
         </div>
+      )}
+      {isPaused && ( // ★ label เล็กๆ บอกว่าหยุดชั่วคราวอยู่ ไม่ใช่ค้าง
+        <span
+          style={{
+            fontFamily: "'Noto Sans Thai', sans-serif",
+            fontSize: 10,
+            letterSpacing: "0.1em",
+            color: "#F0B65C",
+            opacity: 0.85,
+          }}
+        >
+          หยุดชั่วคราว
+        </span>
       )}
     </div>
   );
@@ -92,6 +109,7 @@ export function TimerCircular({ size = 330 }: { size?: number }) {
   if (!timerState || status === "idle") return null;
 
   const isTimeUp = status === "running" && remaining <= 0;
+  const isPaused = status === "paused"; // ★ เพิ่ม
   const radius = (size - 10) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
@@ -113,7 +131,7 @@ export function TimerCircular({ size = 330 }: { size?: number }) {
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={isTimeUp ? "#f87171" : "#ED8240"}
+          stroke={isTimeUp ? "#f87171" : isPaused ? "#F0B65C" : "#ED8240"} // ★ เพิ่มสีเหลืองตอน paused
           strokeWidth="6"
           fill="none"
           strokeLinecap="round"
@@ -155,15 +173,17 @@ export function TimerCircular({ size = 330 }: { size?: number }) {
                 opacity: 0.7,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
+                color: isPaused ? "#F0B65C" : "#fff", // ★ label สีเหลืองตอน paused
               }}
             >
-              เหลือเวลาประมูล
+              {isPaused ? "หยุดชั่วคราว" : "เหลือเวลาประมูล"} {/* ★ เปลี่ยน label ตอน paused */}
             </span>
 
             <span
               style={{
                 fontWeight: 900,
                 fontSize: size * 0.26,
+                color: isPaused ? "#F0B65C" : "#fff", // ★ ตัวเลขสีเหลืองตอน paused
               }}
             >
               {remaining}
