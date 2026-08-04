@@ -922,7 +922,7 @@ function QuestionModal({
                     backgroundClip: "text",
                   }}
                 >
-                  ข้อ {question.number}
+                  ข้อที่ {question.number}
                 </h3>
               </motion.div>
             )}
@@ -1175,8 +1175,14 @@ function QuestionModal({
                 }}
               >
                 <div
-                  style={{ position: "absolute", top:30, left: 20, zIndex: 5, width: "80%",
-                    height: "80%", }}
+                  style={{
+                    position: "absolute",
+                    inset: 0, // ★ เต็มพื้นที่ parent ทุกด้าน แทน top/left/width/height เดิม
+                    zIndex: 5,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                 >
                   <TimerCircular />
                 </div>
@@ -2477,12 +2483,13 @@ function Slide4({
               >
                 <span
                   style={{
-                    ...notoTH,
-                    fontSize: "clamp(0.72rem, 1.1vw, 0.95rem)",
+                    // ...notoTH,
+                    ...orbitron,
+                    fontSize: "clamp(1.3rem, 1.8vw, 0.95rem)",
                     fontWeight: 600,
-                    color: "rgba(255,255,255,0.55)",
+                    // color: "rgba(255,255,255,0.55)",
                     letterSpacing: "0.12em",
-                    textTransform: "uppercase",
+                    // textTransform: "uppercase",
                     lineHeight: 1.3,
                     display: "block",
                   }}
@@ -3771,21 +3778,34 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
 }
 
 // ---------------------------------------------------------------------------
-// SLIDE 12 — BREAK / PAUSE (ต่อท้ายเป็นสไลด์สุดท้าย ไม่แทรกกลาง กัน renumber
-// สไลด์อื่นทั้งหมดที่เคยพลาดมาก่อน) ★★ [ใหม่] แอดมินกดมาที่สไลด์นี้ได้ทุกเมื่อ
-// ตอนระบบมีปัญหา/ติดขัด โดยไม่กระทบตำแหน่งสไลด์อื่นเลย
+// SLIDE 12 — Bonus question (static — QR code)
 // ---------------------------------------------------------------------------
 function Slide12() {
   return (
-    <img
-      src="/qr.jpg"
-      alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
-      style={{
-        // width: "clamp(9rem,4.5vw,4.5rem)",
-        height: "auto",
-        // opacity: 0.85,
-      }}
-    />
+<>
+  <SlideHeader title="Bonus Question" right={<></>} />
+
+  <div
+    style={{
+      height: "calc(100vh)", // ปรับตามความสูงของ Header
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "20px 0",
+      boxSizing: "border-box",
+    }}
+  >
+<img
+  src="/qr.jpg"
+  alt="..."
+  style={{
+    width: "95%",
+    height: "95%",
+    objectFit: "contain",
+  }}
+/>
+  </div>
+</>
   );
 }
 

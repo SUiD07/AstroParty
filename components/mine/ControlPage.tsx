@@ -119,7 +119,7 @@ const SLIDE_LABELS: string[] = [
   "Question Board",
   "Space Race",
   "Live Leaderboard",
-  "กำลังประมวลผล",
+  "Completed",
   "รางวัลชมเชย",
   "รองชนะเลิศ 2",
   "รองชนะเลิศ 1",
@@ -132,15 +132,17 @@ const GREEN = "#1a7a4c";
 const NEGATIVE = "#d4183d";
 const BLUE = "#2563eb";
 
-export default function ControlPage({
-  // onJumpToScore,
-}: {
-  onJumpToScore?: (categoryId: number, questionNumber: number) => void;
-}) {
+export default function ControlPage(
+  {
+    // onJumpToScore,
+  }: {
+    onJumpToScore?: (categoryId: number, questionNumber: number) => void;
+  },
+) {
   const [categories, setCategories] = useState<Category[]>([]);
   // ★ เลขหน้า Canva เริ่มต้นของแต่ละคำถาม (ตั้งไว้ล่วงหน้าใน CanvaLinkManager)
   const [canvaLinks, setCanvaLinks] = useState<Record<number, string>>({});
-const [current, setCurrent] = useState<{
+  const [current, setCurrent] = useState<{
     slide: number;
     qId: number | null;
     open: boolean;
@@ -523,9 +525,7 @@ const [current, setCurrent] = useState<{
                       className="rounded-md border text-[12px] font-semibold transition-all"
                       style={{
                         minHeight: 38,
-                        borderColor: isActive
-                          ? ORANGE
-                          : "rgba(0,0,0,0.08)",
+                        borderColor: isActive ? ORANGE : "rgba(0,0,0,0.08)",
                         borderWidth: isActive ? 2 : 1,
                         cursor: isOnJeopardySlide ? "pointer" : "not-allowed",
                         background: isActive
@@ -541,369 +541,356 @@ const [current, setCurrent] = useState<{
               )}
             </div>
           )}
+        </div>
+
+        {/* ── Action buttons ── */}
+        <div className="mt-6 flex items-center gap-2 flex-wrap">
+          <button
+            onClick={openModal}
+            disabled={!isOnJeopardySlide || !current.qId || current.open}
+            className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:cursor-not-allowed"
+            style={{
+              background:
+                isOnJeopardySlide && current.qId && !current.open
+                  ? GREEN
+                  : "rgba(0,0,0,0.08)",
+              color:
+                isOnJeopardySlide && current.qId && !current.open
+                  ? "#fff"
+                  : "rgba(0,0,0,0.3)",
+            }}
+          >
+            เปิด Modal
+          </button>
+
+          <button
+            onClick={closeModal}
+            disabled={!isOnJeopardySlide || !current.open}
+            className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:cursor-not-allowed"
+            style={{
+              background:
+                isOnJeopardySlide && current.open
+                  ? NEGATIVE
+                  : "rgba(0,0,0,0.08)",
+              color:
+                isOnJeopardySlide && current.open ? "#fff" : "rgba(0,0,0,0.3)",
+            }}
+          >
+            ปิด Modal
+          </button>
+
+          <div className="w-px h-6 bg-black/[0.08]" />
+
+          {/* ── ◀ / ▶ เลื่อนหน้า Canva ของ modal ที่เปิดอยู่ ── */}
+          <div
+            className="flex items-center gap-1 px-1.5 py-1 rounded-lg border transition-opacity"
+            style={{
+              borderColor: canControlCanvaPage
+                ? "rgba(37,99,235,0.3)"
+                : "rgba(0,0,0,0.08)",
+              background: canControlCanvaPage
+                ? "rgba(37,99,235,0.06)"
+                : "transparent",
+              opacity: canControlCanvaPage ? 1 : 0.4,
+            }}
+            title="เลื่อนหน้า Canva — ใช้ได้ทั้งตอนเปิด Modal คำถามอยู่ และตอนอยู่สไลด์ Canva Intro"
+          >
+            <button
+              onClick={() => changeCanvaPage(-1)}
+              disabled={!canControlCanvaPage}
+              className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
+              style={{
+                background: canControlCanvaPage ? BLUE : "transparent",
+                color: canControlCanvaPage ? "#fff" : "rgba(0,0,0,0.25)",
+              }}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span
+              className="text-[11px] font-medium min-w-[52px] text-center"
+              style={{
+                color: canControlCanvaPage ? BLUE : "rgba(0,0,0,0.3)",
+              }}
+            >
+              หน้า {effectivePage}
+            </span>
+            <button
+              onClick={() => changeCanvaPage(1)}
+              disabled={!canControlCanvaPage}
+              className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
+              style={{
+                background: canControlCanvaPage ? BLUE : "transparent",
+                color: canControlCanvaPage ? "#fff" : "rgba(0,0,0,0.25)",
+              }}
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* ── Action buttons ── */}
-          <div className="mt-6 flex items-center gap-2 flex-wrap">
-            <button
-              onClick={openModal}
-              disabled={!isOnJeopardySlide || !current.qId || current.open}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:cursor-not-allowed"
-              style={{
-                background:
-                  isOnJeopardySlide && current.qId && !current.open
-                    ? GREEN
-                    : "rgba(0,0,0,0.08)",
-                color:
-                  isOnJeopardySlide && current.qId && !current.open
-                    ? "#fff"
-                    : "rgba(0,0,0,0.3)",
-              }}
-            >
-              เปิด Modal
-            </button>
+          {/* ── ★★★★ NEW: Quick Jump preset — แยกทรง/สีจาก ◀/▶ ชัดเจน กันสับสน ── */}
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-lg border flex-wrap"
+            style={{
+              borderColor: canControlCanvaPage
+                ? "rgba(0,0,0,0.1)"
+                : "rgba(0,0,0,0.06)",
+              background: "transparent",
+              opacity: canControlCanvaPage ? 1 : 0.4,
+            }}
+            title="กระโดดไปหน้าที่ตั้งชื่อไว้โดยตรง"
+          >
+            <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] text-black/35 px-1">
+              <Zap className="w-3 h-3" />
+              Quick Jump
+            </span>
 
-            <button
-              onClick={closeModal}
-              disabled={!isOnJeopardySlide || !current.open}
-              className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all disabled:cursor-not-allowed"
-              style={{
-                background:
-                  isOnJeopardySlide && current.open
-                    ? NEGATIVE
-                    : "rgba(0,0,0,0.08)",
-                color:
-                  isOnJeopardySlide && current.open
-                    ? "#fff"
-                    : "rgba(0,0,0,0.3)",
-              }}
-            >
-              ปิด Modal
-            </button>
-
-            <div className="w-px h-6 bg-black/[0.08]" />
-
-            {/* ── ◀ / ▶ เลื่อนหน้า Canva ของ modal ที่เปิดอยู่ ── */}
-            <div
-              className="flex items-center gap-1 px-1.5 py-1 rounded-lg border transition-opacity"
-              style={{
-                borderColor: canControlCanvaPage
-                  ? "rgba(37,99,235,0.3)"
-                  : "rgba(0,0,0,0.08)",
-                background: canControlCanvaPage
-                  ? "rgba(37,99,235,0.06)"
-                  : "transparent",
-                opacity: canControlCanvaPage ? 1 : 0.4,
-              }}
-              title="เลื่อนหน้า Canva — ใช้ได้ทั้งตอนเปิด Modal คำถามอยู่ และตอนอยู่สไลด์ Canva Intro"
-            >
-              <button
-                onClick={() => changeCanvaPage(-1)}
-                disabled={!canControlCanvaPage}
-                className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
-                style={{
-                  background: canControlCanvaPage ? BLUE : "transparent",
-                  color: canControlCanvaPage ? "#fff" : "rgba(0,0,0,0.25)",
-                }}
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
+            {presets.map((preset) => (
               <span
-                className="text-[11px] font-medium min-w-[52px] text-center"
-                style={{
-                  color: canControlCanvaPage ? BLUE : "rgba(0,0,0,0.3)",
-                }}
+                key={preset.id}
+                className="flex items-center rounded-md border overflow-hidden"
+                style={{ borderColor: "rgba(0,0,0,0.1)" }}
               >
-                หน้า {effectivePage}
-              </span>
-              <button
-                onClick={() => changeCanvaPage(1)}
-                disabled={!canControlCanvaPage}
-                className="w-7 h-7 rounded-md flex items-center justify-center disabled:cursor-not-allowed"
-                style={{
-                  background: canControlCanvaPage ? BLUE : "transparent",
-                  color: canControlCanvaPage ? "#fff" : "rgba(0,0,0,0.25)",
-                }}
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* ── ★★★★ NEW: Quick Jump preset — แยกทรง/สีจาก ◀/▶ ชัดเจน กันสับสน ── */}
-            <div
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg border flex-wrap"
-              style={{
-                borderColor: canControlCanvaPage
-                  ? "rgba(0,0,0,0.1)"
-                  : "rgba(0,0,0,0.06)",
-                background: "transparent",
-                opacity: canControlCanvaPage ? 1 : 0.4,
-              }}
-              title="กระโดดไปหน้าที่ตั้งชื่อไว้โดยตรง"
-            >
-              <span className="flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] text-black/35 px-1">
-                <Zap className="w-3 h-3" />
-                Quick Jump
-              </span>
-
-              {presets.map((preset) => (
-                <span
-                  key={preset.id}
-                  className="flex items-center rounded-md border overflow-hidden"
-                  style={{ borderColor: "rgba(0,0,0,0.1)" }}
-                >
-                  <button
-                    onClick={() => applyPreset(preset.page_number)}
-                    disabled={!canControlCanvaPage}
-                    className="px-2.5 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed"
-                    style={{
-                      color: canControlCanvaPage
-                        ? "rgba(0,0,0,0.65)"
-                        : "rgba(0,0,0,0.3)",
-                    }}
-                  >
-                    {preset.label} · {preset.page_number}
-                  </button>
-                  <button
-                    onClick={() => removePreset(preset.id)}
-                    className="w-6 h-6 flex items-center justify-center text-black/25 hover:text-red-500 hover:bg-red-50 transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-
-              {showAddPreset ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    value={newPresetLabel}
-                    onChange={(e) => setNewPresetLabel(e.target.value)}
-                    placeholder="ชื่อ"
-                    className="w-16 px-2 py-1.5 text-[11px] rounded-md border border-black/10 outline-none"
-                  />
-                  <input
-                    value={newPresetPage}
-                    onChange={(e) => setNewPresetPage(e.target.value)}
-                    placeholder="หน้า"
-                    inputMode="numeric"
-                    className="w-14 px-2 py-1.5 text-[11px] rounded-md border border-black/10 outline-none"
-                  />
-                  <button
-                    onClick={addPreset}
-                    className="px-2.5 py-1.5 text-[11px] font-medium rounded-md text-white"
-                    style={{ background: ORANGE }}
-                  >
-                    บันทึก
-                  </button>
-                  <button
-                    onClick={() => setShowAddPreset(false)}
-                    className="px-2 py-1.5 text-[11px] text-black/40"
-                  >
-                    ยกเลิก
-                  </button>
-                </div>
-              ) : (
                 <button
-                  onClick={() => setShowAddPreset(true)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-md border border-dashed border-black/15 text-black/40"
-                >
-                  <Plus className="w-3 h-3" />
-                  เพิ่ม
-                </button>
-              )}
-            </div>
-
-            {/* ── ★★★★★★ NEW: ปุ่มกลับจาก Quick Jump — 2 แบบ ── */}
-            {preJumpPage !== null && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => returnFromJump(false)}
+                  onClick={() => applyPreset(preset.page_number)}
                   disabled={!canControlCanvaPage}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border disabled:cursor-not-allowed"
+                  className="px-2.5 py-1.5 text-[11px] font-medium disabled:cursor-not-allowed"
                   style={{
-                    borderColor: "rgba(237,130,64,0.35)",
-                    background: "rgba(237,130,64,0.08)",
-                    color: ORANGE,
+                    color: canControlCanvaPage
+                      ? "rgba(0,0,0,0.65)"
+                      : "rgba(0,0,0,0.3)",
                   }}
-                  title={`กลับไปหน้า ${preJumpPage} (หน้าเดิมที่ค้างไว้ก่อน jump)`}
                 >
-                  <Undo2 className="w-3.5 h-3.5" />
-                  กลับหน้าเดิม · หน้า {preJumpPage}
+                  {preset.label} · {preset.page_number}
                 </button>
-
                 <button
-                  onClick={() => returnFromJump(true)}
-                  disabled={!canControlCanvaPage}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border disabled:cursor-not-allowed"
-                  style={{
-                    borderColor: "rgba(237,130,64,0.35)",
-                    background: "rgba(237,130,64,0.08)",
-                    color: ORANGE,
-                  }}
-                  title={`กลับไปหน้า ${preJumpPage + 1} (ถัดจากหน้าที่ค้างไว้ก่อน jump)`}
+                  onClick={() => removePreset(preset.id)}
+                  className="w-6 h-6 flex items-center justify-center text-black/25 hover:text-red-500 hover:bg-red-50 transition-colors"
                 >
-                  <Undo2 className="w-3.5 h-3.5" />
-                  กลับ+ถัดไป · หน้า {preJumpPage + 1}
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+
+            {showAddPreset ? (
+              <div className="flex items-center gap-1">
+                <input
+                  value={newPresetLabel}
+                  onChange={(e) => setNewPresetLabel(e.target.value)}
+                  placeholder="ชื่อ"
+                  className="w-16 px-2 py-1.5 text-[11px] rounded-md border border-black/10 outline-none"
+                />
+                <input
+                  value={newPresetPage}
+                  onChange={(e) => setNewPresetPage(e.target.value)}
+                  placeholder="หน้า"
+                  inputMode="numeric"
+                  className="w-14 px-2 py-1.5 text-[11px] rounded-md border border-black/10 outline-none"
+                />
+                <button
+                  onClick={addPreset}
+                  className="px-2.5 py-1.5 text-[11px] font-medium rounded-md text-white"
+                  style={{ background: ORANGE }}
+                >
+                  บันทึก
+                </button>
+                <button
+                  onClick={() => setShowAddPreset(false)}
+                  className="px-2 py-1.5 text-[11px] text-black/40"
+                >
+                  ยกเลิก
                 </button>
               </div>
+            ) : (
+              <button
+                onClick={() => setShowAddPreset(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] rounded-md border border-dashed border-black/15 text-black/40"
+              >
+                <Plus className="w-3 h-3" />
+                เพิ่ม
+              </button>
             )}
-            {/* ── ★★★★★ NEW: Canva Preview — ก่อนหน้า / ปัจจุบัน / ถัดไป ──
+          </div>
+
+          {/* ── ★★★★★★ NEW: ปุ่มกลับจาก Quick Jump — 2 แบบ ── */}
+          {preJumpPage !== null && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => returnFromJump(false)}
+                disabled={!canControlCanvaPage}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border disabled:cursor-not-allowed"
+                style={{
+                  borderColor: "rgba(237,130,64,0.35)",
+                  background: "rgba(237,130,64,0.08)",
+                  color: ORANGE,
+                }}
+                title={`กลับไปหน้า ${preJumpPage} (หน้าเดิมที่ค้างไว้ก่อน jump)`}
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                กลับหน้าเดิม · หน้า {preJumpPage}
+              </button>
+
+              <button
+                onClick={() => returnFromJump(true)}
+                disabled={!canControlCanvaPage}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium border disabled:cursor-not-allowed"
+                style={{
+                  borderColor: "rgba(237,130,64,0.35)",
+                  background: "rgba(237,130,64,0.08)",
+                  color: ORANGE,
+                }}
+                title={`กลับไปหน้า ${preJumpPage + 1} (ถัดจากหน้าที่ค้างไว้ก่อน jump)`}
+              >
+                <Undo2 className="w-3.5 h-3.5" />
+                กลับ+ถัดไป · หน้า {preJumpPage + 1}
+              </button>
+            </div>
+          )}
+          {/* ── ★★★★★ NEW: Canva Preview — ก่อนหน้า / ปัจจุบัน / ถัดไป ──
               mount ค้างตลอด (ไม่ conditional-render/unmount) เหมือน
               CanvaSingleFrame หลักของ viewer เพื่อไม่ให้ iframe reload ทุกครั้ง
               ที่เลขหน้าขยับ — gate ด้วย canControlCanvaPage เหมือนปุ่มอื่น
               คลิก preview = จั๊มป์ไปหน้านั้นทันที (เรียก changeCanvaPage เดิม) */}
-            {canControlCanvaPage && (
-              <div className="mt-3 flex items-center gap-2 flex-wrap">
-                {[
-                  {
-                    label: "ก่อนหน้า",
-                    page: effectivePage - 1,
-                    onClick: () => changeCanvaPage(-1),
-                  },
-                  {
-                    label: "ปัจจุบัน",
-                    page: effectivePage,
-                    onClick: undefined,
-                  },
-                  {
-                    label: "ถัดไป",
-                    page: effectivePage + 1,
-                    onClick: () => changeCanvaPage(1),
-                  },
-                ].map(({ label, page, onClick }) => (
+          {canControlCanvaPage && (
+            <div className="mt-3 flex items-center gap-2 flex-nowrap">
+              {[
+                {
+                  label: "ก่อนหน้า",
+                  page: effectivePage - 1,
+                  onClick: () => changeCanvaPage(-1),
+                },
+                { label: "ปัจจุบัน", page: effectivePage, onClick: undefined },
+                {
+                  label: "ถัดไป",
+                  page: effectivePage + 1,
+                  onClick: () => changeCanvaPage(1),
+                },
+              ].map(({ label, page, onClick }) => (
+                <div
+                  key={label}
+                  onClick={onClick}
+                  className="rounded-lg border overflow-hidden flex-shrink-0"
+                  style={{
+                    borderColor:
+                      label === "ปัจจุบัน"
+                        ? "rgba(237,130,64,0.4)"
+                        : "rgba(0,0,0,0.08)",
+                    width: 220,
+                    cursor: onClick ? "pointer" : "default",
+                  }}
+                >
+                  <div className="px-2 py-1 text-[10px] text-black/40 border-b border-black/[0.06] truncate">
+                    {label} · หน้า {Math.max(1, page)}
+                  </div>
                   <div
-                    key={label}
-                    onClick={onClick}
-                    className="rounded-lg border overflow-hidden"
                     style={{
-                      borderColor:
-                        label === "ปัจจุบัน"
-                          ? "rgba(237,130,64,0.4)"
-                          : "rgba(0,0,0,0.08)",
-                      width: 160,
-                      cursor: onClick ? "pointer" : "default",
+                      width: 220,
+                      height: 124,
+                      overflow: "hidden",
+                      position: "relative",
                     }}
                   >
-                    <div className="px-2 py-1 text-[10px] text-black/40 border-b border-black/[0.06]">
-                      {label} · หน้า {Math.max(1, page)}
-                    </div>
-                    {/* ★ scale ย่อทั้ง iframe แทนบีบ width/height ตรงๆ — กัน
-                      Canva re-layout เนื้อหาข้างในผิดสัดส่วน (เทคนิคเดียวกับ
-                      mini scoreboard iframe ใน QuestionModal) */}
                     <div
                       style={{
-                        width: 160,
-                        height: 90,
-                        overflow: "hidden",
-                        position: "relative",
+                        transform: "scale(0.2296)", // 180/958 ≈ พอดีเฟรม 16:9
+                        transformOrigin: "top left",
+                        width: 958,
+                        height: 539,
+                        pointerEvents: "none",
                       }}
                     >
-                      <div
-                        style={{
-                          transform: "scale(0.167)", // 160/958 ≈ พอดีเฟรม 16:9
-                          transformOrigin: "top left",
-                          width: 958,
-                          height: 539,
-                          pointerEvents: "none", // preview ดูอย่างเดียว
-                        }}
-                      >
-                        <CanvaSingleFrame
-                          src={computeCanvaSrc(
-                            activeCanvaUrl,
-                            Math.max(1, page),
-                          )}
-                          modalVisible={true}
-                          fill
-                        />
-                      </div>
+                      <CanvaSingleFrame
+                        src={computeCanvaSrc(activeCanvaUrl, Math.max(1, page))}
+                        modalVisible={true}
+                        fill
+                      />
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="w-px h-6 bg-black/[0.08]" />
 
-            <div className="w-px h-6 bg-black/[0.08]" />
+          {/* ── ↑ เลื่อนขึ้นไปดูโจทย์ / ↓ เลื่อนดูคะแนน ── */}
+          <button
+            onClick={triggerScrollToTop}
+            disabled={!canControlCanvaPage}
+            title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ขึ้นไปดูโจทย์ (Canva) ด้านบน"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
+            style={{
+              borderColor: canControlCanvaPage
+                ? "rgba(52,211,153,0.4)"
+                : "rgba(0,0,0,0.08)",
+              background: canControlCanvaPage
+                ? "rgba(52,211,153,0.10)"
+                : "transparent",
+              color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
+            }}
+          >
+            {/* <ArrowUp className="w-3.5 h-3.5" /> */}
+            {/* <ChevronLeft className="w-3.5 h-3.5" /> */}
+            ขยายโจทย์เต็มจอ
+          </button>
 
-            {/* ── ↑ เลื่อนขึ้นไปดูโจทย์ / ↓ เลื่อนดูคะแนน ── */}
-            <button
-              onClick={triggerScrollToTop}
-              disabled={!canControlCanvaPage}
-              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ขึ้นไปดูโจทย์ (Canva) ด้านบน"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
-              style={{
-                borderColor: canControlCanvaPage
-                  ? "rgba(52,211,153,0.4)"
-                  : "rgba(0,0,0,0.08)",
-                background: canControlCanvaPage
-                  ? "rgba(52,211,153,0.10)"
-                  : "transparent",
-                color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
-              }}
-            >
-              {/* <ArrowUp className="w-3.5 h-3.5" /> */}
-              {/* <ChevronLeft className="w-3.5 h-3.5" /> */}
-              ขยายโจทย์เต็มจอ
-            </button>
+          <button
+            onClick={triggerScrollToScore}
+            disabled={!canControlCanvaPage}
+            title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปยังจุดคะแนนใต้ Canva iframe"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
+            style={{
+              borderColor: canControlCanvaPage
+                ? "rgba(52,211,153,0.4)"
+                : "rgba(0,0,0,0.08)",
+              background: canControlCanvaPage
+                ? "rgba(52,211,153,0.10)"
+                : "transparent",
+              color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
+            }}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            เปิดคะแนนข้อนี้
+          </button>
 
-            <button
-              onClick={triggerScrollToScore}
-              disabled={!canControlCanvaPage}
-              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปยังจุดคะแนนใต้ Canva iframe"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
-              style={{
-                borderColor: canControlCanvaPage
-                  ? "rgba(52,211,153,0.4)"
-                  : "rgba(0,0,0,0.08)",
-                background: canControlCanvaPage
-                  ? "rgba(52,211,153,0.10)"
-                  : "transparent",
-                color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
-              }}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              เปิดคะแนนข้อนี้
-            </button>
+          {/* ── ★★★★★★★★ NEW: เลื่อนให้ผู้ชมดู Scoreboard (keepthescore) ── */}
+          <button
+            onClick={triggerScrollToBoard}
+            disabled={!canControlCanvaPage}
+            title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปโชว์ iframe scoreboard เต็มคอลัมน์ขวา"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
+            style={{
+              borderColor: canControlCanvaPage
+                ? "rgba(52,211,153,0.4)"
+                : "rgba(0,0,0,0.08)",
+              background: canControlCanvaPage
+                ? "rgba(52,211,153,0.10)"
+                : "transparent",
+              color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
+            }}
+          >
+            <Clock className="w-3.5 h-3.5" />
+            จับเวลา
+          </button>
 
-            {/* ── ★★★★★★★★ NEW: เลื่อนให้ผู้ชมดู Scoreboard (keepthescore) ── */}
-            <button
-              onClick={triggerScrollToBoard}
-              disabled={!canControlCanvaPage}
-              title="เลื่อนจอผู้ชมที่เปิด Modal ค้างอยู่ ไปโชว์ iframe scoreboard เต็มคอลัมน์ขวา"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
-              style={{
-                borderColor: canControlCanvaPage
-                  ? "rgba(52,211,153,0.4)"
-                  : "rgba(0,0,0,0.08)",
-                background: canControlCanvaPage
-                  ? "rgba(52,211,153,0.10)"
-                  : "transparent",
-                color: canControlCanvaPage ? "#0f9d68" : "rgba(0,0,0,0.3)",
-              }}
-            >
-              <Clock className="w-3.5 h-3.5" />
-              จับเวลา
-            </button>
+          <div className="w-px h-6 bg-black/[0.08]" />
 
-            <div className="w-px h-6 bg-black/[0.08]" />
-
-            <button
-              onClick={clearHighlight}
-              disabled={!isOnJeopardySlide || !current.qId}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
-              style={{
-                borderColor: "rgba(0,0,0,0.1)",
-                color:
-                  isOnJeopardySlide && current.qId
-                    ? "rgba(0,0,0,0.55)"
-                    : "rgba(0,0,0,0.25)",
-              }}
-            >
-              <X className="w-3.5 h-3.5" />
-              เคลียร์ไฮไลท์
-            </button>
-          </div>
+          <button
+            onClick={clearHighlight}
+            disabled={!isOnJeopardySlide || !current.qId}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium border transition-all disabled:cursor-not-allowed"
+            style={{
+              borderColor: "rgba(0,0,0,0.1)",
+              color:
+                isOnJeopardySlide && current.qId
+                  ? "rgba(0,0,0,0.55)"
+                  : "rgba(0,0,0,0.25)",
+            }}
+          >
+            <X className="w-3.5 h-3.5" />
+            เคลียร์ไฮไลท์
+          </button>
         </div>
       </div>
+    </div>
   );
 }
 
