@@ -41,6 +41,7 @@ import { subscribeToScoreEvents, unsubscribe } from "@/lib/db";
 import { CanvaLinkManager } from "./CanvaLinkManager";
 import ControlPage from "./ControlPage";
 import { TimerAdminControl } from "./TimerAdminControl";
+import { useServerTimeSync } from "@/lib/serverTime";
 
 const ORANGE = "#ED8240";
 const NEGATIVE = "#d4183d";
@@ -2209,6 +2210,8 @@ export default function AdminPanel() {
     positions: [],
     state: { status: "idle", round: 1 },
   });
+  
+  useServerTimeSync();
 
   const [refreshVersion, setRefreshVersion] = useState(0);
 

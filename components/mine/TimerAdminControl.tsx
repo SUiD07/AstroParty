@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   loadTimerState,
   subscribeToTimer,
@@ -10,8 +10,8 @@ import {
   unsubscribe,
   type TimerState,
   type TimerTable,
-} from '@/lib/timer';
-import { useCountdown } from '@/hooks/useCountdown';
+} from "@/lib/timer";
+import { useCountdown } from "@/hooks/useCountdown";
 
 interface TimerAdminControlProps {
   table: TimerTable;
@@ -26,7 +26,11 @@ function toMMSS(totalSeconds: number) {
   };
 }
 
-export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
+export function TimerAdminControl({
+  table,
+  title,
+  defaultSeconds = 0, // ★ default เป็น 0 ถ้าไม่ได้ส่งมา (พฤติกรรมเดิม)
+}: TimerAdminControlProps) {
   const [state, setState] = useState<TimerState | null>(null);
   const [mm, setMm] = useState(0);
   const [ss, setSs] = useState(0);
@@ -34,7 +38,11 @@ export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
   useEffect(() => {
     loadTimerState(table).then((s) => {
       setState(s);
-      const t = toMMSS(s.duration_seconds);
+      // ★ ถ้า DB ยังไม่มีค่า (duration_seconds เป็น 0 หรือไม่เคยตั้งเลย)
+      // ใช้ defaultSeconds เป็นค่าตั้งต้นในช่องกรอกแทน
+      const initialSeconds =
+        s.duration_seconds > 0 ? s.duration_seconds : defaultSeconds;
+      const t = toMMSS(initialSeconds);
       setMm(t.mm);
       setSs(t.ss);
     });
@@ -42,7 +50,7 @@ export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
       setState(s);
       // ★ อัปเดตช่องกรอกตามค่าจริงจาก DB เฉพาะตอนไม่ได้กำลังนับ
       // (กันไม่ให้ทับค่าที่แอดมินกำลังพิมพ์อยู่ระหว่างนับถอยหลัง)
-      if (s.status !== 'running') {
+      if (s.status !== "running") {
         const t = toMMSS(s.duration_seconds);
         setMm(t.mm);
         setSs(t.ss);
@@ -51,18 +59,21 @@ export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
     return () => {
       unsubscribe(channel);
     };
-  }, [table]);
+  }, [table, defaultSeconds]);
 
   const { remaining, status } = useCountdown(state);
-  const isRunning = status === 'running';
+  const isRunning = status === "running";
   const isTimeUp = isRunning && remaining <= 0;
   const inputTotalSeconds = mm * 60 + ss;
 
   if (!state) return <div className="text-xs text-black/30">กำลังโหลด...</div>;
 
   // ★ ระหว่างนับถอยหลัง แสดงตัวเลขสดจาก remaining แทนค่าที่กรอกไว้
-  const liveMM = String(Math.floor(Math.max(0, remaining) / 60)).padStart(2, '0');
-  const liveSS = String(Math.max(0, remaining) % 60).padStart(2, '0');
+  const liveMM = String(Math.floor(Math.max(0, remaining) / 60)).padStart(
+    2,
+    "0",
+  );
+  const liveSS = String(Math.max(0, remaining) % 60).padStart(2, "0");
 
   return (
     <div className="space-y-4">
@@ -74,21 +85,25 @@ export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
           className="text-xs font-medium px-2 py-1 rounded-md"
           style={{
             background: isTimeUp
-              ? 'rgba(220,38,38,0.1)'
+              ? "rgba(220,38,38,0.1)"
               : isRunning
-                ? 'rgba(26,122,76,0.1)'
-                : 'rgba(0,0,0,0.05)',
-            color: isTimeUp ? '#dc2626' : isRunning ? '#1a7a4c' : 'rgba(0,0,0,0.4)',
+                ? "rgba(26,122,76,0.1)"
+                : "rgba(0,0,0,0.05)",
+            color: isTimeUp
+              ? "#dc2626"
+              : isRunning
+                ? "#1a7a4c"
+                : "rgba(0,0,0,0.4)",
           }}
         >
-          {isTimeUp ? 'หมดเวลา' : isRunning ? 'กำลังจับเวลา' : 'พร้อมกรอกเวลา'}
+          {isTimeUp ? "หมดเวลา" : isRunning ? "กำลังจับเวลา" : "พร้อมกรอกเวลา"}
         </span>
       </div>
 
       {/* ★ ช่องแสดง/กรอกเวลา */}
       {isTimeUp ? (
         <div className="py-3 text-center">
-          <span className="text-2xl font-bold" style={{ color: '#dc2626' }}>
+          <span className="text-2xl font-bold" style={{ color: "#dc2626" }}>
             Time&apos;s up
           </span>
         </div>
@@ -128,7 +143,7 @@ export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
           onClick={() => startTimer(table, inputTotalSeconds)}
           disabled={isRunning || inputTotalSeconds <= 0}
           className="flex-1 rounded-lg py-2.5 text-xs font-medium text-white disabled:opacity-40"
-          style={{ background: '#1a7a4c' }}
+          style={{ background: "#1a7a4c" }}
         >
           ▶ จับเวลา
         </button>
@@ -136,7 +151,7 @@ export function TimerAdminControl({ table, title }: TimerAdminControlProps) {
           onClick={() => stopTimer(table)}
           disabled={!isRunning}
           className="flex-1 rounded-lg py-2.5 text-xs font-medium text-white disabled:opacity-40"
-          style={{ background: '#AA4229' }}
+          style={{ background: "#AA4229" }}
         >
           ■ หยุด
         </button>

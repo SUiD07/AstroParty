@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { TimerState } from '@/lib/timer';
+import { getServerNow } from '@/lib/serverTime';
 
 export function useCountdown(timerState: TimerState | null) {
   const [remaining, setRemaining] = useState(0);
@@ -12,7 +13,7 @@ export function useCountdown(timerState: TimerState | null) {
       setRemaining(timerState.duration_seconds);
       return;
     }
-    const diff = Math.max(0, new Date(timerState.end_at).getTime() - Date.now());
+    const diff = Math.max(0, new Date(timerState.end_at).getTime() - getServerNow()); // ★ เปลี่ยนจาก Date.now()
     setRemaining(Math.ceil(diff / 1000));
   }, [timerState]);
 
@@ -20,7 +21,6 @@ export function useCountdown(timerState: TimerState | null) {
     recalc();
     const interval = setInterval(recalc, 100);
 
-    // แก้ throttle ตอนสลับสไลด์/แท็บกลับมา (ดูที่คุยกันไว้)
     const onVisible = () => {
       if (document.visibilityState === 'visible') recalc();
     };

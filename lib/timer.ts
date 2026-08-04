@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getServerNow } from './serverTime';
 
 export interface TimerState {
   id: number;
@@ -36,7 +37,7 @@ export async function saveTimerDuration(table: TimerTable, durationSeconds: numb
 
 // เริ่มนับถอยหลังจริง
 export async function startTimer(table: TimerTable, durationSeconds: number) {
-  const endAt = new Date(Date.now() + durationSeconds * 1000).toISOString();
+  const endAt = new Date(getServerNow() + durationSeconds * 1000).toISOString(); // ★ เปลี่ยนจาก Date.now()
   const { error } = await supabase
     .from(table)
     .update({

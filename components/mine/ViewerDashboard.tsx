@@ -74,6 +74,7 @@ import { PlanetGround } from "./PlanetGround";
 import { ShipLandingRow } from "./PlanetGround";
 import { TimerTopRight } from "./TimerDisplays";
 import { TimerCircular } from "./TimerDisplays";
+import { useServerTimeSync } from "@/lib/serverTime";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -4133,6 +4134,8 @@ function NavBar({
 export default function ViewerDashboard() {
   const totalSlides = 12; // ★★ [แก้ไข] เพิ่ม Slide12 (พักเบรก) ต่อท้าย ไม่กระทบสไลด์เดิม
   const [currentSlide, setCurrentSlide] = useState(1);
+
+  useServerTimeSync();
 
   const [data, setData] = useState<RaceData>({
     teams: [],
