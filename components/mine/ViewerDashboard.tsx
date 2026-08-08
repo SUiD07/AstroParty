@@ -2434,7 +2434,8 @@ function Slide4({
                   color: "#fff",
                 }}
               >
-                Question {answeredCount}/{totalQCount}
+                Question {answeredCount}/12
+                {/* {totalQCount} */}
               </p>
               <div
                 style={{
