@@ -75,6 +75,8 @@ import { ShipLandingRow } from "./PlanetGround";
 import { TimerTopRight } from "./TimerDisplays";
 import { TimerCircular } from "./TimerDisplays";
 import { useServerTimeSync } from "@/lib/serverTime";
+import { useLayoutEffect } from "react";
+import Image from "next/image";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -468,6 +470,68 @@ function SlideHeader({
           {right}
         </div>
       )}
+    </div>
+  );
+}
+
+function FitText({
+  text,
+  style,
+  color,
+  maxFontSize,
+  minFontSize,
+}: {
+  text: string;
+  style: React.CSSProperties;
+  color: string;
+  maxFontSize: number;
+  minFontSize: number;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [fontSize, setFontSize] = useState(maxFontSize);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const el = textRef.current;
+    if (!container || !el) return;
+
+    const fit = () => {
+      const maxWidth = container.clientWidth;
+      let size = maxFontSize;
+      el.style.fontSize = `${size}px`;
+
+      // ลดขนาดลงทีละ step จนกว่าจะพอดี (หรือชนขั้นต่ำ)
+      while (el.scrollWidth > maxWidth && size > minFontSize) {
+        size -= 2;
+        el.style.fontSize = `${size}px`;
+      }
+      setFontSize(size);
+    };
+
+    fit();
+
+    const ro = new ResizeObserver(fit);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [text, maxFontSize, minFontSize]);
+
+  return (
+    <div ref={containerRef} style={{ width: "90vw", maxWidth: 1400 }}>
+      <p
+        ref={textRef}
+        style={{
+          ...style,
+          fontSize,
+          color,
+          margin: 0,
+          whiteSpace: "nowrap",
+          lineHeight: 1.2,
+          textAlign: "center",
+        }}
+      >
+        {text}
+      </p>
     </div>
   );
 }
@@ -915,7 +979,7 @@ function QuestionModal({
                     fontWeight: 900,
                     margin: 0,
                     whiteSpace: "nowrap",
-                    lineHeight: 1, // ★ NEW: เช่นกัน กันฟอนต์ไทย/อังกฤษดันบรรทัดไม่เท่ากัน
+                    lineHeight: 1.35, // ★ NEW: เช่นกัน กันฟอนต์ไทย/อังกฤษดันบรรทัดไม่เท่ากัน
                     background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
@@ -954,7 +1018,7 @@ function QuestionModal({
             {introBig && (
               <motion.div
                 key="header-big"
-                initial={{ opacity: 0, scale: 0.9 }} // ★ CHANGED: ไม่มี position เริ่มต้นจากมุมแล้ว เริ่มที่ scale เล็กน้อย+opacity 0 ตรงตำแหน่งเดิม (กลางจอ)
+                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
@@ -963,7 +1027,7 @@ function QuestionModal({
                   inset: 0,
                   zIndex: 300,
                   display: "flex",
-                  flexDirection: "column", // ★ CHANGED: บังคับ column เสมอ
+                  flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "clamp(8px, 2vw, 24px)",
@@ -974,38 +1038,27 @@ function QuestionModal({
                   textAlign: "center",
                 }}
               >
-                <p
-                  style={{
-                    ...fontDisplay,
-                    fontSize: "clamp(32px, 7vw, 110px)",
-                    color: C.blueLight,
-                    margin: 0,
-                    maxWidth: "90vw",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {category.name}
-                </p>
+                <FitText
+                  text={category.name}
+                  style={fontDisplay}
+                  color={C.blueLight}
+                  maxFontSize={110}
+                  minFontSize={28}
+                />
                 <h3
                   style={{
                     ...notoTH,
                     fontWeight: 900,
                     fontSize: "clamp(24px, 5.5vw, 84px)",
-                    lineHeight: 1.1,
+                    lineHeight: 1.3, // กันไม้เอกโดนตัดแบบที่คุยกันก่อนหน้า
                     margin: 0,
-                    maxWidth: "90vw",
-                    whiteSpace: "nowrap", // ★ ข้อความ "ข้อ N" เองยังไม่ตัดคำ (สั้นอยู่แล้ว) แต่จะอยู่คนละบรรทัดกับ category เพราะ flexDirection: column ด้านบน
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
                     background: `linear-gradient(90deg, ${C.orange}, ${C.gold})`,
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
                   }}
                 >
-                  ข้อ {question.number}
+                  ข้อที่ {question.number}
                 </h3>
               </motion.div>
             )}
@@ -1901,9 +1954,11 @@ function Slide1() {
             flexShrink: 0,
           }}
         >
-          <img
+          <Image
             src="/smcu_old.webp"
             alt="สโมสรนิสิตคณะแพทยศาสตร์"
+            width={857}   // ★ ใส่ตามอัตราส่วนจริงของไฟล์ (ดูขนาดต้นฉบับ)
+            height={1080}
             style={{
               width: "clamp(9rem,4.5vw,4.5rem)",
               height: "auto",
@@ -1919,9 +1974,11 @@ function Slide1() {
             }}
           />
 
-          <img
+          <Image
             src="/logo.png"
             alt="AMSci 2026"
+            width={556}   // ★ ปรับตามอัตราส่วนจริงของไฟล์ logo.png
+            height={529}
             style={{ width: "clamp(25rem,17vw,20rem)", height: "auto" }}
           />
 
@@ -1933,13 +1990,14 @@ function Slide1() {
             }}
           />
 
-          <img
+          <Image
             src="/MD_Chula.png"
             alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
+            width={306}   // ★ ปรับตามอัตราส่วนจริงของไฟล์
+            height={300}
             style={{
               width: "clamp(9rem,4.5vw,4.5rem)",
               height: "auto",
-              // opacity: 0.85,
             }}
           />
         </div>
@@ -3782,30 +3840,29 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
 // ---------------------------------------------------------------------------
 function Slide12() {
   return (
-<>
-  <SlideHeader title="Bonus Question" right={<></>} />
-
-  <div
-    style={{
-      height: "calc(100vh)", // ปรับตามความสูงของ Header
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "20px 0",
-      boxSizing: "border-box",
-    }}
-  >
-<img
-  src="/qr.jpg"
-  alt="..."
-  style={{
-    width: "95%",
-    height: "95%",
-    objectFit: "contain",
-  }}
-/>
-  </div>
-</>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+      <SlideHeader title="Bonus Question" right={<></>} />
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: "20px 0",
+          boxSizing: "border-box",
+          minHeight: 0, // ★ สำคัญ กัน flex child ดันล้นจนสูงเป็น 0
+        }}
+      >
+        <div style={{ position: "relative", width: "95%", height: "95%" }}>
+          <Image
+            src="/qr.jpg"
+            alt="QR code สำหรับ Bonus Question"
+            fill
+            style={{ objectFit: "contain" }}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -3856,7 +3913,7 @@ function FooterTicker() {
         <span style={{ color: C.orange, fontWeight: 600 }}>Final</span>
         &nbsp;·&nbsp;รับชมการถ่ายทอดสดได้ทาง&nbsp;
         <span style={{ color: C.blueLight, fontWeight: 600 }}>
-          facebook.com/@anandayquiz
+          facebook.com/anandayquiz
         </span>
         &nbsp;✦
       </span>
