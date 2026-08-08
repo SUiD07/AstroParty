@@ -537,6 +537,76 @@ function FitText({
 }
 
 // ---------------------------------------------------------------------------
+// AutoFitBlock — หดขนาด font ให้พอดีกับกล่องที่ขนาดคงที่ รองรับข้อความ
+// ที่ wrap หลายบรรทัด (ต่างจาก FitText ที่ใช้กับข้อความบรรทัดเดียว)
+// ---------------------------------------------------------------------------
+function AutoFitBlock({
+  text,
+  maxFontSize = 28,
+  minFontSize = 10,
+  style,
+}: {
+  text: string;
+  maxFontSize?: number;
+  minFontSize?: number;
+  style?: React.CSSProperties;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const [fontSize, setFontSize] = useState(maxFontSize);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const el = textRef.current;
+    if (!container || !el) return;
+
+    const fit = () => {
+      let size = maxFontSize;
+      el.style.fontSize = `${size}px`;
+
+      // ลดขนาดลงทีละ step จนกว่าข้อความจะไม่ล้นทั้งความสูงและความกว้างของกล่อง
+      while (
+        (el.scrollHeight > container.clientHeight ||
+          el.scrollWidth > container.clientWidth) &&
+        size > minFontSize
+      ) {
+        size -= 1;
+        el.style.fontSize = `${size}px`;
+      }
+      setFontSize(size);
+    };
+
+    fit();
+
+    const ro = new ResizeObserver(fit);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [text, maxFontSize, minFontSize]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ width: "100%", height: "100%", overflow: "hidden" }}
+    >
+      <p
+        ref={textRef}
+        className="text-white font-light"
+        style={{
+          ...style,
+          fontSize,
+          margin: 0,
+          lineHeight: 1.4,
+          whiteSpace: "normal",
+          wordBreak: "break-word",
+        }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // JeopardyCell
 // ---------------------------------------------------------------------------
 function JeopardyCell({
@@ -1957,7 +2027,7 @@ function Slide1() {
           <Image
             src="/smcu_old.webp"
             alt="สโมสรนิสิตคณะแพทยศาสตร์"
-            width={857}   // ★ ใส่ตามอัตราส่วนจริงของไฟล์ (ดูขนาดต้นฉบับ)
+            width={857} // ★ ใส่ตามอัตราส่วนจริงของไฟล์ (ดูขนาดต้นฉบับ)
             height={1080}
             style={{
               width: "clamp(9rem,4.5vw,4.5rem)",
@@ -1977,7 +2047,7 @@ function Slide1() {
           <Image
             src="/logo.png"
             alt="AMSci 2026"
-            width={556}   // ★ ปรับตามอัตราส่วนจริงของไฟล์ logo.png
+            width={556} // ★ ปรับตามอัตราส่วนจริงของไฟล์ logo.png
             height={529}
             style={{ width: "clamp(25rem,17vw,20rem)", height: "auto" }}
           />
@@ -1993,7 +2063,7 @@ function Slide1() {
           <Image
             src="/MD_Chula.png"
             alt="คณะแพทยศาสตร์ จุฬาลงกรณ์มหาวิทยาลัย"
-            width={306}   // ★ ปรับตามอัตราส่วนจริงของไฟล์
+            width={306} // ★ ปรับตามอัตราส่วนจริงของไฟล์
             height={300}
             style={{
               width: "clamp(9rem,4.5vw,4.5rem)",
@@ -2164,6 +2234,12 @@ function Slide3({
           .join(" · ")
       : "—";
 
+  // ★ NEW: ยังไม่เริ่มแข่ง = ไม่มีทีมเลย หรือทุกทีมคะแนนเป็น 0 เท่ากันหมด
+  const notStarted =
+    sortedPositions.length === 0 || sortedPositions.every((p) => p.score === 0);
+
+  const allTeamNames = data.teams.map((t) => t.name).join(" · ");
+
   return (
     <div
       className="h-full flex flex-col select-none font-sans overflow-hidden"
@@ -2196,7 +2272,7 @@ function Slide3({
         style={{ height: 1, background: "rgba(255,255,255,0.05)" }}
       />
 
-      <div className="px-16 pb-7 flex gap-5">
+      <div className="px-16 pb-7 flex gap-5" style={{ height: 168 }}>
         <div
           className="flex-[0.8] rounded-2xl p-6"
           style={{
@@ -2206,7 +2282,6 @@ function Slide3({
         >
           <p
             style={{
-              // color: "rgba(255,255,255,0.25)",
               fontSize: 13,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -2232,7 +2307,6 @@ function Slide3({
         >
           <p
             style={{
-              // color: "rgba(255,255,255,0.25)",
               fontSize: 13,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -2252,7 +2326,6 @@ function Slide3({
             {answeredCount}
             <span className="text-white ml-1" style={{ fontSize: "1.5rem" }}>
               / 12
-              {/* {totalQCount} */}
             </span>
           </p>
         </div>
@@ -2262,31 +2335,54 @@ function Slide3({
           style={{
             background: "rgba(61,22,12,0.55)",
             border: "1px solid rgba(255,255,255,0.06)",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0, // ★ สำคัญ — อนุญาตให้ลูกยืด/หดในกล่อง fixed ได้
           }}
         >
           <p
             style={{
-              // color: "rgba(255,255,255,0.25)",
               fontSize: 13,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               marginBottom: 12,
+              flexShrink: 0,
             }}
           >
-            Leader
+            {notStarted ? "Competing Teams" : "Leader"}
           </p>
-          <p
-            className="text-white font-light"
-            style={{
-              fontSize: "clamp(1.6rem, 3vw, 2.5rem)",
-              lineHeight: 1.2,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {leaderName}
-          </p>
+
+          <div style={{ flex: 1, minHeight: 0 }}>
+            {notStarted ? (
+              <AutoFitBlock
+                text={allTeamNames || "—"}
+                maxFontSize={28}
+                minFontSize={10}
+              />
+            ) : (
+              <div
+                style={{
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <p
+                  className="text-white font-light"
+                  style={{
+                    fontSize: "clamp(1.6rem, 3vw, 2.5rem)",
+                    lineHeight: 1.2,
+                    margin: 0,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {leaderName}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -3841,7 +3937,14 @@ function Slide11({ data, sortedPositions }: AwardSlideProps) {
 // ---------------------------------------------------------------------------
 function Slide12() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+      }}
+    >
       <SlideHeader title="Bonus Question" right={<></>} />
       <div
         style={{
