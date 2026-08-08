@@ -2716,6 +2716,7 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
   return (
     <div
       style={{
+        position: "relative", // ★ NEW — เป็น containing block ให้รูปที่ absolute
         display: "flex",
         flexDirection: "column",
         width: "100%",
@@ -2725,6 +2726,23 @@ function Slide5({ data, topSix, minScore, scoreRange }: Slide5Props) {
       }}
     >
       <SlideHeader title="Space Race" />
+
+      <Image
+        src="/logo.png"
+        alt="AMSci 2026"
+        width={556}
+        height={529}
+        style={{
+          position: "absolute",
+          bottom: "clamp(50px, 2vh, 24px)",
+          right: "clamp(16px, 3vw, 40px)",
+          width: "clamp(15rem, 8vw, 14rem)", // ★ เล็กลงจากเดิม
+          height: "auto",
+          pointerEvents: "none",
+          zIndex: 5,
+        }}
+      />
+
 
       <div
         style={{
