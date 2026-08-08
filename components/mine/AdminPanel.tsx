@@ -2472,7 +2472,8 @@ export default function AdminPanel() {
                                 </button>
                                 <button
                                   onClick={() => removeTeam(team.id)}
-                                  className="text-black/25 hover:text-red-500"
+                                  disabled
+                                  className="disabled:cursor-not-allowed text-black/25 hover:text-red-500"
                                   title="ลบทีม"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
